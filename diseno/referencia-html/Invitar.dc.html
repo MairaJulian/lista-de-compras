@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Invitar al hogar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="padding:48px 16px 0 8px;display:flex;align-items:center;gap:4px">
+    <a href="Hogar.dc.html" aria-label="Volver a Hogar" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;flex:none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:24px">Invitar</h1>
+  </div>
+
+  <div style="padding:40px 32px 0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px">
+    <span style="width:104px;height:104px;border-radius:50%;background:#E3F1E8;color:#2E7D57;display:flex;align-items:center;justify-content:center;margin-bottom:8px">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>
+    </span>
+    <h2 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:26px;line-height:1.2;text-wrap:balance">Sumá a alguien a Nuestra casa</h2>
+    <p style="margin:0;font-size:16px;line-height:1.5;color:#5B675F;text-wrap:pretty">Compartí el enlace. Quien lo abra y entre con su cuenta de Google se une al hogar y ve todas las listas.</p>
+  </div>
+
+  <div style="margin:32px 24px 0;display:flex;flex-direction:column;gap:8px">
+    <div id="lbl-enlace" style="font-size:13px;font-weight:700;color:#5B675F">Enlace de invitación</div>
+    <div role="group" aria-labelledby="lbl-enlace" style="display:flex;align-items:center;gap:8px;height:60px;box-sizing:border-box;padding:0 8px 0 16px;border:1.5px solid #D5DAD0;border-radius:18px;background:#fff">
+      <span style="flex:1;min-width:0;font-size:16px;color:#5B675F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">[enlace de invitación]</span>
+      <button onClick="{{ copy }}" style="height:44px;padding:0 16px;border:0;border-radius:22px;background:#E3F1E8;color:#1F5C3E;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;flex:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>
+        {{ copyLabel }}
+      </button>
+    </div>
+  </div>
+
+  <div style="flex:1"></div>
+
+  <div style="padding:0 24px 40px">
+    <a href="Hogar.dc.html" style="height:56px;border-radius:28px;background:#2E7D57;color:#fff;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg>
+      Compartir enlace
+    </a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(...args) {
+super(...args);
+this.state = { copied: false };
+}
+renderVals() {
+return {
+copyLabel: this.state.copied ? 'Copiado' : 'Copiar',
+copy: () => this.setState({ copied: !this.state.copied })
+};
+}
+}
+</script>
+</body>
+</html>

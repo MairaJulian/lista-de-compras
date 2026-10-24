@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Lista sin conexión</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+input::placeholder{color:#5B675F;opacity:1}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="padding:48px 16px 0 8px;display:flex;align-items:center;gap:4px">
+    <a href="Inicio.dc.html" aria-label="Volver a las listas" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;flex:none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <div style="flex:1;min-width:0">
+      <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:24px;line-height:1.1">Supermercado</h1>
+      <div style="font-size:13px;color:#5B675F;margin-top:2px">Nuestra casa</div>
+    </div>
+    <span style="height:44px;padding:0 14px 0 12px;border-radius:22px;background:#FCEBCB;color:#7A4300;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;flex:none">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 1 1 .8-8.9A6 6 0 0 1 19 11.5 3.3 3.3 0 0 1 18 18z"/><path d="M4 4l16 16"/></svg>
+      Sin conexión
+    </span>
+  </div>
+
+  <div style="margin:8px 20px 0;padding:10px 14px;border-radius:14px;background:#FCEBCB;color:#7A4300;font-size:13px;line-height:1.4">2 cambios sin sincronizar. Se enviarán solos cuando vuelva la conexión.</div>
+
+  <form style="margin:14px 20px 8px;display:flex;align-items:center;gap:10px">
+    <label for="nuevo-item" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Agregar ítem</label>
+    <input id="nuevo-item" type="text" placeholder="Agregar ítem…" autocomplete="off" style="flex:1;min-width:0;height:52px;box-sizing:border-box;padding:0 20px;border:1.5px solid #D5DAD0;border-radius:26px;background:#fff;font-family:inherit;font-size:17px;color:#1C2621">
+    <button type="button" aria-label="Agregar a la lista" style="width:52px;height:52px;border:0;border-radius:50%;background:#2E7D57;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </form>
+
+  <div style="flex:1;overflow-y:auto;padding:4px 20px 28px">
+    <div style="display:flex;align-items:baseline;gap:8px;padding:8px 4px">
+      <h2 style="margin:0;font-size:15px;font-weight:700">Pendientes</h2>
+      <span style="font-size:15px;font-weight:700;color:#5B675F">6</span>
+    </div>
+    <div style="border-radius:20px;overflow:hidden;background:#EEF1EA;display:flex;flex-direction:column;gap:1px">
+      <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 16px 0 6px;background:#fff">
+        <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box;display:block"></span></span>
+        <span style="flex:1;min-width:0;display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:500">Pilas AA</span><span style="font-size:14px;color:#5B675F">×4</span></span>
+        <span role="img" aria-label="Sin sincronizar" style="color:#8A4B00;display:flex;flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+        <span role="img" aria-label="Vos" style="width:28px;height:28px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">V</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 16px 0 6px;background:#fff">
+        <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box;display:block"></span></span>
+        <span style="flex:1;min-width:0;display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:500">Fideos</span><span style="font-size:14px;color:#5B675F">×3</span></span>
+        <span role="img" aria-label="Sin sincronizar" style="color:#8A4B00;display:flex;flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+        <span role="img" aria-label="Vos" style="width:28px;height:28px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">V</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 16px 0 6px;background:#fff">
+        <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box;display:block"></span></span>
+        <span style="flex:1;min-width:0;display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:500">Leche</span><span style="font-size:14px;color:#5B675F">×2</span></span>
+        <span role="img" aria-label="Lucía" style="width:28px;height:28px;border-radius:50%;background:#F8DDAE;color:#7A4300;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">L</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 16px 0 6px;background:#fff">
+        <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box;display:block"></span></span>
+        <span style="flex:1;min-width:0;display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:500">Pan lactal</span></span>
+        <span role="img" aria-label="Vos" style="width:28px;height:28px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">V</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 16px 0 6px;background:#fff">
+        <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box;display:block"></span></span>
+        <span style="flex:1;min-width:0;display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:500">Yerba mate</span><span style="font-size:14px;color:#5B675F">1 kg</span></span>
+        <span role="img" aria-label="Vos" style="width:28px;height:28px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">V</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;height:56px;padding:0 16px 0 6px;background:#fff">
+        <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box;display:block"></span></span>
+        <span style="flex:1;min-width:0;display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:500">Huevos</span><span style="font-size:14px;color:#5B675F">1 docena</span></span>
+        <span role="img" aria-label="Diego" style="width:28px;height:28px;border-radius:50%;background:#CFE0F2;color:#1D4E75;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">D</span>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:baseline;gap:8px;padding:24px 4px 8px">
+      <h2 style="margin:0;font-size:15px;font-weight:700;color:#5B675F">Comprados</h2>
+      <span style="font-size:15px;font-weight:700;color:#5B675F">2</span>
+    </div>
+    <div style="border-radius:20px;overflow:hidden;background:#EEF1EA;display:flex;flex-direction:column;gap:1px">
+      <div style="display:flex;align-items:center;gap:4px;height:52px;padding:0 16px 0 6px;background:#fff">
+        <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;background:#2E7D57;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span></span>
+        <span style="flex:1;font-size:17px;color:#5B675F;text-decoration:line-through">Arroz</span>
+        <span role="img" aria-label="Diego" style="width:28px;height:28px;border-radius:50%;background:#CFE0F2;color:#1D4E75;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">D</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;height:52px;padding:0 16px 0 6px;background:#fff">
+        <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;background:#2E7D57;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span></span>
+        <span style="flex:1;font-size:17px;color:#5B675F;text-decoration:line-through">Detergente</span>
+        <span role="img" aria-label="Vos" style="width:28px;height:28px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">V</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

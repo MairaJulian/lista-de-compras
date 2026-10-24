@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Detalle del ítem</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+@keyframes subir{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes velo{from{opacity:0}to{opacity:1}}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;position:relative;overflow:hidden">
+
+  <div aria-hidden="true" style="position:absolute;inset:0;display:flex;flex-direction:column">
+    <div style="padding:48px 16px 0 8px;display:flex;align-items:center;gap:4px">
+      <span style="width:48px;height:48px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>
+      <div style="flex:1">
+        <div style="font-family:Nunito,sans-serif;font-weight:800;font-size:24px;line-height:1.1">Supermercado</div>
+        <div style="font-size:13px;color:#5B675F;margin-top:2px">Nuestra casa</div>
+      </div>
+      <span style="height:44px;padding:0 14px 0 12px;border-radius:22px;background:#E3F1E8;color:#1F5C3E;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 1 1 .8-8.9A6 6 0 0 1 19 11.5 3.3 3.3 0 0 1 18 18z"/><path d="M9.5 13.5l2 2 3.5-4"/></svg>Sincronizado</span>
+    </div>
+    <div style="margin:14px 20px 8px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1;height:52px;box-sizing:border-box;padding:0 20px;border:1.5px solid #D5DAD0;border-radius:26px;background:#fff;display:flex;align-items:center;font-size:17px;color:#5B675F">Agregar ítem…</div>
+      <span style="width:52px;height:52px;border-radius:50%;background:#2E7D57"></span>
+    </div>
+    <div style="padding:4px 20px">
+      <div style="padding:8px 4px;font-size:15px;font-weight:700">Pendientes <span style="color:#5B675F">7</span></div>
+      <div style="border-radius:20px;overflow:hidden;background:#EEF1EA;display:flex;flex-direction:column;gap:1px">
+        <div style="height:56px;padding:0 16px 0 6px;background:#fff;display:flex;align-items:center;gap:4px">
+          <span style="width:44px;display:flex;justify-content:center"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box"></span></span>
+          <span style="flex:1;font-size:17px;font-weight:500">Leche <span style="font-size:14px;font-weight:400;color:#5B675F">×2</span></span>
+        </div>
+        <div style="height:56px;padding:0 16px 0 6px;background:#fff;display:flex;align-items:center;gap:4px">
+          <span style="width:44px;display:flex;justify-content:center"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box"></span></span>
+          <span style="flex:1;font-size:17px;font-weight:500">Pan lactal</span>
+        </div>
+        <div style="height:56px;padding:0 16px 0 6px;background:#fff;display:flex;align-items:center;gap:4px">
+          <span style="width:44px;display:flex;justify-content:center"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box"></span></span>
+          <span style="flex:1;font-size:17px;font-weight:500">Yerba mate <span style="font-size:14px;font-weight:400;color:#5B675F">1 kg</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <a href="Lista.dc.html" aria-label="Cerrar detalle" style="position:absolute;inset:0;background:rgba(28,38,33,0.5);animation:velo 0.25s ease-out both"></a>
+
+  <div role="dialog" aria-label="Detalle del ítem" style="position:absolute;left:0;right:0;bottom:0;box-sizing:border-box;padding:0 24px 28px;background:#fff;border-radius:28px 28px 0 0;box-shadow:0 -8px 30px rgba(28,38,33,0.18);animation:subir 0.35s cubic-bezier(0.2,0.8,0.2,1) both;display:flex;flex-direction:column">
+    <div style="width:36px;height:4px;border-radius:2px;background:#C9D0C9;margin:10px auto 6px"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;height:48px">
+      <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:20px">Detalle del ítem</h1>
+      <a href="Lista.dc.html" aria-label="Cerrar" style="width:44px;height:44px;margin-right:-10px;display:flex;align-items:center;justify-content:center;color:#5B675F">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </a>
+    </div>
+
+    <label for="nombre" style="font-size:13px;font-weight:700;color:#5B675F;margin:8px 0 6px">Nombre</label>
+    <input id="nombre" type="text" value="{{ name }}" onInput="{{ onName }}" style="height:52px;box-sizing:border-box;padding:0 16px;border:1.5px solid #D5DAD0;border-radius:14px;background:#F7F8F3;font-family:inherit;font-size:18px;font-weight:500;color:#1C2621">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;height:64px;margin-top:6px">
+      <span id="lbl-cantidad" style="font-size:15px;font-weight:700">Cantidad</span>
+      <div role="group" aria-labelledby="lbl-cantidad" style="display:flex;align-items:center;gap:6px">
+        <button onClick="{{ dec }}" aria-label="Una menos" style="width:44px;height:44px;border:1.5px solid #D5DAD0;border-radius:50%;background:#fff;color:#1C2621;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+        </button>
+        <span style="min-width:44px;text-align:center;font-family:Nunito,sans-serif;font-weight:800;font-size:24px">{{ qty }}</span>
+        <button onClick="{{ inc }}" aria-label="Una más" style="width:44px;height:44px;border:0;border-radius:50%;background:#E3F1E8;color:#1F5C3E;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <label for="nota" style="font-size:13px;font-weight:700;color:#5B675F;margin:4px 0 6px">Nota</label>
+    <textarea id="nota" rows="2" value="{{ note }}" onInput="{{ onNote }}" style="box-sizing:border-box;padding:14px 16px;border:1.5px solid #D5DAD0;border-radius:14px;background:#F7F8F3;font-family:inherit;font-size:16px;line-height:1.4;color:#1C2621;resize:none"></textarea>
+
+    <div style="display:flex;align-items:center;gap:12px;height:64px;margin-top:6px">
+      <span role="img" aria-label="Lucía" style="width:36px;height:36px;border-radius:50%;background:#F8DDAE;color:#7A4300;font:800 16px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">L</span>
+      <div>
+        <div style="font-size:13px;color:#5B675F">Agregado por</div>
+        <div style="font-size:16px;font-weight:700">Lucía</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <a href="Lista.dc.html" style="flex:1;height:52px;box-sizing:border-box;border:1.5px solid #D5DAD0;border-radius:26px;color:#A12D2D;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center">Eliminar</a>
+      <a href="Lista.dc.html" style="flex:2;height:52px;border-radius:26px;background:#2E7D57;color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center">Guardar</a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(...args) {
+super(...args);
+this.state = { name: 'Leche', qty: 2, note: 'La de caja, sin lactosa.' };
+}
+renderVals() {
+const s = this.state;
+return {
+name: s.name,
+qty: s.qty,
+note: s.note,
+onName: (e) => this.setState({ name: e.target.value }),
+onNote: (e) => this.setState({ note: e.target.value }),
+dec: () => this.setState({ qty: Math.max(1, this.state.qty - 1) }),
+inc: () => this.setState({ qty: this.state.qty + 1 })
+};
+}
+}
+</script>
+</body>
+</html>

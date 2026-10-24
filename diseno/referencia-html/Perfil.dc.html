@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Perfil</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+a:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="padding:48px 16px 0 8px;display:flex;align-items:center;gap:4px">
+    <a href="Hogar.dc.html" aria-label="Volver a Hogar" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;flex:none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:24px">Perfil</h1>
+  </div>
+
+  <div style="padding:48px 32px 0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px">
+    <span role="img" aria-label="Vos" style="width:96px;height:96px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;font:800 40px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;margin-bottom:10px">V</span>
+    <div style="font-family:Nunito,sans-serif;font-weight:800;font-size:28px;line-height:1.1">Vos</div>
+    <div style="font-size:16px;color:#5B675F">[cuenta de Google]</div>
+  </div>
+
+  <div style="margin:32px 24px 0;padding:16px 20px;border-radius:20px;background:#fff;display:flex;align-items:center;gap:14px">
+    <span style="width:44px;height:44px;border-radius:14px;background:#E3F1E8;color:#2E7D57;display:flex;align-items:center;justify-content:center;flex:none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg></span>
+    <div>
+      <div style="font-size:13px;color:#5B675F">Hogar</div>
+      <div style="font-size:17px;font-weight:700">Nuestra casa</div>
+    </div>
+  </div>
+
+  <div style="flex:1"></div>
+
+  <div style="padding:0 24px 40px">
+    <a href="Main.dc.html" style="height:56px;box-sizing:border-box;border:1.5px solid #D5DAD0;border-radius:28px;color:#A12D2D;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center">Cerrar sesión</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

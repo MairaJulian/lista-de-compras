@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Lista vacía</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+input::placeholder{color:#5B675F;opacity:1}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="padding:48px 16px 0 8px;display:flex;align-items:center;gap:4px">
+    <a href="Inicio.dc.html" aria-label="Volver a las listas" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;flex:none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <div style="flex:1;min-width:0">
+      <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:24px;line-height:1.1">Ferretería</h1>
+      <div style="font-size:13px;color:#5B675F;margin-top:2px">Nuestra casa</div>
+    </div>
+    <span style="height:44px;padding:0 14px 0 12px;border-radius:22px;background:#E3F1E8;color:#1F5C3E;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;flex:none">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 1 1 .8-8.9A6 6 0 0 1 19 11.5 3.3 3.3 0 0 1 18 18z"/><path d="M9.5 13.5l2 2 3.5-4"/></svg>
+      Sincronizado
+    </span>
+  </div>
+
+  <form style="margin:14px 20px 8px;display:flex;align-items:center;gap:10px">
+    <label for="nuevo-item" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Agregar ítem</label>
+    <input id="nuevo-item" type="text" placeholder="Agregar ítem…" autocomplete="off" style="flex:1;min-width:0;height:52px;box-sizing:border-box;padding:0 20px;border:1.5px solid #D5DAD0;border-radius:26px;background:#fff;font-family:inherit;font-size:17px;color:#1C2621">
+    <button type="button" aria-label="Agregar a la lista" style="width:52px;height:52px;border:0;border-radius:50%;background:#2E7D57;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </form>
+
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 48px 120px;text-align:center;gap:12px">
+    <span style="width:120px;height:120px;border-radius:50%;background:#E3F1E8;color:#2E7D57;display:flex;align-items:center;justify-content:center;margin-bottom:12px">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h10.2L20 8H6.2"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>
+    </span>
+    <h2 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:24px;line-height:1.2">Esta lista está vacía</h2>
+    <p style="margin:0;font-size:16px;line-height:1.5;color:#5B675F;text-wrap:balance">Escribí arriba lo que falta comprar y se suma para todos en casa.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
