@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hogar y miembros</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="padding:56px 24px 8px;display:flex;align-items:center;justify-content:space-between">
+    <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:34px;line-height:1.1">Hogar</h1>
+    <a href="Perfil.dc.html" aria-label="Tu perfil" style="width:44px;height:44px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;font:800 18px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center">V</a>
+  </div>
+
+  <div style="margin:12px 24px 0;padding:20px;border-radius:24px;background:#E3F1E8;display:flex;align-items:center;gap:16px">
+    <span style="width:56px;height:56px;border-radius:16px;background:#2E7D57;color:#fff;display:flex;align-items:center;justify-content:center;flex:none">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>
+    </span>
+    <div>
+      <div style="font-family:Nunito,sans-serif;font-weight:800;font-size:22px;line-height:1.1">Nuestra casa</div>
+      <div style="font-size:14px;color:#1F5C3E;margin-top:4px">3 miembros</div>
+    </div>
+  </div>
+
+  <div style="margin:28px 24px 10px;display:flex;align-items:center;justify-content:space-between">
+    <h2 style="margin:0;font-size:15px;font-weight:700">Miembros</h2>
+    <a href="Invitar.dc.html" style="height:44px;padding:0 18px 0 14px;border-radius:22px;background:#2E7D57;color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>
+      Invitar
+    </a>
+  </div>
+
+  <div style="margin:0 24px;border-radius:20px;overflow:hidden;background:#EEF1EA;display:flex;flex-direction:column;gap:1px">
+    <div style="height:72px;padding:0 8px 0 16px;background:#fff;display:flex;align-items:center;gap:14px">
+      <span role="img" aria-label="Vos" style="width:44px;height:44px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;font:800 18px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">V</span>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:700">Vos</div>
+        <div style="font-size:14px;color:#5B675F;margin-top:2px">Creaste el hogar</div>
+      </div>
+    </div>
+    <div style="height:72px;padding:0 8px 0 16px;background:#fff;display:flex;align-items:center;gap:14px">
+      <span role="img" aria-label="Lucía" style="width:44px;height:44px;border-radius:50%;background:#F8DDAE;color:#7A4300;font:800 18px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">L</span>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:700">Lucía</div>
+        <div style="font-size:14px;color:#5B675F;margin-top:2px">Miembro</div>
+      </div>
+      <a href="MiembroOpciones.dc.html" aria-label="Opciones de Lucía" style="width:44px;height:44px;color:#5B675F;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+      </a>
+    </div>
+    <div style="height:72px;padding:0 8px 0 16px;background:#fff;display:flex;align-items:center;gap:14px">
+      <span role="img" aria-label="Diego" style="width:44px;height:44px;border-radius:50%;background:#CFE0F2;color:#1D4E75;font:800 18px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">D</span>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:700">Diego</div>
+        <div style="font-size:14px;color:#5B675F;margin-top:2px">Miembro</div>
+      </div>
+      <button aria-label="Opciones de Diego" style="width:44px;height:44px;border:0;background:transparent;color:#5B675F;display:flex;align-items:center;justify-content:center;cursor:pointer">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <a href="ConfirmarSalir.dc.html" style="margin:24px 24px 0;height:52px;box-sizing:border-box;border:1.5px solid #D5DAD0;border-radius:26px;color:#A12D2D;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center">Salir del hogar</a>
+
+  <nav style="position:absolute;left:0;right:0;bottom:0;height:80px;background:#fff;border-top:1px solid #E4E8DF;display:flex">
+    <a href="Inicio.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:13px;font-weight:500;color:#5B675F">
+      <span style="width:64px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></span>
+      Listas
+    </a>
+    <a href="Hogar.dc.html" aria-current="page" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:13px;font-weight:700;color:#1C2621">
+      <span style="width:64px;height:32px;border-radius:16px;background:#CFE8D9;color:#1F5C3E;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17.5 14.5c2.5.3 4 2 4.5 5"/></svg></span>
+      Hogar
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

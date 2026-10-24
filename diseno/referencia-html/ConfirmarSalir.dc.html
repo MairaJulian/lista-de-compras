@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Confirmar salir del hogar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+@keyframes velo{from{opacity:0}to{opacity:1}}
+@keyframes aparecer{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}
+a:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;position:relative;overflow:hidden">
+
+  <div aria-hidden="true" style="position:absolute;inset:0;display:flex;flex-direction:column">
+    <div style="padding:56px 24px 8px"><div style="font-family:Nunito,sans-serif;font-weight:800;font-size:34px;line-height:1.1">Hogar</div></div>
+    <div style="margin:12px 24px 0;padding:20px;border-radius:24px;background:#E3F1E8;display:flex;align-items:center;gap:16px">
+      <span style="width:56px;height:56px;border-radius:16px;background:#2E7D57;color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg></span>
+      <div><div style="font-family:Nunito,sans-serif;font-weight:800;font-size:22px;line-height:1.1">Nuestra casa</div><div style="font-size:14px;color:#1F5C3E;margin-top:4px">3 miembros</div></div>
+    </div>
+    <div style="margin:28px 24px 10px;font-size:15px;font-weight:700">Miembros</div>
+    <div style="margin:0 24px;border-radius:20px;overflow:hidden;background:#EEF1EA;display:flex;flex-direction:column;gap:1px">
+      <div style="height:72px;padding:0 16px;background:#fff;display:flex;align-items:center;gap:14px"><span style="width:44px;height:44px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;font:800 18px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center">V</span><span style="font-size:17px;font-weight:700">Vos</span></div>
+      <div style="height:72px;padding:0 16px;background:#fff;display:flex;align-items:center;gap:14px"><span style="width:44px;height:44px;border-radius:50%;background:#F8DDAE;color:#7A4300;font:800 18px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center">L</span><span style="font-size:17px;font-weight:700">Lucía</span></div>
+      <div style="height:72px;padding:0 16px;background:#fff;display:flex;align-items:center;gap:14px"><span style="width:44px;height:44px;border-radius:50%;background:#CFE0F2;color:#1D4E75;font:800 18px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center">D</span><span style="font-size:17px;font-weight:700">Diego</span></div>
+    </div>
+  </div>
+
+  <a href="Hogar.dc.html" aria-label="Cerrar aviso" style="position:absolute;inset:0;background:rgba(28,38,33,0.5);animation:velo 0.25s ease-out both"></a>
+
+  <div role="alertdialog" aria-labelledby="titulo-aviso" aria-describedby="texto-aviso" style="position:absolute;left:35px;right:35px;top:50%;margin-top:-170px;box-sizing:border-box;padding:28px 24px 24px;background:#fff;border-radius:28px;box-shadow:0 20px 50px rgba(28,38,33,0.25);animation:aparecer 0.25s ease-out both;display:flex;flex-direction:column;gap:12px">
+    <span style="width:56px;height:56px;border-radius:50%;background:#FBEAEA;color:#A12D2D;display:flex;align-items:center;justify-content:center">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H9"/><path d="M16 8l4 4-4 4M20 12H9"/></svg>
+    </span>
+    <h1 id="titulo-aviso" style="margin:4px 0 0;font-family:Nunito,sans-serif;font-weight:800;font-size:24px;line-height:1.2">¿Salir de Nuestra casa?</h1>
+    <p id="texto-aviso" style="margin:0 0 12px;font-size:16px;line-height:1.5;color:#5B675F">Vas a dejar de ver sus listas. Para volver, alguien del hogar tiene que invitarte de nuevo.</p>
+    <a href="Main.dc.html" style="height:52px;border-radius:26px;background:#A12D2D;color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center">Salir del hogar</a>
+    <a href="Hogar.dc.html" style="height:52px;box-sizing:border-box;border:1.5px solid #D5DAD0;border-radius:26px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center">Cancelar</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
