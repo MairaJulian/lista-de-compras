@@ -1,1 +1,14 @@
 .claude/settings.local.json
+
+# Dependencias y builds
+node_modules/
+android/
+ios/
+.expo/
+
+# Secretos y configuración local de Firebase
+google-services.json
+.env*
+*.keystore
+*.jks
+firebase-debug.log
