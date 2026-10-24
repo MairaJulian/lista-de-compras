@@ -12,3 +12,5 @@ google-services.json
 *.keystore
 *.jks
 firebase-debug.log
+firestore-debug.log
+ui-debug.log

@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { FirestorePing } from './src/dev/FirestorePing';
 import { colors, fonts } from './src/theme';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.title}>Changuito</Text>
       <Text style={styles.subtitle}>Lista de compras compartida</Text>
+      {__DEV__ && <FirestorePing />}
       <StatusBar style="dark" />
     </View>
   );

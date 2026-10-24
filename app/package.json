@@ -5,6 +5,8 @@
   "dependencies": {
     "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo-google-fonts/nunito": "^0.4.2",
+    "@react-native-firebase/app": "^27.1.0",
+    "@react-native-firebase/firestore": "^27.1.0",
     "expo": "~58.0.19",
     "expo-font": "~58.0.10",
     "expo-status-bar": "~58.0.4",
