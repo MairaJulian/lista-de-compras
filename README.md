@@ -17,7 +17,7 @@ App Android de lista de compras compartida para una familia. Hecha con React Nat
 
 ## Requisitos
 
-Node 22, JDK 17 y el SDK de Android (`ANDROID_HOME` configurado). Expo Go no sirve: la app usa código nativo y se compila en tu compu.
+Node 22, JDK 17, el SDK de Android (`ANDROID_HOME` configurado) y CMake 3.31.6 (ver "Rutas largas en Windows"). Expo Go no sirve: la app usa código nativo y se compila en tu compu.
 
 ## Instalar y correr
 
@@ -81,3 +81,28 @@ Notas:
 - `app/firebase.json` desactiva el cambio automático de `localhost` por `10.0.2.2` (`android_bypass_emulator_url_remap`). Esa dirección solo sirve en el emulador de Android; sin esto, en un celular real la prueba se queda en "Probando…". Es un dato que se toma al compilar: si lo cambiás, reconstruí la app con `npx expo run:android`.
 - El emulador usa `firebase/firestore.emulator.rules`, que solo permite `ping/*`. El Firestore real usa `firebase/firestore.rules`, todo bloqueado.
 - El emulador de Firestore necesita Java. Con JDK 17 funciona con `firebase-tools` 14 (fijado en `firebase/package.json`); la versión 15 pide JDK 21 o más.
+
+## Rutas largas en Windows (CMake 3.31.6)
+
+**Requisito:** CMake **3.31.6** instalado en el SDK de Android (Android Studio > SDK Manager > SDK Tools > CMake > "Show Package Details" > 3.31.6).
+
+**Por qué:** las librerías nativas con C++ generado (`react-native-screens`, `react-native-safe-area-context`) producen rutas de objetos de CMake de hasta ~370 caracteres con el repo en `C:\Users\maira\dev\MAIRA\lista-de-compras`. El ninja de CMake 3.22.1 (el que usa Android Gradle Plugin por defecto) falla con `Filename longer than 260 characters`; el ninja 1.12 de CMake 3.31.x no. Windows ya tiene `LongPathsEnabled = 1`, así que alcanza con cambiar de CMake. No hace falta mover el repo ni usar `subst` (probamos `subst` y falla: Node resuelve la ruta real y mezcla las dos raíces).
+
+**Cómo funciona:** el config plugin `app/plugins/with-cmake-local-properties.js` escribe `android/local.properties` (`sdk.dir` y `cmake.dir`, con barras normales) en cada `expo prebuild`, buscando CMake 3.31.x dentro de `ANDROID_HOME`. Si no lo encuentra, el prebuild falla con un mensaje que explica cómo instalarlo.
+
+**Comandos para compilar** (desde `app/`):
+
+```bash
+npm install
+npx expo prebuild --platform android      # genera android/ y escribe local.properties
+npx expo run:android                      # compila e instala en el dispositivo conectado
+```
+
+Solo para compilar el APK debug (sin instalar), más rápido porque usa una sola arquitectura:
+
+```bash
+cd android
+./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a
+```
+
+Si ya tenías una carpeta `android/` de antes, corré `npx expo prebuild --platform android` una vez para que se escriba `local.properties`. Si aparece `Filename longer than 260 characters`, es que falta ese archivo o apunta a otro CMake.

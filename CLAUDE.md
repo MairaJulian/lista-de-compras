@@ -48,3 +48,7 @@ App Android de lista de compras compartida para una familia (3 adultos). Nombre 
 ## Para probar en el celular
 
 Hay un celular real conectado por USB (depuración activada) y un emulador Pixel 8 con Google Play. Usá `npx expo run:android` para instalar en el dispositivo conectado; en PowerShell `& "$env:ANDROID_HOME\platform-tools\adb.exe" devices` lista los dispositivos.
+
+## Requisito de build en Windows
+
+El build nativo necesita **CMake 3.31.6** del SDK de Android (el 3.22.1 por defecto falla con rutas de más de 260 caracteres). El config plugin `app/plugins/with-cmake-local-properties.js` escribe `android/local.properties` en cada prebuild; no lo borres ni lo reemplaces por `subst` o por mover el repo. Detalle en el README ("Rutas largas en Windows").
