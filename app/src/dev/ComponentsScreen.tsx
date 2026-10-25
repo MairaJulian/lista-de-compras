@@ -14,7 +14,7 @@ import {
   StatusPill,
   TextField,
 } from '../components';
-import { useInsets } from '../system/insets';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, fonts, listTones, ListTone } from '../theme';
 
 const vos = { name: 'Vos', tone: 'green' } as const;
@@ -23,7 +23,7 @@ const diego = { name: 'Diego', tone: 'blue' } as const;
 
 /** Pantalla de desarrollo (solo `__DEV__`): todos los componentes juntos para revisarlos de un vistazo. */
 export function ComponentsScreen({ onBack }: { onBack?: () => void }) {
-  const { top, bottom } = useInsets();
+  const { top, bottom } = useSafeAreaInsets();
   const [online, setOnline] = useState(true);
   const [draft, setDraft] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);

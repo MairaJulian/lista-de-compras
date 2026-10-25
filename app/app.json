@@ -22,7 +22,8 @@
       "expo-font",
       "@react-native-firebase/app",
       "expo-asset",
-      "./plugins/with-cmake-local-properties"
+      "./plugins/with-cmake-local-properties",
+      "expo-router"
     ]
   }
 }

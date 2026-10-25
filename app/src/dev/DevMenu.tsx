@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useInsets } from '../system/insets';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, fonts } from '../theme';
 import { ComponentsScreen } from './ComponentsScreen';
 import { FirestorePing } from './FirestorePing';
@@ -12,7 +12,7 @@ type Page = 'menu' | 'components' | 'firestore';
 export function DevMenu() {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState<Page>('menu');
-  const { top } = useInsets();
+  const { top } = useSafeAreaInsets();
 
   if (!open) {
     return (
