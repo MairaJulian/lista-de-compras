@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
 
 import type { ListTone } from '../theme';
-import { getMockCurrentMember, mockHousehold } from '../mock/data';
+import { getMockCurrentMember, mockAccountEmail, mockHousehold, mockInvites } from '../mock/data';
 import { newItemId, newListId, setState, useMockStore } from '../mock/store';
+import { deactivateInvite, regenerateInvite, removeMember } from './householdLogic';
 import {
   addItem,
   addList,
@@ -16,13 +17,46 @@ import {
   toggleItem,
   updateItem,
 } from './listLogic';
-import type { Household, ListInfo, ListItem, ListSummary, Member } from './types';
+import type { Household, Invite, ListInfo, ListItem, ListSummary, Member } from './types';
 
 // Único punto de acceso a los datos para las pantallas. Hoy devuelve los datos de ejemplo;
 // con Firebase se reemplaza la implementación sin tocar las pantallas.
 
 export function useHousehold(): Household {
-  return mockHousehold;
+  const { members } = useMockStore();
+  return { ...mockHousehold, members };
+}
+
+/** Quita a un miembro del hogar (solo si quien lo pide creó el hogar). */
+export function useRemoveMember(): (memberId: string) => void {
+  return useCallback(
+    (memberId) =>
+      setState((s) => ({
+        ...s,
+        members: removeMember(s.members, memberId, getMockCurrentMember().id),
+      })),
+    [],
+  );
+}
+
+export type InviteControls = {
+  invite: Invite;
+  regenerate: () => void;
+  deactivate: () => void;
+};
+
+/** Enlace y código de invitación del hogar, con generar uno nuevo y desactivar. */
+export function useInvite(): InviteControls {
+  const { invite } = useMockStore();
+  const regenerate = useCallback(
+    () => setState((s) => ({ ...s, invite: regenerateInvite(mockInvites, s.invite) })),
+    [],
+  );
+  const deactivate = useCallback(
+    () => setState((s) => ({ ...s, invite: deactivateInvite(s.invite) })),
+    [],
+  );
+  return { invite, regenerate, deactivate };
 }
 
 export function useLists(): ListSummary[] {
@@ -35,6 +69,11 @@ export function useLists(): ListSummary[] {
 
 export function useCurrentMember(): Member {
   return getMockCurrentMember();
+}
+
+/** Cuenta con la que se entró (el mail aparece en Perfil). */
+export function useAccount(): { member: Member; email: string } {
+  return { member: getMockCurrentMember(), email: mockAccountEmail };
 }
 
 export function useList(listId: string): ListInfo | undefined {

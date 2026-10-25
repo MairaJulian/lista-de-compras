@@ -6,7 +6,7 @@ import { Icon, IconName } from '../components';
 import { colors, fontSizes, fonts, heights, radii, sizes } from '../theme';
 
 const tabs: { name: string; label: string; icon: IconName }[] = [
-  { name: 'index', label: 'Listas', icon: 'list' },
+  { name: 'listas', label: 'Listas', icon: 'list' },
   { name: 'hogar', label: 'Hogar', icon: 'users' },
 ];
 

@@ -31,8 +31,10 @@ const styles = StyleSheet.create({
   initial: { fontFamily: fonts.heading, includeFontPadding: false },
 });
 
-/** Tamaño de la inicial según el avatar: 13 en 28, 16 en 36, 18 en 44. */
+/** Tamaño de la inicial según el avatar: 13 en 28, 16 en 36, 18 en 44, 24 en 56, 40 en 96. */
 function initialSize(size: number) {
+  if (size >= 96) return 40;
+  if (size >= 56) return 24;
   if (size >= 44) return 18;
   if (size >= sizes.avatarLarge) return 16;
   return 13;

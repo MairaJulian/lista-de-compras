@@ -41,3 +41,11 @@ export type ListItem = {
   /** Cambio hecho sin conexión que todavía no se sincronizó. */
   pendingSync?: boolean;
 };
+
+export type Invite = {
+  /** Código corto con el formato `K7P2-9XQ-4MN`. */
+  code: string;
+  hoursLeft: number;
+  /** Falso cuando se desactivó o venció: el enlace y el código ya no sirven. */
+  active: boolean;
+};

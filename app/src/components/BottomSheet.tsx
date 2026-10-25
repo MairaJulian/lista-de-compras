@@ -17,11 +17,13 @@ type Props = {
   visible: boolean;
   title: string;
   onClose: () => void;
+  /** Falso en paneles que arrancan directo con su contenido (opciones de miembro). */
+  showHeader?: boolean;
   children: React.ReactNode;
 };
 
 /** Panel inferior: velo, manija, título con ✕ y contenido. Sube en ~0,35 s. */
-export function BottomSheet({ visible, title, onClose, children }: Props) {
+export function BottomSheet({ visible, title, onClose, showHeader = true, children }: Props) {
   const { mounted, progress } = useAnimatedPresence(visible, motion.panelDuration);
   const { bottom } = useSafeAreaInsets();
 
@@ -43,19 +45,21 @@ export function BottomSheet({ visible, title, onClose, children }: Props) {
           style={[styles.sheet, { paddingBottom: 28 + bottom, transform: [{ translateY }] }]}
         >
           <View style={styles.handle} />
-          <View style={styles.header}>
-            <Text accessibilityRole="header" style={styles.title}>
-              {title}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Cerrar"
-              onPress={onClose}
-              style={styles.close}
-            >
-              <Icon name="close" color={colors.textSecondary} />
-            </Pressable>
-          </View>
+          {showHeader && (
+            <View style={styles.header}>
+              <Text accessibilityRole="header" style={styles.title}>
+                {title}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+                onPress={onClose}
+                style={styles.close}
+              >
+                <Icon name="close" color={colors.textSecondary} />
+              </Pressable>
+            </View>
+          )}
           {children}
         </Animated.View>
       </KeyboardAvoidingView>

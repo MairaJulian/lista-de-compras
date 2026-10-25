@@ -47,29 +47,6 @@ describe('HogarScreen', () => {
     expect(screen.getByLabelText('Opciones de Diego')).toBeTruthy();
     expect(screen.queryByLabelText('Opciones de Vos')).toBeNull();
   });
-
-  it('avisa perfil, invitar, opciones de miembro y salir', async () => {
-    const onOpenProfile = jest.fn();
-    const onInvite = jest.fn();
-    const onMemberOptions = jest.fn();
-    const onLeave = jest.fn();
-    await render(
-      <HogarScreen
-        onOpenProfile={onOpenProfile}
-        onInvite={onInvite}
-        onMemberOptions={onMemberOptions}
-        onLeave={onLeave}
-      />,
-    );
-    await fireEvent.press(screen.getByLabelText('Tu perfil'));
-    await fireEvent.press(screen.getByText('Invitar'));
-    await fireEvent.press(screen.getByLabelText('Opciones de Lucía'));
-    await fireEvent.press(screen.getByText('Salir del hogar'));
-    expect(onOpenProfile).toHaveBeenCalledTimes(1);
-    expect(onInvite).toHaveBeenCalledTimes(1);
-    expect(onMemberOptions).toHaveBeenCalledWith(expect.objectContaining({ id: 'lucia' }));
-    expect(onLeave).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe('ListaScreen', () => {

@@ -1,4 +1,4 @@
-import type { Household, ListInfo, ListItem, Member } from '../data/types';
+import type { Household, Invite, ListInfo, ListItem, Member } from '../data/types';
 
 // Datos de ejemplo del diseño. Cuando llegue Firebase se reemplazan sin tocar las pantallas:
 // las pantallas leen todo a través de los hooks de `src/data`.
@@ -14,6 +14,13 @@ export const mockHousehold: Household = {
     { id: 'diego', name: 'Diego', role: 'member', tone: 'blue' },
   ],
 };
+
+// Invitaciones de ejemplo: la primera es la de `12-invitar`; "Generar enlace nuevo" pasa a la
+// segunda (R4WD-3ZT-8HC, 48 h) y después vuelve a dar vueltas entre ambas.
+export const mockInvites: Invite[] = [
+  { code: 'K7P2-9XQ-4MN', hoursLeft: 47, active: true },
+  { code: 'R4WD-3ZT-8HC', hoursLeft: 48, active: true },
+];
 
 export const mockLists: ListInfo[] = [
   { id: 'supermercado', name: 'Supermercado', tone: 'green', icon: 'cart' },
@@ -51,6 +58,9 @@ export const mockItems: ListItem[] = [
   item('farmacia', '1', 'Ibuprofeno', 'diego'),
   item('farmacia', '2', 'Curitas', 'lucia', { quantity: 1, unit: 'caja' }),
 ];
+
+// Marcador del diseño (`16-perfil`): no hay cuenta de Google real hasta la Etapa 2.
+export const mockAccountEmail = '[cuenta de Google]';
 
 export function getMockCurrentMember(): Member {
   return (

@@ -1,14 +1,27 @@
 import { useSyncExternalStore } from 'react';
 
-import type { ListInfo, ListItem } from '../data/types';
-import { mockItems, mockLists } from './data';
+import type { Invite, ListInfo, ListItem, Member } from '../data/types';
+import { mockHousehold, mockInvites, mockItems, mockLists } from './data';
 
-// Estado en memoria de los datos de ejemplo. Vive fuera de las pantallas para que Inicio y Lista
-// vean lo mismo (los contadores de Inicio se actualizan al tildar). Con Firebase se reemplaza.
+// Estado en memoria de los datos de ejemplo. Vive fuera de las pantallas para que Inicio, Lista y
+// Hogar vean lo mismo (los contadores de Inicio se actualizan al tildar; quitar a alguien actualiza
+// Hogar). Con Firebase se reemplaza.
 
-type State = { lists: ListInfo[]; items: ListItem[]; online: boolean };
+type State = {
+  lists: ListInfo[];
+  items: ListItem[];
+  members: Member[];
+  invite: Invite;
+  online: boolean;
+};
 
-const initialState: State = { lists: mockLists, items: mockItems, online: true };
+const initialState: State = {
+  lists: mockLists,
+  items: mockItems,
+  members: mockHousehold.members,
+  invite: mockInvites[0],
+  online: true,
+};
 
 let state: State = initialState;
 const listeners = new Set<() => void>();
