@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Crear hogar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+input::placeholder{color:#5B675F;opacity:1}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="padding:48px 16px 0 8px;display:flex;align-items:center;gap:4px">
+    <a href="SinHogar.dc.html" aria-label="Volver" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;flex:none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:24px">Crear hogar</h1>
+  </div>
+
+  <div style="padding:40px 32px 0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px">
+    <span style="width:104px;height:104px;border-radius:50%;background:#E3F1E8;color:#2E7D57;display:flex;align-items:center;justify-content:center;margin-bottom:8px">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>
+    </span>
+    <h2 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:26px;line-height:1.2;text-wrap:balance">¿Cómo le ponemos a tu hogar?</h2>
+    <p style="margin:0;font-size:16px;line-height:1.5;color:#5B675F;text-wrap:pretty">Lo van a ver todas las personas que invites.</p>
+  </div>
+
+  <div style="margin:32px 24px 0;display:flex;flex-direction:column;gap:8px">
+    <label for="nombre-hogar" style="font-size:13px;font-weight:700;color:#5B675F">Nombre del hogar</label>
+    <input id="nombre-hogar" type="text" value="{{ name }}" onInput="{{ onName }}" placeholder="Por ejemplo: Nuestra casa" autocomplete="off" style="height:60px;box-sizing:border-box;padding:0 18px;border:1.5px solid #D5DAD0;border-radius:18px;background:#fff;font-family:inherit;font-size:18px;font-weight:500;color:#1C2621">
+  </div>
+
+  <div style="flex:1"></div>
+
+  <div style="padding:0 24px 40px">
+    <sc-if value="{{ hasName }}" hint-placeholder-val="{{ false }}">
+      <a href="HogarCreado.dc.html" style="height:56px;border-radius:28px;background:#2E7D57;color:#fff;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center">Crear hogar</a>
+    </sc-if>
+    <sc-if value="{{ noName }}" hint-placeholder-val="{{ true }}">
+      <button disabled style="width:100%;height:56px;border:0;border-radius:28px;background:#E4E8DF;color:#5B675F;font-size:17px;font-weight:700">Crear hogar</button>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(...args) {
+super(...args);
+this.state = { name: '' };
+}
+renderVals() {
+const name = this.state.name;
+const has = name.trim().length > 0;
+return {
+name,
+hasName: has,
+noName: !has,
+onName: (e) => this.setState({ name: e.target.value })
+};
+}
+}
+</script>
+</body>
+</html>
