@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 
 import type { ListTone } from '../theme';
 import { getMockCurrentMember, mockAccountEmail, mockHousehold, mockInvites } from '../mock/data';
-import { newItemId, newListId, setState, useMockStore } from '../mock/store';
-import { deactivateInvite, regenerateInvite, removeMember } from './householdLogic';
+import { joinMockHousehold, newItemId, newListId, setState, useMockStore } from '../mock/store';
+import { deactivateInvite, leaveHousehold, regenerateInvite, removeMember } from './householdLogic';
 import {
   addItem,
   addList,
@@ -23,8 +23,52 @@ import type { Household, Invite, ListInfo, ListItem, ListSummary, Member } from 
 // con Firebase se reemplaza la implementación sin tocar las pantallas.
 
 export function useHousehold(): Household {
-  const { members } = useMockStore();
-  return { ...mockHousehold, members };
+  const { members, householdName } = useMockStore();
+  return { ...mockHousehold, name: householdName, members };
+}
+
+export function useHasHousehold(): boolean {
+  return useMockStore().hasHousehold;
+}
+
+/** Sale del hogar (si era quien lo creó, el rol pasa a otro miembro) y queda sin hogar. */
+export function useLeaveHousehold(): () => void {
+  return useCallback(
+    () =>
+      setState((s) => ({
+        ...s,
+        members: leaveHousehold(s.members, getMockCurrentMember().id),
+        hasHousehold: false,
+      })),
+    [],
+  );
+}
+
+/** Crea un hogar nuevo con una sola persona (nada si el nombre estaba vacío). */
+export function useCreateHousehold(): (name: string) => boolean {
+  return useCallback((name) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return false;
+    }
+    setState((s) => ({
+      ...s,
+      householdName: trimmed,
+      members: [{ ...getMockCurrentMember(), role: 'creator' }],
+      hasHousehold: true,
+    }));
+    return true;
+  }, []);
+}
+
+/** Se une al hogar de ejemplo (con un enlace o un código). */
+export function useJoinHousehold(): () => void {
+  return joinMockHousehold;
+}
+
+/** Si hay conexión (las invitaciones necesitan internet; el indicador de la lista lo alterna). */
+export function useOnline(): boolean {
+  return useMockStore().online;
 }
 
 /** Quita a un miembro del hogar (solo si quien lo pide creó el hogar). */

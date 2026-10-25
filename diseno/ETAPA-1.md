@@ -104,11 +104,35 @@ Rama: `etapa-1/05-hogar-cuenta`
 
 **Se comprueba cuando:** se puede recorrer toda la app con datos de ejemplo siguiendo la tabla "Pantallas y navegación" de `DISENO.md`, sin que haya ningún botón sin destino.
 
+## PR 6 · Sin hogar, errores y variantes
+
+Rama: `etapa-1/06-sin-hogar-errores`
+
+El diseño ya incluye estas pantallas (17 a 28 de `DISENO.md`), así que entran en la Etapa 1.
+
+1. **Sin hogar** (`17-sin-hogar`), **Unirme con un código** (`18-sin-hogar-codigo`), **Te sacaron** (`19-sin-hogar-te-sacaron`), **Crear hogar** (`20-crear-hogar`) y **Hogar creado** (`21-hogar-creado`).
+2. **Errores**: enlace inválido (`24`), inicio de sesión (`25`) y sin conexión al unirse (`26`).
+3. **Variantes de "Salir del hogar"**: creador (`27`) y última persona (`28`), elegidas según el caso.
+4. Las pantallas `22-invitar-sin-enlace` y `23-desactivar-enlace` ya estaban hechas en la PR 5.
+5. Navegaciones de la tabla de `DISENO.md` para estas pantallas y tests.
+
+**Se comprueba cuando:** salir del hogar lleva a Sin hogar; desde ahí se puede crear un hogar o unirse con un código y volver a Listas; y los tres errores y el aviso de "te sacaron" se pueden ver.
+
 ## Cierre de la etapa
 
-La Etapa 1 termina cuando las 15 pantallas de la app (todas menos `09-notificacion`) se ven como el diseño, la navegación funciona y los chequeos automáticos pasan. Al terminar, actualizá esta sección y avisá que sigue la **Etapa 2 · Login y perfil**.
+La Etapa 1 termina cuando las 15 pantallas de la app (todas menos `09-notificacion`) más las del PR 6 se ven como el diseño, la navegación funciona y los chequeos automáticos pasan. Al terminar, actualizá esta sección y avisá que sigue la **Etapa 2 · Login y perfil**.
 
-Antes de empezar la Etapa 3 hay que diseñar, en Claude Design, el estado "sin hogar", los errores de invitación y las pantallas de vencimiento, regenerar y revocar de Invitar. Dejalo anotado como recordatorio.
+### Estado del cierre
+
+- **Hecho:** las 27 pantallas de la app (todas menos `09-notificacion`, que es de la Etapa 7) existen con datos de ejemplo, y la navegación sigue la tabla "Pantallas y navegación" de `DISENO.md`. Lint, tipos y tests pasan.
+- **Falta:** la comprobación visual contra las imágenes de `diseno/pantallas/` de las pantallas nuevas (ver la PR 6 para lo que se comparó y lo que quedó sin ver) y el recorrido completo en el celular, que lo hace Maira.
+- **Disparadores de los datos de ejemplo** (se reemplazan en las Etapas 2 y 3): "Entrar y unirme" muestra el error de **sin conexión** si en una lista se pasó a "Sin conexión", y el de **enlace inválido** si se desactivó el enlace en Invitar. El error de **inicio de sesión** y el aviso de **te sacaron** solo se ven desde el menú DEV, porque todavía no hay login ni quien saque a nadie. En Unirme con un código sirve cualquier texto.
+- **Decisiones de la PR 6:** sale del hogar quien toca "Salir del hogar" y el rol de creador pasa al primer miembro que queda; crear un hogar deja las listas de ejemplo tal cual (no hay diseño de Inicio sin listas); "Pegar" lee el portapapeles real con `expo-clipboard` (dependencia nueva, requiere recompilar).
+- **Sigue la Etapa 2 · Login y perfil.**
+
+### Recordatorio para antes de la Etapa 3
+
+Siguen **sin diseñar** (ver "No diseñado todavía" en `DISENO.md`): otros errores (por ejemplo código mal escrito en la pantalla 18 o fallo al crear el hogar), Inicio de un hogar sin listas, edición del nombre del hogar o de una lista, borrar una lista y el tema oscuro. Conviene diseñarlos en Claude Design antes de programar las invitaciones reales.
 
 ## Estado
 
@@ -119,6 +143,7 @@ Antes de empezar la Etapa 3 hay que diseñar, en Claude Design, el estado "sin h
 - [x] PR 3 · Pantalla Lista (ruta `lista/[id]`; estado en memoria en `src/mock/store.ts`, lógica pura en `src/data/listLogic.ts`)
 - [x] PR 4 · Paneles y avisos de la lista (paneles en `src/sheets`; el store en memoria ahora guarda también las listas; editar, eliminar, crear y salir actualizan Inicio y Lista)
 - [x] PR 5 · Flujos del hogar y de la cuenta (rutas `index` = Bienvenida, `unirse`, `perfil`, `invitar`; Inicio pasó a `(tabs)/listas`; opciones de miembro, quitar y salir viven en Hogar; falta la comprobación visual contra las capturas, ver PR)
+- [x] PR 6 · Sin hogar, errores y variantes (rutas `sin-hogar`, `codigo`, `crear-hogar`, `hogar-creado`, `error-enlace`, `error-login`, `error-sin-conexion`; `Salir del hogar` elige entre las 3 variantes; ver "Estado del cierre")
 
 ## Decisión de navegación (PR 2b)
 

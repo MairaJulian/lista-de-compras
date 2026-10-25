@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { resetMockStore } from '../mock/store';
 import { HogarScreen } from './HogarScreen';
@@ -36,7 +36,8 @@ describe('HogarScreen: perfil, invitar, opciones de miembro y salir', () => {
     expect(screen.getByText('¿Quitar a Lucía del hogar?')).toBeTruthy();
     await fireEvent.press(screen.getByText('Quitar'));
     expect(screen.getByText('2 miembros')).toBeTruthy();
-    expect(screen.queryByLabelText('Opciones de Lucía')).toBeNull();
+    // El panel de opciones sale con animación: se espera a que se cierre.
+    await waitFor(() => expect(screen.queryByLabelText('Opciones de Lucía')).toBeNull());
   });
 
   it('Cancelar en el aviso de quitar no quita a nadie', async () => {

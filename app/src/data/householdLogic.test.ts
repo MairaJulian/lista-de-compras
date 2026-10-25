@@ -1,5 +1,13 @@
 import { mockHousehold, mockInvites } from '../mock/data';
-import { deactivateInvite, formatExpiry, regenerateInvite, removeMember } from './householdLogic';
+import {
+  deactivateInvite,
+  formatExpiry,
+  leaveCase,
+  leaveHousehold,
+  nextCreator,
+  regenerateInvite,
+  removeMember,
+} from './householdLogic';
 
 const members = mockHousehold.members;
 
@@ -21,6 +29,37 @@ describe('removeMember', () => {
     expect(removeMember(members, 'nadie', 'vos')).toBe(members);
     removeMember(members, 'lucia', 'vos');
     expect(members).toHaveLength(3);
+  });
+});
+
+describe('salir del hogar', () => {
+  it('elige el aviso según quién sale', () => {
+    expect(leaveCase(members, 'lucia')).toBe('common');
+    expect(leaveCase(members, 'vos')).toBe('creator');
+    expect(leaveCase([members[0]], 'vos')).toBe('last');
+  });
+
+  it('el rol de creador pasa al primer miembro que queda', () => {
+    expect(nextCreator(members, 'vos')?.id).toBe('lucia');
+    const result = leaveHousehold(members, 'vos');
+    expect(result.map((m) => [m.id, m.role])).toEqual([
+      ['lucia', 'creator'],
+      ['diego', 'member'],
+    ]);
+  });
+
+  it('un miembro común se va sin cambiar roles ni modificar el original', () => {
+    const result = leaveHousehold(members, 'lucia');
+    expect(result.map((m) => [m.id, m.role])).toEqual([
+      ['vos', 'creator'],
+      ['diego', 'member'],
+    ]);
+    expect(members).toHaveLength(3);
+    expect(members[1].role).toBe('member');
+  });
+
+  it('la última persona deja el hogar vacío', () => {
+    expect(leaveHousehold([members[0]], 'vos')).toEqual([]);
   });
 });
 

@@ -13,6 +13,9 @@ type State = {
   members: Member[];
   invite: Invite;
   online: boolean;
+  /** Falso después de salir del hogar y antes de crear uno o unirse a otro (`17-sin-hogar`). */
+  hasHousehold: boolean;
+  householdName: string;
 };
 
 const initialState: State = {
@@ -21,6 +24,8 @@ const initialState: State = {
   members: mockHousehold.members,
   invite: mockInvites[0],
   online: true,
+  hasHousehold: true,
+  householdName: mockHousehold.name,
 };
 
 let state: State = initialState;
@@ -30,6 +35,25 @@ let nextId = 1;
 export function setState(update: (current: State) => State) {
   state = update(state);
   listeners.forEach((listener) => listener());
+}
+
+/** Lectura puntual para la navegación, que no es un componente. */
+export function getMockState(): State {
+  return state;
+}
+
+/** Datos del hogar de ejemplo, para "unirse" con un código o un enlace. */
+export function joinedHouseholdState(): Pick<State, 'members' | 'householdName' | 'hasHousehold'> {
+  return {
+    members: initialState.members,
+    householdName: initialState.householdName,
+    hasHousehold: true,
+  };
+}
+
+/** Se une al hogar de ejemplo (con un enlace o un código). */
+export function joinMockHousehold() {
+  setState((s) => ({ ...s, ...joinedHouseholdState() }));
 }
 
 export function newItemId(): string {
