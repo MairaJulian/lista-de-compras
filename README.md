@@ -59,6 +59,23 @@ En cada PR corre `.github/workflows/ci.yml`: instala las dependencias de `app/` 
 
 La app usa `@react-native-firebase`. El archivo `google-services.json` **no está en el repo**: bajalo de la consola de Firebase (proyecto `changuito-31ec1`, app Android `com.mairajulian.changuito`) y dejalo en `app/google-services.json`. `app.json` lo referencia desde ahí. Sin ese archivo la app no compila, pero `lint`, `typecheck` y `test` siguen pasando.
 
+### Reglas de seguridad de Firestore
+
+`firebase/firestore.rules` son las reglas reales: cada persona lee y escribe solo su `usuarios/{uid}` (con los campos de `ESQUEMA-DATOS.md`; no se puede borrar ni cambiar `creadoEn`) y todo lo demás está bloqueado. Las pruebas corren contra el emulador (necesita Java):
+
+```
+cd firebase
+npm run test:rules
+```
+
+Publicarlas (hace falta `firebase login` con la cuenta personal):
+
+```
+cd firebase
+npx firebase login
+npx firebase deploy --only firestore:rules --project changuito-31ec1
+```
+
 ### Emulador de Firestore y pantalla de prueba
 
 En modo desarrollo, la pantalla inicial muestra un botón **Probar Firestore** que escribe y lee el documento `ping/ping` contra el **emulador** de Firestore (nunca contra el Firestore real, que está bloqueado por `firebase/firestore.rules`).
