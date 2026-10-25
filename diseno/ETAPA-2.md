@@ -91,5 +91,5 @@ Antes de la Etapa 3 conviene diseñar en Claude Design: el Inicio de un hogar si
 - [x] PR 1 · Que compile la autenticación nativa (Kotlin 2.4.0 con `expo-build-properties`; probado en el emulador y en el celular real)
 - [x] PR 2 · Reglas de seguridad de `usuarios` (pruebas con el emulador y en CI; sin publicar)
 - [ ] Maira publica las reglas
-- [ ] PR 3 · Login con Google y documento de usuario
+- [x] PR 3 · Login con Google y documento de usuario (hecho y con tests; falta que Maira lo pruebe en el celular, con las reglas ya publicadas)
 - [ ] PR 4 · Sesión, rutas protegidas y Perfil
