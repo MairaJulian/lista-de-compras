@@ -3,9 +3,12 @@
   "private": true,
   "description": "Reglas de Firestore y emulador de Changuito",
   "scripts": {
-    "emulator": "firebase emulators:start --only firestore --config firebase.emulator.json"
+    "emulator": "firebase emulators:start --only firestore --config firebase.emulator.json",
+    "test:rules": "firebase emulators:exec --only firestore --config firebase.json --project changuito-rules-test \"node --test test/*.test.mjs\""
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.10.0",
     "firebase-tools": "~14.27.0"
   }
 }

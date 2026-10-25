@@ -2,6 +2,42 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Campos de usuarios/{uid} según diseno/ESQUEMA-DATOS.md.
+    function esTextoOVacio(valor) {
+      return valor == null || valor is string;
+    }
+
+    function preferenciasValidas(preferencias) {
+      return preferencias is map
+        && preferencias.keys().hasOnly(['avisarAgregadosBorrados', 'listasSilenciadas'])
+        && (!('avisarAgregadosBorrados' in preferencias) || preferencias.avisarAgregadosBorrados is bool)
+        && (!('listasSilenciadas' in preferencias) || preferencias.listasSilenciadas is list);
+    }
+
+    function usuarioValido(datos) {
+      return datos.keys().hasOnly(['nombre', 'email', 'foto', 'creadoEn', 'hogarActualId', 'preferencias'])
+        && datos.keys().hasAll(['nombre', 'email', 'creadoEn', 'hogarActualId'])
+        && datos.nombre is string
+        && datos.email is string
+        && esTextoOVacio(datos.get('foto', null))
+        && datos.creadoEn is timestamp
+        && esTextoOVacio(datos.hogarActualId)
+        && (!('preferencias' in datos) || preferenciasValidas(datos.preferencias));
+    }
+
+    // Cada persona lee, crea y modifica solo su propio documento.
+    // No se puede borrar, y creadoEn no cambia después de creado.
+    match /usuarios/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && usuarioValido(request.resource.data);
+      allow update: if request.auth != null && request.auth.uid == uid
+        && usuarioValido(request.resource.data)
+        && request.resource.data.creadoEn == resource.data.creadoEn;
+    }
+
+    // Todo lo demás sigue bloqueado hasta que se necesite.
     match /{document=**} {
       allow read, write: if false;
     }
