@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { HogarScreen } from './HogarScreen';
 import { resetMockStore } from '../mock/store';
@@ -6,6 +6,8 @@ import { InicioScreen } from './InicioScreen';
 import { ListaScreen } from './ListaScreen';
 
 describe('InicioScreen', () => {
+  beforeEach(() => resetMockStore());
+
   it('muestra el hogar, las tarjetas con pendientes y "Al día"', async () => {
     await render(<InicioScreen />);
     expect(screen.getByText('Nuestra casa')).toBeTruthy();
@@ -17,14 +19,11 @@ describe('InicioScreen', () => {
     expect(screen.getByText('Nueva lista')).toBeTruthy();
   });
 
-  it('avisa qué lista se tocó y el botón Nueva lista', async () => {
+  it('avisa qué lista se tocó', async () => {
     const onOpenList = jest.fn();
-    const onNewList = jest.fn();
-    await render(<InicioScreen onOpenList={onOpenList} onNewList={onNewList} />);
+    await render(<InicioScreen onOpenList={onOpenList} />);
     await fireEvent.press(screen.getByText('Supermercado'));
     expect(onOpenList).toHaveBeenCalledWith(expect.objectContaining({ id: 'supermercado' }));
-    await fireEvent.press(screen.getByText('Nueva lista'));
-    expect(onNewList).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -144,10 +143,120 @@ describe('ListaScreen', () => {
     expect(screen.getByLabelText('Farmacia, 1 pendientes')).toBeTruthy();
   });
 
-  it('la flecha avisa que se quiere volver', async () => {
+  it('la flecha avisa que se quiere volver (sin comprados no pide confirmación)', async () => {
+    const onBack = jest.fn();
+    await render(<ListaScreen listId="ferreteria" onBack={onBack} />);
+    await fireEvent.press(screen.getByLabelText('Volver a las listas'));
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Los paneles y avisos se montan con animación: se espera a que termine antes de mirar.
+const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 600)));
+
+describe('Detalle del ítem', () => {
+  beforeEach(() => resetMockStore());
+
+  it('abre con los datos del ítem tocado', async () => {
+    await render(<ListaScreen listId="supermercado" />);
+    await fireEvent.press(screen.getByText('Leche'));
+    expect(screen.getByText('Detalle del ítem')).toBeTruthy();
+    expect(screen.getByLabelText('Nombre').props.value).toBe('Leche');
+    expect(screen.getByLabelText('Nota').props.value).toBe('La de caja, sin lactosa.');
+    expect(screen.getByText('Agregado por')).toBeTruthy();
+    expect(screen.getAllByText('Lucía').length).toBeGreaterThan(0);
+  });
+
+  it('la cantidad no baja de 1', async () => {
+    await render(<ListaScreen listId="supermercado" />);
+    await fireEvent.press(screen.getByText('Pan lactal'));
+    await fireEvent.press(screen.getByLabelText('Una menos'));
+    expect(screen.getByLabelText('Cantidad 1')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Una más'));
+    expect(screen.getByLabelText('Cantidad 2')).toBeTruthy();
+  });
+
+  it('Guardar actualiza el ítem y cierra el panel', async () => {
+    await render(<ListaScreen listId="supermercado" />);
+    await fireEvent.press(screen.getByText('Leche'));
+    await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Leche entera');
+    await fireEvent.press(screen.getByLabelText('Una más'));
+    await fireEvent.press(screen.getByLabelText('Una más'));
+    await fireEvent.press(screen.getByText('Guardar'));
+    await settle();
+    expect(screen.queryByText('Detalle del ítem')).toBeNull();
+    expect(screen.getByText('Leche entera')).toBeTruthy();
+    expect(screen.getByText('×4')).toBeTruthy();
+  });
+
+  it('Eliminar saca el ítem y baja el contador', async () => {
+    await render(<ListaScreen listId="supermercado" />);
+    await fireEvent.press(screen.getByText('Leche'));
+    await fireEvent.press(screen.getByText('Eliminar'));
+    await settle();
+    expect(screen.queryByText('Detalle del ítem')).toBeNull();
+    expect(screen.queryByText('Leche')).toBeNull();
+    expect(screen.getByText('6')).toBeTruthy();
+  });
+
+  it('cerrar con la ✕ no cambia nada', async () => {
+    await render(<ListaScreen listId="supermercado" />);
+    await fireEvent.press(screen.getByText('Leche'));
+    await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Otra cosa');
+    await fireEvent.press(screen.getAllByLabelText('Cerrar')[1]);
+    await settle();
+    expect(screen.getByText('Leche')).toBeTruthy();
+  });
+});
+
+describe('Nueva lista', () => {
+  beforeEach(() => resetMockStore());
+
+  it('Crear lista agrega la tarjeta', async () => {
+    await render(<InicioScreen />);
+    await fireEvent.press(screen.getByText('Nueva lista'));
+    await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Panadería');
+    await fireEvent.press(screen.getByLabelText('Ámbar'));
+    await fireEvent.press(screen.getByText('Crear lista'));
+    await settle();
+    expect(screen.getByLabelText('Panadería, al día')).toBeTruthy();
+  });
+
+  it('sin nombre no se puede crear', async () => {
+    await render(<InicioScreen />);
+    await fireEvent.press(screen.getByText('Nueva lista'));
+    expect(screen.getByRole('button', { name: 'Crear lista' })).toBeDisabled();
+  });
+});
+
+describe('Salir de la lista', () => {
+  beforeEach(() => resetMockStore());
+
+  it('con comprados, la flecha pide confirmación y Quedarme no sale', async () => {
     const onBack = jest.fn();
     await render(<ListaScreen listId="supermercado" onBack={onBack} />);
     await fireEvent.press(screen.getByLabelText('Volver a las listas'));
+    expect(screen.getByText('¿Salir de la lista?')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Se van a borrar los 3 ítems comprados de Supermercado. Los pendientes se quedan.',
+      ),
+    ).toBeTruthy();
+    await fireEvent.press(screen.getByText('Quedarme'));
+    await settle();
+    expect(onBack).not.toHaveBeenCalled();
+    expect(screen.queryByText('¿Salir de la lista?')).toBeNull();
+    expect(screen.getByText('Comprados')).toBeTruthy();
+  });
+
+  it('Salir y borrar elimina los comprados y vuelve', async () => {
+    const onBack = jest.fn();
+    await render(<ListaScreen listId="supermercado" onBack={onBack} />);
+    await fireEvent.press(screen.getByLabelText('Volver a las listas'));
+    await fireEvent.press(screen.getByText('Salir y borrar'));
     expect(onBack).toHaveBeenCalledTimes(1);
+    await settle();
+    expect(screen.queryByText('Comprados')).toBeNull();
+    expect(screen.getByText('7')).toBeTruthy();
   });
 });

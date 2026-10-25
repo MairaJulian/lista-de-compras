@@ -35,7 +35,7 @@ export const sizes = {
   handleHeight: 4,
   tabIndicatorWidth: 64,
   tabIndicatorHeight: 32,
-  swatch: 44,
+  swatch: 48,
 } as const;
 
 export const spacing = {

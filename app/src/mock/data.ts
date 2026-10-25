@@ -33,7 +33,7 @@ const item = (
 // Supermercado es el de `05-lista`. Verdulería y Farmacia no tienen pantalla de diseño: solo
 // completan los pendientes que muestran las tarjetas de Inicio (5 y 2). Ferretería está vacía (`06`).
 export const mockItems: ListItem[] = [
-  item('supermercado', '1', 'Leche', 'lucia', { quantity: 2 }),
+  item('supermercado', '1', 'Leche', 'lucia', { quantity: 2, note: 'La de caja, sin lactosa.' }),
   item('supermercado', '2', 'Pan lactal', 'vos'),
   item('supermercado', '3', 'Yerba mate', 'vos', { quantity: 1, unit: 'kg' }),
   item('supermercado', '4', 'Huevos', 'diego', { quantity: 1, unit: 'docena' }),

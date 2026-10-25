@@ -1,14 +1,20 @@
 import { useCallback } from 'react';
 
-import { getMockCurrentMember, mockHousehold, mockLists } from '../mock/data';
-import { newItemId, setState, useMockStore } from '../mock/store';
+import type { ListTone } from '../theme';
+import { getMockCurrentMember, mockHousehold } from '../mock/data';
+import { newItemId, newListId, setState, useMockStore } from '../mock/store';
 import {
   addItem,
+  addList,
   countPending,
   countUnsynced,
+  ItemPatch,
   markSynced,
+  removeDone,
+  removeItem,
   splitItems,
   toggleItem,
+  updateItem,
 } from './listLogic';
 import type { Household, ListInfo, ListItem, ListSummary, Member } from './types';
 
@@ -20,8 +26,8 @@ export function useHousehold(): Household {
 }
 
 export function useLists(): ListSummary[] {
-  const { items } = useMockStore();
-  return mockLists.map((list) => ({
+  const { lists, items } = useMockStore();
+  return lists.map((list) => ({
     ...list,
     pendingCount: countPending(items.filter((item) => item.listId === list.id)),
   }));
@@ -32,7 +38,22 @@ export function useCurrentMember(): Member {
 }
 
 export function useList(listId: string): ListInfo | undefined {
-  return mockLists.find((list) => list.id === listId);
+  const { lists } = useMockStore();
+  return lists.find((list) => list.id === listId);
+}
+
+/** Crea una lista nueva en el hogar y devuelve su id (nada si el nombre estaba vacío). */
+export function useCreateList(): (name: string, tone: ListTone) => string | undefined {
+  return useCallback((name, tone) => {
+    const id = newListId();
+    let created = false;
+    setState((s) => {
+      const lists = addList(s.lists, name, tone, id);
+      created = lists !== s.lists;
+      return { ...s, lists };
+    });
+    return created ? id : undefined;
+  }, []);
 }
 
 export type ListContents = {
@@ -42,6 +63,10 @@ export type ListContents = {
   unsyncedCount: number;
   toggle: (itemId: string) => void;
   add: (name: string) => void;
+  update: (itemId: string, patch: ItemPatch) => void;
+  remove: (itemId: string) => void;
+  /** Borra los comprados de la lista (al salir de ella). */
+  removeDone: () => void;
   toggleOnline: () => void;
 };
 
@@ -69,9 +94,26 @@ export function useListContents(listId: string): ListContents {
     [listId],
   );
 
+  const update = useCallback(
+    (itemId: string, patch: ItemPatch) =>
+      setState((s) => ({ ...s, items: updateItem(s.items, itemId, patch, s.online) })),
+    [],
+  );
+
+  const remove = useCallback(
+    (itemId: string) => setState((s) => ({ ...s, items: removeItem(s.items, itemId) })),
+    [],
+  );
+
+  const clearDone = useCallback(
+    () => setState((s) => ({ ...s, items: removeDone(s.items, listId) })),
+    [listId],
+  );
+
   const toggleOnline = useCallback(
     () =>
       setState((s) => ({
+        ...s,
         online: !s.online,
         // Al volver la conexión se sincroniza todo.
         items: s.online ? s.items : markSynced(s.items),
@@ -86,6 +128,9 @@ export function useListContents(listId: string): ListContents {
     unsyncedCount: countUnsynced(listItems),
     toggle,
     add,
+    update,
+    remove,
+    removeDone: clearDone,
     toggleOnline,
   };
 }

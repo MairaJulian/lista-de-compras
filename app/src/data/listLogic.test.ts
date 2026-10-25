@@ -1,11 +1,15 @@
 import {
   addItem,
+  addList,
   countPending,
   countUnsynced,
   formatQuantity,
   markSynced,
+  removeDone,
+  removeItem,
   splitItems,
   toggleItem,
+  updateItem,
 } from './listLogic';
 import type { ListItem } from './types';
 
@@ -75,5 +79,55 @@ describe('formatQuantity', () => {
     expect(formatQuantity({ quantity: 2 })).toBe('×2');
     expect(formatQuantity({ quantity: 1, unit: 'kg' })).toBe('1 kg');
     expect(formatQuantity({})).toBeUndefined();
+  });
+});
+
+describe('updateItem', () => {
+  it('cambia solo los campos del parche', () => {
+    const result = updateItem(base, 'a', { quantity: 3, note: 'Sin lactosa' }, true);
+    expect(result[0]).toMatchObject({ name: 'Leche', quantity: 3, note: 'Sin lactosa' });
+    expect(result[1]).toBe(base[1]);
+  });
+
+  it('recorta el nombre y ignora uno vacío', () => {
+    expect(updateItem(base, 'a', { name: '  Leche entera ' }, true)[0].name).toBe('Leche entera');
+    expect(updateItem(base, 'a', { name: '   ' }, true)).toEqual(base);
+  });
+
+  it('un parche vacío no cambia nada, ni siquiera sin conexión', () => {
+    expect(updateItem(base, 'a', {}, false)[0]).toBe(base[0]);
+  });
+
+  it('sin conexión marca el cambio como sin sincronizar', () => {
+    expect(updateItem(base, 'a', { quantity: 2 }, false)[0].pendingSync).toBe(true);
+    expect(updateItem(base, 'a', { quantity: 2 }, true)[0].pendingSync).toBeUndefined();
+  });
+});
+
+describe('removeItem y removeDone', () => {
+  it('elimina un ítem', () => {
+    expect(removeItem(base, 'a').map((i) => i.id)).toEqual(['b']);
+  });
+
+  it('al salir borra los comprados de esa lista y deja pendientes y otras listas', () => {
+    const items: ListItem[] = [
+      ...base,
+      { id: 'c', listId: 'otra', name: 'Tornillos', done: true, addedBy: 'vos' },
+    ];
+    expect(removeDone(items, 'l').map((i) => i.id)).toEqual(['a', 'c']);
+  });
+});
+
+describe('addList', () => {
+  const lists = [{ id: 'x', name: 'Súper', tone: 'green' as const, icon: 'cart' as const }];
+
+  it('agrega al final con nombre recortado y el color elegido', () => {
+    const result = addList(lists, ' Panadería ', 'amber', 'n1');
+    expect(result).toHaveLength(2);
+    expect(result[1]).toMatchObject({ id: 'n1', name: 'Panadería', tone: 'amber' });
+  });
+
+  it('ignora un nombre vacío', () => {
+    expect(addList(lists, '  ', 'green', 'n1')).toBe(lists);
   });
 });

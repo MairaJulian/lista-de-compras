@@ -1,19 +1,22 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Fab, ListCard } from '../components';
-import { useHousehold, useLists } from '../data/hooks';
+import { useCreateList, useHousehold, useLists } from '../data/hooks';
 import type { ListSummary } from '../data/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { NewListSheet } from '../sheets/NewListSheet';
 import { colors, fontSizes, fonts } from '../theme';
 
 type Props = {
   onOpenList?: (list: ListSummary) => void;
-  onNewList?: () => void;
 };
 
-export function InicioScreen({ onOpenList, onNewList }: Props) {
+export function InicioScreen({ onOpenList }: Props) {
   const household = useHousehold();
   const lists = useLists();
+  const createList = useCreateList();
+  const [newListOpen, setNewListOpen] = useState(false);
   const { top } = useSafeAreaInsets();
 
   // Las tarjetas van de a dos por fila.
@@ -50,8 +53,16 @@ export function InicioScreen({ onOpenList, onNewList }: Props) {
         </View>
       </ScrollView>
       <View style={styles.fab}>
-        <Fab label="Nueva lista" icon="plus" onPress={onNewList} />
+        <Fab label="Nueva lista" icon="plus" onPress={() => setNewListOpen(true)} />
       </View>
+      <NewListSheet
+        visible={newListOpen}
+        onClose={() => setNewListOpen(false)}
+        onCreate={(name, tone) => {
+          createList(name, tone);
+          setNewListOpen(false);
+        }}
+      />
     </View>
   );
 }
