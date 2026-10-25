@@ -1,0 +1,11 @@
+{
+  "name": "changuito-firebase",
+  "private": true,
+  "description": "Reglas de Firestore y emulador de Changuito",
+  "scripts": {
+    "emulator": "firebase emulators:start --only firestore --config firebase.emulator.json"
+  },
+  "devDependencies": {
+    "firebase-tools": "~14.27.0"
+  }
+}

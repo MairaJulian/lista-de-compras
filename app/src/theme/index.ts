@@ -5,6 +5,7 @@ export const colors = {
   textSecondary: '#5B675F',
   primary: '#2E7D57',
   primaryText: '#1F5C3E',
+  danger: '#A12D2D',
 } as const;
 
 export const fonts = {

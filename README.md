@@ -13,7 +13,7 @@ App Android de lista de compras compartida para una familia. Hecha con React Nat
 
 - `diseno/`: documentación y diseño.
 - `app/`: la app (React Native + TypeScript).
-- `firebase/`: reglas de Firestore y emulador (llega en el PR 2 de la Etapa 0).
+- `firebase/`: reglas de Firestore y emulador.
 
 ## Requisitos
 
@@ -38,3 +38,30 @@ npm run lint
 npm run typecheck
 npm test
 ```
+
+## Firebase
+
+La app usa `@react-native-firebase`. El archivo `google-services.json` **no está en el repo**: bajalo de la consola de Firebase (proyecto `changuito-31ec1`, app Android `com.mairajulian.changuito`) y dejalo en `app/google-services.json`. `app.json` lo referencia desde ahí. Sin ese archivo la app no compila, pero `lint`, `typecheck` y `test` siguen pasando.
+
+### Emulador de Firestore y pantalla de prueba
+
+En modo desarrollo, la pantalla inicial muestra un botón **Probar Firestore** que escribe y lee el documento `ping/ping` contra el **emulador** de Firestore (nunca contra el Firestore real, que está bloqueado por `firebase/firestore.rules`).
+
+1. Levantá el emulador (en una terminal que quede abierta). La primera vez descarga el emulador:
+   ```bash
+   cd firebase
+   npm install
+   npm run emulator
+   ```
+2. Con el celular (o el emulador de Android) conectado, redirigí el puerto:
+   ```bash
+   adb reverse tcp:8080 tcp:8080
+   ```
+   Hay que repetirlo cada vez que se reconecta el cable o se reinicia el emulador de Android.
+3. Corré la app (`cd app && npx expo run:android`) y tocá **Probar Firestore**. Tiene que decir "Escribió y leyó ping".
+
+Notas:
+
+- `app/firebase.json` desactiva el cambio automático de `localhost` por `10.0.2.2` (`android_bypass_emulator_url_remap`). Esa dirección solo sirve en el emulador de Android; sin esto, en un celular real la prueba se queda en "Probando…". Es un dato que se toma al compilar: si lo cambiás, reconstruí la app con `npx expo run:android`.
+- El emulador usa `firebase/firestore.emulator.rules`, que solo permite `ping/*`. El Firestore real usa `firebase/firestore.rules`, todo bloqueado.
+- El emulador de Firestore necesita Java. Con JDK 17 funciona con `firebase-tools` 14 (fijado en `firebase/package.json`); la versión 15 pide JDK 21 o más.

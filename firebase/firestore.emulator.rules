@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// Solo para el emulador local (pantalla de prueba de la Etapa 0).
+// Nunca se despliega: el Firestore real usa firestore.rules (todo bloqueado).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /ping/{id} {
+      allow read, write: if true;
+    }
+  }
+}

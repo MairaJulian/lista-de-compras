@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react-native';
 
 import App from './App';
 
+jest.mock('./src/dev/FirestorePing', () => ({ FirestorePing: () => null }));
 jest.mock('expo-font', () => ({ useFonts: () => [true] }));
 
 describe('App', () => {

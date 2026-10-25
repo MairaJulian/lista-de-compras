@@ -71,7 +71,7 @@ Al terminar, actualizá esta sección con lo que quedó hecho y dejá el aviso d
 
 ## Estado
 
-- [ ] PR 1 · Esqueleto
-- [ ] Firebase creado por Maira
-- [ ] PR 2 · Conexión con Firebase
+- [x] PR 1 · Esqueleto (PR #3, mergeada)
+- [x] Firebase creado por Maira (proyecto `changuito-31ec1`)
+- [ ] PR 2 · Conexión con Firebase (PR abierta; falta que Maira pruebe la pantalla con el emulador)
 - [ ] PR 3 · Chequeos automáticos
