@@ -11,7 +11,7 @@ App de lista de compras compartida para el hogar: 3 adultos de la misma casa, ca
 - `DISENO.md`: este documento (decisiones, estilo, pantallas, flujos).
 - `pantallas/`: una imagen PNG por pantalla (780 × 1688, el doble del tamaño de diseño) más el PDF original `Changuito-pantallas.pdf`. El número del archivo sigue el orden de la tabla de pantallas de abajo:
   `01-bienvenida`, `02-invitacion-recibida`, `03-inicio`, `04-nueva-lista`, `05-lista`, `06-lista-vacia`, `07-lista-sin-conexion`, `08-salir-de-la-lista`, `09-notificacion`, `10-detalle-item`, `11-hogar`, `12-invitar`, `13-opciones-miembro`, `14-confirmar-quitar`, `15-confirmar-salir`, `16-perfil`, `17-sin-hogar`, `18-sin-hogar-codigo`, `19-sin-hogar-te-sacaron`, `20-crear-hogar`, `21-hogar-creado`, `22-invitar-sin-enlace`, `23-desactivar-enlace`, `24-error-enlace-invalido`, `25-error-inicio-sesion`, `26-error-sin-conexion-unirse`, `27-salir-hogar-creador`, `28-salir-hogar-ultima-persona`.
-  Ojo: las barras de desplazamiento visibles en `05-lista` son un detalle de la exportación, no parte del diseño. En `12-invitar` el código aparece partido en dos líneas porque la captura es anterior a un ajuste; en el diseño final el código va en una sola línea (ver `referencia-html/Invitar.dc.html`).
+  Ojo: las barras de desplazamiento visibles en `05-lista` son un detalle de la exportación, no parte del diseño. En `12-invitar` la pill "Vence en 47 h" se ve partida en dos líneas porque la captura es anterior a un ajuste; en el diseño final va en una sola línea (ver `referencia-html/Invitar.dc.html`).
 - `referencia-html/`: el código fuente de cada pantalla (`*.dc.html`). Sirve **solo para copiar valores exactos** (colores, tamaños, textos, márgenes). No es código de la app y no se ejecuta suelto (depende de un `support.js` que no está acá).
 
 ## Decisiones de producto (ya tomadas)
@@ -95,7 +95,7 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 | 3d | `SalirLista` | Aviso: "¿Salir de la lista? Se van a borrar los N ítems comprados" | 3 → "Salir y borrar" → 2 / "Quedarme" → 3 |
 | 3e | `Notificacion` | Notificaciones de Android: "Lucía agregó 2 ítems", "Diego borró un ítem" | Tocar → 3 |
 | 4 | `Detalle` | Panel que sube desde abajo: nombre, cantidad (− / +), nota, "Agregado por", Guardar / Eliminar | 3 → vuelve a 3 |
-| 5 | `Hogar` | Nombre del hogar, miembros con rol, botón **Invitar**, "Salir del hogar", avatar de perfil arriba a la derecha | pestaña Hogar de 2 |
+| 5 | `Hogar` | Tarjeta con el nombre del hogar (con lápiz, se toca para editarlo), miembros con rol, botón **Invitar**, "Salir del hogar", avatar de perfil arriba a la derecha | pestaña Hogar de 2; tarjeta del hogar → 33 |
 | 5b | `Invitar` | Enlace + código corto (`K7P2-9XQ-4MN`), cada uno con "Copiar", pill "Vence en 47 h", y los botones "Compartir enlace", "Generar enlace nuevo" y "Desactivar enlace" (peligro) | 5 → "Invitar"; "Desactivar enlace" → 23; también se llega desde 21 |
 | 5c | `MiembroOpciones` | Panel inferior de un miembro con "Quitar del hogar" (solo lo ve quien creó el hogar) | 5 → botón ⋯ |
 | 5d | `ConfirmarQuitar` | Aviso "¿Quitar a Lucía del hogar?" | 5c → "Quitar" / "Cancelar" → 5 |
@@ -105,7 +105,7 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 | 18 | `SinHogarCodigo` | Campo para escribir o pegar el código; "Unirme" se habilita al haber texto | 17 → Inicio (2) |
 | 19 | `SinHogarSacaron` | Aviso centrado "Ya no sos parte de Nuestra casa" con "Continuar" | Cuando sacan a la persona del hogar → 17 |
 | 20 | `CrearHogar` | Campo "Nombre del hogar"; "Crear hogar" se habilita al haber texto | 17 → 21 |
-| 21 | `HogarCreado` | "¡Listo, ya tenés hogar!" con "Invitar" y "Más tarde" | 20 → Invitar (5b) / Inicio (2) |
+| 21 | `HogarCreado` | "¡Listo, ya tenés hogar!" con "Invitar" y "Más tarde" | 20 → Invitar (5b) / "Más tarde" → 29 (hogar nuevo, sin listas) |
 | 22 | `InvitarSinEnlace` | "El enlace ya no está activo" (venció o se desactivó) con "Generar enlace nuevo" | 23 "Desactivar" (o cuando venció) → 5b |
 | 23 | `DesactivarEnlace` | Aviso "¿Desactivar el enlace?" con "Desactivar" (peligro) y "Cancelar" | 5b → 22 / 5b |
 | 24 | `ErrorEnlace` | Error en la pantalla de unirse: "Este enlace ya no sirve. Pedile otro enlace a quien te invitó." | Al abrir un enlace vencido, desactivado o inválido → Bienvenida (1) / código (18) |
@@ -113,6 +113,11 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 | 26 | `ErrorSinConexion` | Error: "Necesitás internet para unirte" con "Reintentar" y "Ahora no" | Al intentar unirse sin conexión → 1b / 1 |
 | 27 | `SalirCreador` | Variante del aviso de salir: avisa que el rol de creador pasa a otro miembro (muestra a Lucía) | Quien creó el hogar toca "Salir del hogar" en 5 → 17 / 5 |
 | 28 | `SalirUltimo` | Variante del aviso de salir: "Sos la última persona del hogar"; el hogar se archiva | La última persona del hogar toca "Salir del hogar" → 17 / 5 |
+| 29 | `InicioSinListas` | Inicio de un hogar recién creado: título "Listas", mensaje "Todavía no hay listas", botón extendido **Nueva lista** y barra inferior | 21 "Más tarde" → FAB → 2b; pestaña Hogar → 5. Se muestra siempre que el hogar no tenga listas |
+| 30 | `ErrorCodigo` | Variante de 18 con el código mal escrito: campo con borde rojo y mensaje debajo "Este código no existe o ya venció. Revisalo o pedí uno nuevo." | 18 al tocar "Unirme" con un código inválido. Al editar el campo o tocar "Pegar" el error se borra |
+| 31 | `ErrorCrearHogar` | Variante de 20 si falla la creación: "No pudimos crear el hogar", el nombre escrito se conserva, aviso rojo y botón **Reintentar** | 20 al tocar "Crear hogar" y fallar → "Reintentar" → 21 / "Ahora no" → 17 |
+| 32 | `ErrorCarga` | Error general de lectura de datos: "No pudimos cargar tus datos" con **Reintentar**; conserva el título y la barra inferior | Cuando falla la lectura (Inicio, Hogar, etc.) → "Reintentar" → 2 |
+| 33 | `EditarHogar` | Panel inferior "Nombre del hogar": nombre actual, campo editable, **Guardar** (se deshabilita si el campo queda vacío) y Cancelar | 5 (tarjeta del hogar) → Guardar / Cancelar → 5 |
 
 ## Comportamientos que muestra el prototipo
 
@@ -129,11 +134,12 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 - La flecha atrás de una lista siempre muestra el aviso 3d en el prototipo; en la app real solo cuando haya ítems comprados.
 - El detalle siempre muestra "Leche"; en la app real muestra el ítem tocado.
 - En el prototipo "Salir del hogar" de Hogar siempre abre la variante común (5e); las variantes 27 y 28 se ven directamente en el lienzo. En la app real se elige la variante según el caso.
-- El prototipo no conecta 19 (te sacaron) ni 24–26 (errores) con un disparador real: se ven en el lienzo para diseñar el estado.
+- El prototipo no conecta 19 (te sacaron), 24–26 ni 30–32 (errores) con un disparador real: se ven en el lienzo para diseñar el estado.
+- En 33 el nombre nuevo no se refleja al volver a 5 (el prototipo no guarda datos). Quién puede editar el nombre no está decidido en el diseño: el panel no dice nada al respecto.
 - Código de ejemplo `K7P2-9XQ-4MN`, "Vence en 47 h" y el nuevo "R4WD-3ZT-8HC / Vence en 48 h" son datos de ejemplo.
 
 ## No diseñado todavía
 
-- Otros errores (por ejemplo, código mal escrito en la pantalla 18, o fallo al crear el hogar).
-- Edición del nombre del hogar o de una lista; borrar una lista.
+- Otros errores puntuales (por ejemplo, fallo al guardar un cambio de nombre o al crear una lista).
+- Edición del nombre de una lista; borrar una lista.
 - Tema oscuro.

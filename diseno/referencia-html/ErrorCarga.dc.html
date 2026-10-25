@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Error: no se pudo cargar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+a:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="padding:56px 24px 8px;display:flex;flex-direction:column;gap:2px">
+    <div style="font-size:15px;font-weight:700;color:#5B675F">Nuestra casa</div>
+    <div style="font-family:Nunito,sans-serif;font-weight:800;font-size:34px;line-height:1.1">Listas</div>
+  </div>
+
+  <div role="alert" style="flex:1;padding:0 40px 80px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px">
+    <span style="width:104px;height:104px;border-radius:50%;background:#FCEBCB;color:#7A4300;display:flex;align-items:center;justify-content:center;margin-bottom:8px">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.4v.01" stroke-width="2.2"/></svg>
+    </span>
+    <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:26px;line-height:1.2;text-wrap:balance">No pudimos cargar tus datos</h1>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#5B675F;text-wrap:pretty">Puede ser la conexión o un problema nuestro. Probá de nuevo.</p>
+    <a href="Inicio.dc.html" style="height:56px;padding:0 32px;border-radius:28px;background:#2E7D57;color:#fff;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></svg>
+      Reintentar
+    </a>
+  </div>
+
+  <nav style="position:absolute;left:0;right:0;bottom:0;height:80px;background:#fff;border-top:1px solid #E4E8DF;display:flex">
+    <a href="ErrorCarga.dc.html" aria-current="page" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:13px;font-weight:700;color:#1C2621">
+      <span style="width:64px;height:32px;border-radius:16px;background:#CFE8D9;color:#1F5C3E;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></span>
+      Listas
+    </a>
+    <a href="Hogar.dc.html" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:13px;font-weight:500;color:#5B675F">
+      <span style="width:64px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17.5 14.5c2.5.3 4 2 4.5 5"/></svg></span>
+      Hogar
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
