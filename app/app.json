@@ -23,7 +23,8 @@
       "@react-native-firebase/app",
       "expo-asset",
       "./plugins/with-cmake-local-properties",
-      "expo-router"
+      "expo-router",
+      ["expo-build-properties", { "android": { "kotlinVersion": "2.4.0" } }]
     ]
   }
 }
