@@ -13,7 +13,18 @@
 - Node 22.14.0, npm 10.9.2, JDK 17 (Temurin) con `JAVA_HOME`, `ANDROID_HOME` configurado, plataformas Android 33 a 36 y build-tools hasta 36.0.0.
 - Celular real conectado y autorizado por USB. Emulador **Pixel 8** (Android 36, con Google Play) creado.
 - Git con el correo personal y el remoto personal, dentro de esta carpeta.
-- **Pendiente de Maira:** crear el proyecto de Firebase y bajar `google-services.json` (ver "Antes del PR 2"). Todavía no está hecho.
+- Proyecto de Firebase `changuito-31ec1` creado (plan Spark) y `google-services.json` descargado (ver "Antes del PR 2"). El archivo vive en `app/google-services.json`, fuera del repo.
+
+## PR 0 · Documentación y diseño
+
+Rama: `etapa-0/00-documentacion` · PR #2 (mergeada)
+
+Solo documentación, sin código.
+
+1. Agregar `CLAUDE.md`, la guía del proyecto para Claude Code.
+2. Agregar `diseno/` con `DISENO.md`, `ESQUEMA-DATOS.md`, `PLAN-CONSTRUCCION.md` y `ETAPA-0.md`, las imágenes y el PDF de `pantallas/`, y los archivos de `referencia-html/`.
+
+**Cómo comprueba Maira que está bien:** los archivos están en `main` y la guía de `CLAUDE.md` apunta a ellos.
 
 ## PR 1 · Esqueleto del proyecto
 
@@ -71,7 +82,10 @@ Al terminar, actualizá esta sección con lo que quedó hecho y dejá el aviso d
 
 ## Estado
 
+- [x] PR 0 · Documentación y diseño (PR #2, mergeada)
 - [x] PR 1 · Esqueleto (PR #3, mergeada)
 - [x] Firebase creado por Maira (proyecto `changuito-31ec1`)
-- [ ] PR 2 · Conexión con Firebase (PR abierta; falta que Maira pruebe la pantalla con el emulador)
-- [ ] PR 3 · Chequeos automáticos
+- [x] PR 2 · Conexión con Firebase (PR #4, mergeada). Notas: el emulador usa `firebase-tools` 14 porque la 15 exige JDK 21 y hay JDK 17; en Android real hace falta `app/firebase.json` con `android_bypass_emulator_url_remap` y `adb reverse tcp:8080 tcp:8080`. La pantalla de prueba se probó en el celular real; falta probarla en el emulador de Android.
+- [ ] PR 3 · Chequeos automáticos (esta PR, en revisión: falta ver los chequeos en verde en GitHub)
+
+Cuando se mergee la PR 3, la etapa termina: actualizar "Cierre de la etapa" y avisar que sigue la **Etapa 1 · Base visual y navegación**.
