@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { HogarScreen } from './HogarScreen';
 import { resetMockStore } from '../mock/store';
@@ -128,8 +128,8 @@ describe('ListaScreen', () => {
   });
 });
 
-// Los paneles y avisos se montan con animación: se espera a que termine antes de mirar.
-const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 600)));
+// Los paneles y avisos se cierran con animación: se espera a que salgan del árbol antes de mirar.
+const closed = (text: string) => waitFor(() => expect(screen.queryByText(text)).toBeNull());
 
 describe('Detalle del ítem', () => {
   beforeEach(() => resetMockStore());
@@ -160,7 +160,7 @@ describe('Detalle del ítem', () => {
     await fireEvent.press(screen.getByLabelText('Una más'));
     await fireEvent.press(screen.getByLabelText('Una más'));
     await fireEvent.press(screen.getByText('Guardar'));
-    await settle();
+    await closed('Detalle del ítem');
     expect(screen.queryByText('Detalle del ítem')).toBeNull();
     expect(screen.getByText('Leche entera')).toBeTruthy();
     expect(screen.getByText('×4')).toBeTruthy();
@@ -170,7 +170,7 @@ describe('Detalle del ítem', () => {
     await render(<ListaScreen listId="supermercado" />);
     await fireEvent.press(screen.getByText('Leche'));
     await fireEvent.press(screen.getByText('Eliminar'));
-    await settle();
+    await closed('Detalle del ítem');
     expect(screen.queryByText('Detalle del ítem')).toBeNull();
     expect(screen.queryByText('Leche')).toBeNull();
     expect(screen.getByText('6')).toBeTruthy();
@@ -181,7 +181,7 @@ describe('Detalle del ítem', () => {
     await fireEvent.press(screen.getByText('Leche'));
     await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Otra cosa');
     await fireEvent.press(screen.getAllByLabelText('Cerrar')[1]);
-    await settle();
+    await closed('Detalle del ítem');
     expect(screen.getByText('Leche')).toBeTruthy();
   });
 });
@@ -195,7 +195,7 @@ describe('Nueva lista', () => {
     await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Panadería');
     await fireEvent.press(screen.getByLabelText('Ámbar'));
     await fireEvent.press(screen.getByText('Crear lista'));
-    await settle();
+    await closed('Crear lista');
     expect(screen.getByLabelText('Panadería, al día')).toBeTruthy();
   });
 
@@ -220,7 +220,7 @@ describe('Salir de la lista', () => {
       ),
     ).toBeTruthy();
     await fireEvent.press(screen.getByText('Quedarme'));
-    await settle();
+    await closed('¿Salir de la lista?');
     expect(onBack).not.toHaveBeenCalled();
     expect(screen.queryByText('¿Salir de la lista?')).toBeNull();
     expect(screen.getByText('Comprados')).toBeTruthy();
@@ -232,7 +232,7 @@ describe('Salir de la lista', () => {
     await fireEvent.press(screen.getByLabelText('Volver a las listas'));
     await fireEvent.press(screen.getByText('Salir y borrar'));
     expect(onBack).toHaveBeenCalledTimes(1);
-    await settle();
+    await closed('¿Salir de la lista?');
     expect(screen.queryByText('Comprados')).toBeNull();
     expect(screen.getByText('7')).toBeTruthy();
   });
