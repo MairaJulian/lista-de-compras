@@ -39,6 +39,22 @@ npm run typecheck
 npm test
 ```
 
+### Chequeos automáticos (GitHub Actions)
+
+En cada PR corre `.github/workflows/ci.yml`: instala las dependencias de `app/` con `npm ci` y ejecuta `lint`, `typecheck` y `test`, en Ubuntu con Node 22.
+
+**Qué verifica:**
+
+- Que el código pase ESLint y compile con TypeScript estricto.
+- Que pasen las pruebas de Jest. Firestore está mockeado, así que no hace falta `google-services.json` ni el emulador.
+
+**Qué no verifica:**
+
+- Que la app compile para Android ni que se vea o ande en un dispositivo: eso se prueba a mano con `npx expo run:android`.
+- Nada contra Firebase real ni contra el emulador de Firestore (la pantalla de prueba se comprueba a mano).
+- El formato de Prettier (`npm run format` lo arregla, pero no falla el PR).
+- Las reglas de Firestore: todavía no hay pruebas de reglas (llegan con las etapas que las usan).
+
 ## Firebase
 
 La app usa `@react-native-firebase`. El archivo `google-services.json` **no está en el repo**: bajalo de la consola de Firebase (proyecto `changuito-31ec1`, app Android `com.mairajulian.changuito`) y dejalo en `app/google-services.json`. `app.json` lo referencia desde ahí. Sin ese archivo la app no compila, pero `lint`, `typecheck` y `test` siguen pasando.
