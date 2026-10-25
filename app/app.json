@@ -18,6 +18,6 @@
       },
       "predictiveBackGestureEnabled": false
     },
-    "plugins": ["expo-font", "@react-native-firebase/app"]
+    "plugins": ["expo-font", "@react-native-firebase/app", "expo-asset"]
   }
 }
