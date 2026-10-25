@@ -5,6 +5,7 @@ import RootLayout from '../app/_layout';
 import TabsLayout from '../app/(tabs)/_layout';
 import Hogar from '../app/(tabs)/hogar';
 import Inicio from '../app/(tabs)/index';
+import Lista from '../app/lista/[id]';
 
 jest.mock('../dev/FirestorePing', () => ({ FirestorePing: () => null }));
 
@@ -15,6 +16,7 @@ const routes = {
   '(tabs)/_layout': TabsLayout,
   '(tabs)/index': Inicio,
   '(tabs)/hogar': Hogar,
+  'lista/[id]': Lista,
 };
 
 describe('navegación', () => {
@@ -27,6 +29,14 @@ describe('navegación', () => {
     expect(screen.getByRole('tab', { name: 'Hogar', selected: true })).toBeTruthy();
     await fireEvent.press(screen.getByRole('tab', { name: 'Listas' }));
     expect(screen.getByText('Supermercado')).toBeTruthy();
+  });
+
+  it('abre una lista desde Inicio y la flecha vuelve a Inicio', async () => {
+    await renderRouter(routes);
+    await fireEvent.press(screen.getByText('Ferretería'));
+    expect(screen.getByText('Esta lista está vacía')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Volver a las listas'));
+    expect(screen.getByText('Nueva lista')).toBeTruthy();
   });
 
   it('atrás en Hogar vuelve a Listas', async () => {

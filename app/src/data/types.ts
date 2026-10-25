@@ -16,10 +16,27 @@ export type Household = {
   members: Member[];
 };
 
-export type ListSummary = {
+export type ListInfo = {
   id: string;
   name: string;
   tone: ListTone;
   icon: IconName;
+};
+
+export type ListSummary = ListInfo & {
   pendingCount: number;
+};
+
+export type ListItem = {
+  id: string;
+  listId: string;
+  name: string;
+  quantity?: number;
+  unit?: string;
+  done: boolean;
+  addedBy: string;
+  /** Quién lo tildó; vacío mientras está pendiente. */
+  doneBy?: string;
+  /** Cambio hecho sin conexión que todavía no se sincronizó. */
+  pendingSync?: boolean;
 };
