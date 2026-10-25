@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 
-import { getMockState } from '../mock/store';
+import { startRoute } from '../auth/sessionState';
+import { getSession } from '../auth/sessionStore';
 
 /** Cierra todo lo que haya abierto y deja `path` como única pantalla (entrar, cerrar sesión, salir del hogar). */
 function resetTo(path: Parameters<typeof router.replace>[0]) {
@@ -10,14 +11,13 @@ function resetTo(path: Parameters<typeof router.replace>[0]) {
   router.replace(path);
 }
 
-/** Entra a la app dejando atrás Bienvenida o Unirse: a Listas, o a Sin hogar si todavía no tiene hogar. */
-export function enterApp() {
-  resetTo(getMockState().hasHousehold ? '/listas' : '/sin-hogar');
-}
-
-/** Vuelve a Bienvenida cerrando todo lo que haya abierto (cerrar sesión). */
-export function goToWelcome() {
-  resetTo('/');
+/**
+ * Deja atrás lo que haya abierto (Unirse, errores, Hogar creado) y va a la pantalla de arranque de
+ * la sesión: Bienvenida sin sesión, Sin hogar si no tiene hogar, Listas si lo tiene.
+ */
+export function goToStart() {
+  const route = startRoute(getSession());
+  if (route) resetTo(route);
 }
 
 /** Después de salir del hogar o de que te saquen. */

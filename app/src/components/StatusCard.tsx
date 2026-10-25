@@ -96,7 +96,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontFamily: fonts.heading, fontSize: 24, lineHeight: 26, color: colors.textPrimary },
+  // Ancho completo y centrado a mano: si el texto se mide con la fuente de respaldo antes de cargar
+  // Nunito, un ancho "justo" lo recorta (se perdía la palabra "hogar").
+  title: {
+    alignSelf: 'stretch',
+    textAlign: 'center',
+    fontFamily: fonts.heading,
+    fontSize: 24,
+    lineHeight: 26,
+    color: colors.textPrimary,
+  },
   titleSmall: { fontSize: 22, lineHeight: 24 },
-  subtitle: { fontFamily: fonts.body, fontSize: fontSizes.label, color: colors.textSecondary },
+  subtitle: {
+    alignSelf: 'stretch',
+    textAlign: 'center',
+    fontFamily: fonts.body,
+    fontSize: fontSizes.label,
+    color: colors.textSecondary,
+  },
 });

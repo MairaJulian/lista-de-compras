@@ -17,6 +17,10 @@ import Invitar from '../app/invitar';
 import Lista from '../app/lista/[id]';
 import Perfil from '../app/perfil';
 import Unirse from '../app/unirse';
+import { Alert } from 'react-native';
+import { signOutEverywhere, watchSession } from '../auth/sessionSource';
+import { signedInState, type AuthState } from '../auth/sessionState';
+import { resetSession } from '../auth/sessionStore';
 import { resetMockStore } from '../mock/store';
 
 jest.mock('../dev/FirestorePing', () => ({ FirestorePing: () => null }));
@@ -47,9 +51,24 @@ const routes = {
   'error-sin-conexion': ErrorSinConexion,
 };
 
+const account = { displayName: 'Maira Julián', email: 'maira@example.com', photoURL: null };
+
+/** Qué avisa Firebase al abrir la app, y cómo avisar que la sesión cambió (entrar, salir). */
+let emitAuth: (state: AuthState) => unknown = () => {};
+function firebaseSession(initial: AuthState) {
+  (watchSession as jest.Mock).mockImplementation((onChange: (state: AuthState) => void) => {
+    emitAuth = (state) => act(async () => onChange(state));
+    onChange(initial);
+    return () => {};
+  });
+  resetSession();
+}
+
 describe('navegación', () => {
   beforeEach(() => {
     resetMockStore();
+    // Por defecto: sesión de ejemplo (con hogar), como en desarrollo.
+    resetSession({ status: 'demo' });
     mockSignIn.mockReset();
     mockSignIn.mockResolvedValue({ status: 'success' });
   });
@@ -81,14 +100,21 @@ describe('navegación', () => {
   });
 
   it('la app abre en Bienvenida y "Entrar con Google" lleva a Sin hogar', async () => {
+    firebaseSession({ status: 'signedOut' });
+    mockSignIn.mockImplementation(async () => {
+      await emitAuth(signedInState(account, { hogarActualId: null }));
+      return { status: 'success' };
+    });
     await renderRouter(routes);
     expect(screen.getByText('Las compras de casa, entre todos.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Entrar con Google'));
     expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
     expect(screen.queryByText('Entrar con Google')).toBeNull();
+    expect(router.canGoBack()).toBe(false);
   });
 
   it('si la persona cancela el login se queda en Bienvenida, sin error', async () => {
+    firebaseSession({ status: 'signedOut' });
     mockSignIn.mockResolvedValue({ status: 'cancelled' });
     await renderRouter(routes);
     await fireEvent.press(screen.getByText('Entrar con Google'));
@@ -98,6 +124,11 @@ describe('navegación', () => {
   });
 
   it('si falla el login abre el error y "Reintentar" entra cuando sale bien', async () => {
+    firebaseSession({ status: 'signedOut' });
+    mockSignIn.mockImplementation(async () => {
+      await emitAuth(signedInState(account, { hogarActualId: null }));
+      return { status: 'success' };
+    });
     mockSignIn.mockResolvedValueOnce({ status: 'error' });
     await renderRouter(routes);
     await fireEvent.press(screen.getByText('Entrar con Google'));
@@ -107,6 +138,7 @@ describe('navegación', () => {
   });
 
   it('si el reintento falla de nuevo se queda en el error, y si cancela vuelve a Bienvenida', async () => {
+    firebaseSession({ status: 'signedOut' });
     mockSignIn.mockResolvedValue({ status: 'error' });
     await renderRouter(routes, { initialUrl: '/error-login' });
     await fireEvent.press(screen.getByText('Reintentar'));
@@ -117,14 +149,19 @@ describe('navegación', () => {
     expect(await screen.findByText('Entrar con Google')).toBeTruthy();
   });
 
-  it('Unirse: "Entrar y unirme" lleva a Listas y "Ahora no" a Bienvenida', async () => {
+  it('Unirse: "Entrar y unirme" lleva a Listas, y "Ahora no" a donde arranca la sesión', async () => {
     await renderRouter(routes, { initialUrl: '/unirse' });
     expect(screen.getByText('Te invitaron a unirte al hogar.')).toBeTruthy();
-    await fireEvent.press(screen.getByText('Ahora no'));
-    expect(screen.getByText('Entrar con Google')).toBeTruthy();
-    await act(async () => router.push('/unirse'));
     await fireEvent.press(screen.getByText('Entrar y unirme'));
     expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
+    await act(async () => router.push('/unirse'));
+    await fireEvent.press(screen.getByText('Ahora no'));
+    expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
+    // Sin sesión, "Ahora no" lleva a Bienvenida.
+    await act(async () => resetSession({ status: 'signedOut' }));
+    await act(async () => router.push('/unirse'));
+    await fireEvent.press(screen.getByText('Ahora no'));
+    expect(screen.getByText('Entrar con Google')).toBeTruthy();
   });
 
   it('Hogar abre Perfil y la flecha vuelve; Cerrar sesión lleva a Bienvenida', async () => {
@@ -196,12 +233,17 @@ describe('navegación', () => {
     await renderRouter(routes, { initialUrl: '/hogar' });
     await fireEvent.press(screen.getByText('Salir del hogar'));
     await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
-    await act(async () => router.replace('/'));
+    // Termina la sesión de ejemplo y se vuelve a entrar con una cuenta sin hogar.
+    await act(async () => resetSession({ status: 'signedOut' }));
+    mockSignIn.mockImplementation(async () => {
+      await emitAuth(signedInState(account, { hogarActualId: null }));
+      return { status: 'success' };
+    });
     await fireEvent.press(screen.getByText('Entrar con Google'));
     expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
   });
 
-  it('Unirse con el enlace desactivado muestra el error y "Entendido" vuelve a Bienvenida', async () => {
+  it('Unirse con el enlace desactivado muestra el error y "Entendido" vuelve al inicio', async () => {
     await renderRouter(routes, { initialUrl: '/invitar' });
     await fireEvent.press(screen.getByText('Desactivar enlace'));
     await fireEvent.press(screen.getByText('Desactivar'));
@@ -209,7 +251,7 @@ describe('navegación', () => {
     await fireEvent.press(screen.getByText('Entrar y unirme'));
     expect(screen.getByText('Este enlace ya no sirve.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Entendido'));
-    expect(screen.getByText('Entrar con Google')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
   });
 
   it('Unirse sin conexión muestra el error y "Reintentar" vuelve a Unirse', async () => {
@@ -229,6 +271,11 @@ describe('navegación', () => {
   });
 
   it('error de inicio de sesión: "Reintentar" entra si el login sale bien', async () => {
+    firebaseSession({ status: 'signedOut' });
+    mockSignIn.mockImplementation(async () => {
+      await emitAuth(signedInState(account, { hogarActualId: null }));
+      return { status: 'success' };
+    });
     await renderRouter(routes, { initialUrl: '/error-login' });
     expect(screen.getByText('Algo salió mal.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Reintentar'));
@@ -240,5 +287,93 @@ describe('navegación', () => {
     expect(screen.getByText('Ya no sos parte de Nuestra casa')).toBeTruthy();
     await fireEvent.press(screen.getByText('Continuar'));
     await waitFor(() => expect(screen.queryByText('Ya no sos parte de Nuestra casa')).toBeNull());
+  });
+
+  describe('sesión y rutas protegidas', () => {
+    it('mientras se averigua la sesión muestra la carga con la marca, sin Bienvenida', async () => {
+      (watchSession as jest.Mock).mockImplementation(() => () => {});
+      resetSession();
+      await renderRouter(routes);
+      expect(screen.getByLabelText('Cargando')).toBeTruthy();
+      expect(screen.queryByText('Entrar con Google')).toBeNull();
+    });
+
+    it('sin sesión abre Bienvenida aunque se pida una pantalla de la app', async () => {
+      firebaseSession({ status: 'signedOut' });
+      await renderRouter(routes, { initialUrl: '/listas' });
+      expect(screen.getByText('Entrar con Google')).toBeTruthy();
+      expect(screen.queryByText('Nueva lista')).toBeNull();
+    });
+
+    it('con sesión y sin hogar abre Sin hogar', async () => {
+      firebaseSession(signedInState(account, { hogarActualId: null }));
+      await renderRouter(routes);
+      expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    });
+
+    it('con sesión y sin hogar, pedir Listas lleva a Sin hogar', async () => {
+      firebaseSession(signedInState(account, { hogarActualId: null }));
+      await renderRouter(routes, { initialUrl: '/listas' });
+      expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    });
+
+    it('con sesión y hogar abre Listas, sin pasar por Bienvenida', async () => {
+      firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+      await renderRouter(routes);
+      expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
+      expect(screen.queryByText('Entrar con Google')).toBeNull();
+    });
+
+    it('con sesión, la pantalla de error de inicio de sesión no se puede abrir', async () => {
+      firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+      await renderRouter(routes);
+      await act(async () => router.push('/error-login'));
+      expect(screen.queryByText('Algo salió mal.')).toBeNull();
+    });
+
+    it('Perfil muestra el nombre y el mail reales, y sin hogar no muestra la tarjeta de hogar', async () => {
+      firebaseSession(signedInState(account, { nombre: 'Maira J.', hogarActualId: null }));
+      await renderRouter(routes, { initialUrl: '/perfil' });
+      expect(screen.getByText('Maira J.')).toBeTruthy();
+      expect(screen.getByText('maira@example.com')).toBeTruthy();
+      expect(screen.queryByText('Nuestra casa')).toBeNull();
+    });
+
+    it('Cerrar sesión cierra Google y Firebase, vuelve a Bienvenida y se puede volver a entrar', async () => {
+      firebaseSession(signedInState(account, { hogarActualId: null }));
+      (signOutEverywhere as jest.Mock).mockImplementationOnce(async () => {
+        await emitAuth({ status: 'signedOut' });
+      });
+      mockSignIn.mockImplementation(async () => {
+        await emitAuth(signedInState(account, { hogarActualId: null }));
+        return { status: 'success' };
+      });
+      await renderRouter(routes, { initialUrl: '/perfil' });
+      await fireEvent.press(screen.getByText('Cerrar sesión'));
+      expect(await screen.findByText('Entrar con Google')).toBeTruthy();
+      expect(signOutEverywhere).toHaveBeenCalledTimes(1);
+      expect(router.canGoBack()).toBe(false);
+      await fireEvent.press(screen.getByText('Entrar con Google'));
+      expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    });
+
+    it('si no se puede cerrar la sesión avisa y se queda en Perfil', async () => {
+      firebaseSession(signedInState(account, { hogarActualId: null }));
+      (signOutEverywhere as jest.Mock).mockRejectedValueOnce(new Error('sin conexión'));
+      const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      await renderRouter(routes, { initialUrl: '/perfil' });
+      await fireEvent.press(screen.getByText('Cerrar sesión'));
+      await waitFor(() => expect(alert).toHaveBeenCalledTimes(1));
+      expect(screen.getByText('maira@example.com')).toBeTruthy();
+      alert.mockRestore();
+    });
+
+    it('el menú DEV entra con datos de ejemplo y se ve toda la app', async () => {
+      firebaseSession({ status: 'signedOut' });
+      await renderRouter(routes);
+      await fireEvent.press(screen.getByLabelText('Menú de desarrollo'));
+      await fireEvent.press(screen.getByText('Entrar con datos de ejemplo'));
+      expect(await screen.findByText('Supermercado')).toBeTruthy();
+    });
   });
 });

@@ -92,4 +92,4 @@ Antes de la Etapa 3 conviene diseñar en Claude Design: el Inicio de un hogar si
 - [x] PR 2 · Reglas de seguridad de `usuarios` (pruebas con el emulador y en CI; sin publicar)
 - [ ] Maira publica las reglas
 - [x] PR 3 · Login con Google y documento de usuario (hecho y con tests; falta que Maira lo pruebe en el celular, con las reglas ya publicadas)
-- [ ] PR 4 · Sesión, rutas protegidas y Perfil
+- [x] PR 4 · Sesión, rutas protegidas y Perfil (hecho y con tests; falta que Maira lo pruebe en el celular). Queda abierto: Sin hogar (`17`) no tiene acceso a Perfil ni a "Cerrar sesión" en el diseño; por ahora se llega desde el menú DEV ("Ver perfil" y "Cerrar sesión")

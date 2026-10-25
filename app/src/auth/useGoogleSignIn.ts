@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import { useRef } from 'react';
 import { Alert } from 'react-native';
 
-import { goToNoHousehold } from '../navigation/session';
 import { signInWithGoogle } from './googleSignIn';
 
 type Options = {
@@ -23,8 +22,7 @@ export function useGoogleSignIn({ onCancelled, onError }: Options = {}) {
       const result = await signInWithGoogle();
       switch (result.status) {
         case 'success':
-          // Hasta el PR 4 (rutas según la sesión) nadie tiene hogar real todavía.
-          goToNoHousehold();
+          // Las rutas protegidas llevan solas a Sin hogar o a Listas cuando se abre la sesión.
           break;
         case 'cancelled':
           onCancelled?.();

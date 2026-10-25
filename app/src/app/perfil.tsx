@@ -1,8 +1,15 @@
 import { router } from 'expo-router';
+import { Alert } from 'react-native';
 
-import { goToWelcome } from '../navigation/session';
+import { signOut } from '../auth/sessionStore';
 import { ProfileScreen } from '../screens/ProfileScreen';
 
 export default function ProfileRoute() {
-  return <ProfileScreen onBack={() => router.back()} onSignOut={goToWelcome} />;
+  // Al cerrarse la sesión, las rutas protegidas llevan solas a Bienvenida.
+  const onSignOut = () =>
+    signOut().catch(() =>
+      Alert.alert('No pudimos cerrar la sesión', 'Probá de nuevo en unos segundos.'),
+    );
+
+  return <ProfileScreen onBack={() => router.back()} onSignOut={onSignOut} />;
 }
