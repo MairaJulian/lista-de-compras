@@ -18,6 +18,11 @@
       },
       "predictiveBackGestureEnabled": false
     },
-    "plugins": ["expo-font", "@react-native-firebase/app", "expo-asset"]
+    "plugins": [
+      "expo-font",
+      "@react-native-firebase/app",
+      "expo-asset",
+      "./plugins/with-cmake-local-properties"
+    ]
   }
 }

@@ -31,6 +31,8 @@
 
 ## Etapa 2 · Login y perfil
 
+**Primer paso (antes que nada):** lograr que `@react-native-firebase/auth` compile. Con Expo 58 / React Native 0.88 falla en `:react-native-firebase_auth:compileDebugKotlin` porque `firebase-auth 25.0.0` trae metadata de Kotlin 2.4.0 y el proyecto usa 2.2.0 (no es un problema de rutas). Probar, en este orden: fijar la versión del BoM de Firebase a una anterior, o subir la versión de Kotlin con `android.kotlinVersion`. `@react-native-google-signin/google-signin` 16.1.5 ya se probó y compila (solo Kotlin/Java). **No** reemplazar por `expo-auth-session` ni por el SDK web de Firebase: se perdería la copia local de Firestore.
+
 **Qué se hace**
 - Pantalla de bienvenida con "Entrar con Google".
 - Crear el documento `usuarios/{uid}` en el primer ingreso.

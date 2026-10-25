@@ -58,6 +58,19 @@ Rama: `etapa-1/02-navegacion-inicio-hogar`
 
 **Se comprueba cuando:** Inicio y Hogar se ven como `03-inicio` y `11-hogar`, y la barra inferior cambia entre ambas.
 
+## PR 2b · Navegación estándar
+
+Rama: `etapa-1/02b-navegacion-estandar`
+
+Prerrequisito: el problema de rutas largas está resuelto (CMake 3.31.6 fijado por el config plugin; ver README, "Rutas largas en Windows").
+
+1. Reemplazar la navegación propia de `app/src/navigation` por **Expo Router** (recomendado por el enlace `changuito://...` de la Etapa 3) o **React Navigation**. Dejar escrito el motivo.
+2. Reemplazar el módulo local `app/modules/system-insets` por `react-native-safe-area-context` y borrar el módulo.
+3. Mantener lo que ya anda: pestañas Listas y Hogar con indicador pill, atrás en Hogar vuelve a Listas, y el aspecto de Inicio y Hogar.
+4. Confirmar que compila con las librerías nuevas (`react-native-screens` y `react-native-safe-area-context`, más lo que pida Expo Router).
+
+**Se comprueba cuando:** Inicio y Hogar se ven igual que antes de la PR, los márgenes seguros siguen bien en el celular y la app compila desde la ruta real del repo.
+
 ## PR 3 · Pantalla Lista
 
 Rama: `etapa-1/03-lista`
@@ -101,13 +114,15 @@ Antes de empezar la Etapa 3 hay que diseñar, en Claude Design, el estado "sin h
 
 - [x] PR 1 · Tema y componentes base (íconos: `@expo/vector-icons` MaterialCommunityIcons; pendiente: márgenes seguros inferiores, ver PR)
 - [x] PR 2 · Navegación, Inicio y Hogar (navegación propia sin librerías nativas; ver sección "Decisión de navegación")
+- [x] Infra · Rutas largas resueltas con CMake 3.31.6 fijado por config plugin (rama `etapa-1/infra-rutas-largas`)
+- [ ] PR 2b · Navegación estándar
 - [ ] PR 3 · Pantalla Lista
 - [ ] PR 4 · Paneles y avisos de la lista
 - [ ] PR 5 · Flujos del hogar y de la cuenta
 
 ## Decisión de navegación (PR 2)
 
-- **Ni Expo Router ni React Navigation**: las dos necesitan `react-native-screens` y `react-native-safe-area-context` (más `gesture-handler` y `reanimated` en el caso de Expo Router), librerías nativas con código C++ generado que **no compilan en Android desde la ruta del repo en Windows** (ninja supera los 260 caracteres). Probé acortar el directorio de build de CMake y `CMAKE_OBJECT_PATH_MAX` sin éxito. Mover el repo no es una opción.
+- **Ni Expo Router ni React Navigation**: las dos necesitan `react-native-screens` y `react-native-safe-area-context` (más `gesture-handler` y `reanimated` en el caso de Expo Router), librerías nativas con código C++ generado que **no compilaban en Android desde la ruta del repo en Windows** (ninja supera los 260 caracteres). Probé acortar el directorio de build de CMake y `CMAKE_OBJECT_PATH_MAX` sin éxito. Mover el repo no es una opción. **Resuelto después** (rama `etapa-1/infra-rutas-largas`): fijando CMake 3.31.6, cuyo ninja sí soporta rutas largas, compilan con rutas de hasta 367 caracteres. La navegación estándar se retoma en la PR 2b.
 - Se hizo una navegación propia en `app/src/navigation` (por ahora, las pestañas Listas y Hogar; atrás en Hogar vuelve a Listas). Las pantallas internas se agregan como una pila en las PR 3 a 5.
 - Márgenes seguros: módulo nativo local `app/modules/system-insets` (solo Kotlin, sin C++), que se usa con `useInsets()`.
 - **Pendiente para la Etapa 3**: el enlace de invitación (`changuito://...`). Se puede resolver con `Linking` de React Native (no necesita librerías nativas nuevas) y con la pila propia; si para entonces se resuelve el problema de rutas, reevaluar Expo Router.
