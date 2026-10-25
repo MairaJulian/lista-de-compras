@@ -7,7 +7,7 @@ App Android de lista de compras compartida para una familia (3 adultos). Nombre 
 1. `diseno/DISENO.md`: decisiones de producto, estilo, pantallas y flujos. Las imágenes de `diseno/pantallas/` son el diseño de referencia.
 2. `diseno/ESQUEMA-DATOS.md`: qué se guarda en Firestore, reglas de seguridad y sincronización.
 3. `diseno/PLAN-CONSTRUCCION.md`: etapas de construcción.
-4. El archivo de la etapa en curso. **Etapa actual: 2** → `diseno/ETAPA-2.md`. (Las Etapas 0 y 1 ya están cerradas.)
+4. El archivo de la etapa en curso. **Etapa actual: 3** → `diseno/ETAPA-3.md`. (Las Etapas 0, 1 y 2 ya están cerradas.)
 
 `diseno/referencia-html/*.dc.html` sirve solo para copiar valores exactos (colores, tamaños, textos). No es código de la app.
 
