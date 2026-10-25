@@ -99,7 +99,7 @@ Antes de empezar la Etapa 3 hay que diseñar, en Claude Design, el estado "sin h
 
 ## Estado
 
-- [ ] PR 1 · Tema y componentes base
+- [x] PR 1 · Tema y componentes base (íconos: `@expo/vector-icons` MaterialCommunityIcons; pendiente: márgenes seguros inferiores, ver PR)
 - [ ] PR 2 · Navegación, Inicio y Hogar
 - [ ] PR 3 · Pantalla Lista
 - [ ] PR 4 · Paneles y avisos de la lista

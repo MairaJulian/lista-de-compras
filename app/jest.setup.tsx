@@ -1,0 +1,8 @@
+// Los glifos vienen de una fuente que jest no puede cargar: se reemplazan por un texto con el nombre.
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
+  const { Text } = jest.requireActual('react-native');
+  return {
+    __esModule: true,
+    default: ({ name }: { name: string }) => <Text>{name}</Text>,
+  };
+});
