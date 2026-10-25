@@ -117,7 +117,7 @@ Antes de empezar la Etapa 3 hay que diseñar, en Claude Design, el estado "sin h
 - [x] Infra · Rutas largas resueltas con CMake 3.31.6 fijado por config plugin (rama `etapa-1/infra-rutas-largas`)
 - [x] PR 2b · Navegación estándar (Expo Router; ver sección "Decisión de navegación (PR 2b)")
 - [x] PR 3 · Pantalla Lista (ruta `lista/[id]`; estado en memoria en `src/mock/store.ts`, lógica pura en `src/data/listLogic.ts`)
-- [ ] PR 4 · Paneles y avisos de la lista
+- [x] PR 4 · Paneles y avisos de la lista (paneles en `src/sheets`; el store en memoria ahora guarda también las listas; editar, eliminar, crear y salir actualizan Inicio y Lista)
 - [ ] PR 5 · Flujos del hogar y de la cuenta
 
 ## Decisión de navegación (PR 2b)

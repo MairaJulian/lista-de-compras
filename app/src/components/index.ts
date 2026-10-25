@@ -11,3 +11,5 @@ export { StatusPill } from './StatusPill';
 export { TextField } from './TextField';
 export { Fab } from './Fab';
 export { MemberRow } from './MemberRow';
+export { QuantityStepper } from './QuantityStepper';
+export { SwatchPicker } from './SwatchPicker';

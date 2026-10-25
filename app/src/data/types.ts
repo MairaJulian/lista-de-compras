@@ -33,6 +33,7 @@ export type ListItem = {
   name: string;
   quantity?: number;
   unit?: string;
+  note?: string;
   done: boolean;
   addedBy: string;
   /** Quién lo tildó; vacío mientras está pendiente. */

@@ -8,8 +8,10 @@ import {
   ItemGroup,
   ItemRow,
   ListCard,
+  QuantityStepper,
   QuickAddField,
   StatusPill,
+  SwatchPicker,
   TextField,
 } from '.';
 
@@ -189,5 +191,28 @@ describe('CenteredDialog', () => {
     );
     await fireEvent.press(screen.getByLabelText('Cerrar aviso'));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('QuantityStepper', () => {
+  it('muestra la cantidad y avisa − y +', async () => {
+    const onDecrement = jest.fn();
+    const onIncrement = jest.fn();
+    await render(<QuantityStepper value={2} onDecrement={onDecrement} onIncrement={onIncrement} />);
+    expect(screen.getByText('2')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Una menos'));
+    await fireEvent.press(screen.getByLabelText('Una más'));
+    expect(onDecrement).toHaveBeenCalledTimes(1);
+    expect(onIncrement).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SwatchPicker', () => {
+  it('marca el color elegido y avisa el cambio', async () => {
+    const onChange = jest.fn();
+    await render(<SwatchPicker value="green" onChange={onChange} />);
+    expect(screen.getByRole('radio', { name: 'Verde', selected: true })).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Azul'));
+    expect(onChange).toHaveBeenCalledWith('blue');
   });
 });

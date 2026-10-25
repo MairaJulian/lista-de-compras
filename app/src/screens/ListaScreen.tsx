@@ -1,11 +1,20 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Icon, ItemGroup, ItemRow, QuickAddField, StatusPill } from '../components';
+import {
+  Button,
+  CenteredDialog,
+  Icon,
+  ItemGroup,
+  ItemRow,
+  QuickAddField,
+  StatusPill,
+} from '../components';
 import { useHousehold, useList, useListContents, useMemberLookup } from '../data/hooks';
 import { formatQuantity } from '../data/listLogic';
 import type { ListItem } from '../data/types';
+import { ItemDetailSheet } from '../sheets/ItemDetailSheet';
 import { colors, fontSizes, fonts, radii } from '../theme';
 
 type Props = {
@@ -16,11 +25,50 @@ type Props = {
 export function ListaScreen({ listId, onBack }: Props) {
   const list = useList(listId);
   const household = useHousehold();
-  const { pending, done, online, unsyncedCount, toggle, add, toggleOnline } =
-    useListContents(listId);
+  const {
+    pending,
+    done,
+    online,
+    unsyncedCount,
+    toggle,
+    add,
+    update,
+    remove,
+    removeDone,
+    toggleOnline,
+  } = useListContents(listId);
   const memberOf = useMemberLookup();
   const [draft, setDraft] = useState('');
+  const [detailId, setDetailId] = useState<string>();
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const { top, bottom } = useSafeAreaInsets();
+  const hasDone = done.length > 0;
+
+  // Con ítems comprados, salir de la lista (flecha o botón atrás de Android) pide confirmación.
+  const goBack = () => (hasDone ? setLeaveOpen(true) : onBack?.());
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (!hasDone) return false;
+      setLeaveOpen(true);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [hasDone]);
+
+  const leaveAndDelete = () => {
+    removeDone();
+    setLeaveOpen(false);
+    onBack?.();
+  };
+
+  const openDetail = (itemId: string) => {
+    setDetailId(itemId);
+    setDetailOpen(true);
+  };
+
+  const detailItem = [...pending, ...done].find((item) => item.id === detailId);
 
   const submit = () => {
     if (!draft.trim()) return;
@@ -40,6 +88,7 @@ export function ListaScreen({ listId, onBack }: Props) {
         pendingSync={item.pendingSync}
         addedBy={author}
         onToggle={() => toggle(item.id)}
+        onPress={() => openDetail(item.id)}
       />
     );
   };
@@ -52,7 +101,7 @@ export function ListaScreen({ listId, onBack }: Props) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Volver a las listas"
-          onPress={onBack}
+          onPress={goBack}
           style={styles.back}
         >
           <Icon name="back" size={30} />
@@ -103,8 +152,40 @@ export function ListaScreen({ listId, onBack }: Props) {
           )}
         </ScrollView>
       )}
+
+      <ItemDetailSheet
+        visible={detailOpen}
+        item={detailItem}
+        addedBy={memberOf(detailItem?.addedBy ?? '')}
+        onClose={() => setDetailOpen(false)}
+        onSave={(itemId, patch) => {
+          update(itemId, patch);
+          setDetailOpen(false);
+        }}
+        onDelete={(itemId) => {
+          setDetailOpen(false);
+          remove(itemId);
+        }}
+      />
+
+      <CenteredDialog
+        visible={leaveOpen}
+        icon="trash"
+        title="¿Salir de la lista?"
+        message={leaveMessage(done.length, list?.name ?? '')}
+        onClose={() => setLeaveOpen(false)}
+      >
+        <Button label="Salir y borrar" onPress={leaveAndDelete} />
+        <Button label="Quedarme" variant="secondary" onPress={() => setLeaveOpen(false)} />
+      </CenteredDialog>
     </View>
   );
+}
+
+function leaveMessage(doneCount: number, listName: string) {
+  return doneCount === 1
+    ? `Se va a borrar el ítem comprado de ${listName}. Los pendientes se quedan.`
+    : `Se van a borrar los ${doneCount} ítems comprados de ${listName}. Los pendientes se quedan.`;
 }
 
 function offlineMessage(unsyncedCount: number) {
