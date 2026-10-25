@@ -9,3 +9,5 @@ export { ListCard } from './ListCard';
 export { QuickAddField } from './QuickAddField';
 export { StatusPill } from './StatusPill';
 export { TextField } from './TextField';
+export { Fab } from './Fab';
+export { MemberRow } from './MemberRow';

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import { colors, fonts, fontSizes, heights, motion, radii, sizes } from '../theme';
+import { useInsets } from '../system/insets';
 import { Icon } from './Icon';
 import { useAnimatedPresence } from './useAnimatedPresence';
 
@@ -22,6 +23,7 @@ type Props = {
 /** Panel inferior: velo, manija, título con ✕ y contenido. Sube en ~0,35 s. */
 export function BottomSheet({ visible, title, onClose, children }: Props) {
   const { mounted, progress } = useAnimatedPresence(visible, motion.panelDuration);
+  const { bottom } = useInsets();
 
   if (!mounted) {
     return null;
@@ -38,7 +40,7 @@ export function BottomSheet({ visible, title, onClose, children }: Props) {
         <Animated.View
           accessibilityViewIsModal
           accessibilityLabel={title}
-          style={[styles.sheet, { transform: [{ translateY }] }]}
+          style={[styles.sheet, { paddingBottom: 28 + bottom, transform: [{ translateY }] }]}
         >
           <View style={styles.handle} />
           <View style={styles.header}>
@@ -73,7 +75,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     paddingHorizontal: 24,
-    paddingBottom: 28,
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.panel,
     borderTopRightRadius: radii.panel,

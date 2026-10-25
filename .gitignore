@@ -14,3 +14,9 @@ google-services.json
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# El módulo nativo local sí se versiona
+!app/modules/**/android/
+app/modules/**/android/build/
+app/modules/**/android/.cxx/
+app/modules/**/android/.gradle/
