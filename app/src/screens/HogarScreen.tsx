@@ -3,7 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, Button, CenteredDialog, Icon, ItemGroup, MemberRow } from '../components';
-import { useCurrentMember, useHousehold, useRemoveMember } from '../data/hooks';
+import { useCurrentMember, useHousehold, useLeaveHousehold, useRemoveMember } from '../data/hooks';
+import { LeaveCase, leaveCase, nextCreator } from '../data/householdLogic';
 import type { Member } from '../data/types';
 import { MemberOptionsSheet } from '../sheets/MemberOptionsSheet';
 import { colors, fontSizes, fonts, heights, radii, sizes } from '../theme';
@@ -14,6 +15,33 @@ type Props = {
   /** Después de confirmar "Salir del hogar". */
   onLeft?: () => void;
 };
+
+function leaveDialogProps(leaving: LeaveCase, householdName: string) {
+  switch (leaving) {
+    case 'creator':
+      return {
+        icon: 'logout',
+        tone: 'danger',
+        title: `¿Salir de ${householdName}?`,
+        message: 'Vos creaste el hogar. Si salís, el rol de creador pasa a otro miembro.',
+      } as const;
+    case 'last':
+      return {
+        icon: 'archive',
+        tone: 'amber',
+        title: 'Sos la última persona del hogar',
+        message: `Si salís, ${householdName} se archiva y no queda nadie con acceso a sus listas.`,
+      } as const;
+    default:
+      return {
+        icon: 'logout',
+        tone: 'danger',
+        title: `¿Salir de ${householdName}?`,
+        message:
+          'Vas a dejar de ver sus listas. Para volver, alguien del hogar tiene que invitarte de nuevo.',
+      } as const;
+  }
+}
 
 function roleLabel(member: Member, currentId: string) {
   if (member.role === 'creator') {
@@ -26,6 +54,7 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
   const household = useHousehold();
   const current = useCurrentMember();
   const removeMember = useRemoveMember();
+  const leaveHousehold = useLeaveHousehold();
   const { top } = useSafeAreaInsets();
   // El panel y el aviso guardan a quién se refieren aparte de si están abiertos, para que el
   // contenido no desaparezca mientras se cierran.
@@ -37,6 +66,9 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
   const count = household.members.length;
   // Solo quien creó el hogar puede sacar a otros miembros.
   const canRemove = current.role === 'creator';
+  // Al salir se elige el aviso según el caso: miembro común, creador (el rol pasa a otro) o la última persona.
+  const leaving = leaveCase(household.members, current.id);
+  const successor = nextCreator(household.members, current.id);
 
   return (
     <View style={styles.screen}>
@@ -132,17 +164,26 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
 
       <CenteredDialog
         visible={leaveOpen}
-        icon="logout"
-        tone="danger"
-        title={`¿Salir de ${household.name}?`}
-        message="Vas a dejar de ver sus listas. Para volver, alguien del hogar tiene que invitarte de nuevo."
+        {...leaveDialogProps(leaving, household.name)}
+        detail={
+          leaving === 'creator' && successor ? (
+            <View style={styles.successor}>
+              <Avatar name={successor.name} tone={successor.tone} size={40} />
+              <View>
+                <Text style={styles.successorName}>{successor.name}</Text>
+                <Text style={styles.successorNote}>Será la nueva persona a cargo</Text>
+              </View>
+            </View>
+          ) : undefined
+        }
         onClose={() => setLeaveOpen(false)}
       >
         <Button
-          label="Salir del hogar"
+          label={leaving === 'last' ? 'Salir y archivar' : 'Salir del hogar'}
           variant="dangerFilled"
           onPress={() => {
             setLeaveOpen(false);
+            leaveHousehold();
             onLeft?.();
           }}
         />
@@ -225,4 +266,23 @@ const styles = StyleSheet.create({
   inviteLabel: { fontFamily: fonts.bodyBold, fontSize: fontSizes.label, color: colors.onPrimary },
   members: { marginHorizontal: 24 },
   leave: { marginHorizontal: 24, marginTop: 24 },
+  successor: {
+    padding: 12,
+    borderRadius: 16,
+    backgroundColor: colors.background,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  successorName: {
+    fontFamily: fonts.bodyBold,
+    fontSize: fontSizes.body,
+    color: colors.textPrimary,
+  },
+  successorNote: {
+    marginTop: 1,
+    fontFamily: fonts.body,
+    fontSize: fontSizes.secondary,
+    color: colors.textSecondary,
+  },
 });

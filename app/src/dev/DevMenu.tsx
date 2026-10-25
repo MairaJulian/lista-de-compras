@@ -33,6 +33,11 @@ export function DevMenu() {
     setOpen(false);
   };
 
+  const go = (path: Parameters<typeof router.push>[0]) => {
+    close();
+    router.push(path);
+  };
+
   if (page === 'components') {
     return (
       <View style={styles.overlay}>
@@ -55,6 +60,9 @@ export function DevMenu() {
           router.push('/unirse');
         }}
       />
+      <DevButton label="Ver sin hogar" onPress={() => go('/sin-hogar')} />
+      <DevButton label="Ver aviso de que te sacaron" onPress={() => go('/sin-hogar?sacaron=1')} />
+      <DevButton label="Ver error de inicio de sesión" onPress={() => go('/error-login')} />
       {page === 'firestore' ? (
         <FirestorePing />
       ) : (

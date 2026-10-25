@@ -14,6 +14,8 @@ type Props = {
   icon?: IconName;
   leading?: React.ReactNode;
   tone?: Tone;
+  /** Tarjeta entre el texto y los botones (a quién pasa el rol de creador al salir del hogar). */
+  detail?: React.ReactNode;
   onClose: () => void;
   /** Botones (Button), uno debajo del otro. */
   children: React.ReactNode;
@@ -32,6 +34,7 @@ export function CenteredDialog({
   icon,
   leading,
   tone = 'amber',
+  detail,
   onClose,
   children,
 }: Props) {
@@ -69,7 +72,8 @@ export function CenteredDialog({
           <Text accessibilityRole="header" style={styles.title}>
             {title}
           </Text>
-          <Text style={styles.message}>{message}</Text>
+          <Text style={[styles.message, detail ? styles.messageWithDetail : null]}>{message}</Text>
+          {detail && <View style={styles.detail}>{detail}</View>}
           <View style={styles.actions}>{children}</View>
         </Animated.View>
       </View>
@@ -117,5 +121,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: colors.textSecondary,
   },
+  messageWithDetail: { marginBottom: 0 },
+  detail: { marginBottom: 8 },
   actions: { gap: 12 },
 });

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 
-import { goToWelcome } from '../../navigation/session';
+import { goToNoHousehold } from '../../navigation/session';
 import { HogarScreen } from '../../screens/HogarScreen';
 
 export default function HogarRoute() {
@@ -8,7 +8,7 @@ export default function HogarRoute() {
     <HogarScreen
       onOpenProfile={() => router.push('/perfil')}
       onInvite={() => router.push('/invitar')}
-      onLeft={goToWelcome}
+      onLeft={goToNoHousehold}
     />
   );
 }
