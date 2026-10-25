@@ -1,7 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { HogarScreen } from './HogarScreen';
+import { resetMockStore } from '../mock/store';
 import { InicioScreen } from './InicioScreen';
+import { ListaScreen } from './ListaScreen';
 
 describe('InicioScreen', () => {
   it('muestra el hogar, las tarjetas con pendientes y "Al día"', async () => {
@@ -68,5 +70,84 @@ describe('HogarScreen', () => {
     expect(onInvite).toHaveBeenCalledTimes(1);
     expect(onMemberOptions).toHaveBeenCalledWith(expect.objectContaining({ id: 'lucia' }));
     expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ListaScreen', () => {
+  beforeEach(() => resetMockStore());
+
+  it('Supermercado: pendientes y comprados con sus contadores', async () => {
+    await render(<ListaScreen listId="supermercado" />);
+    expect(screen.getByText('Supermercado')).toBeTruthy();
+    expect(screen.getByText('Pendientes')).toBeTruthy();
+    expect(screen.getByText('7')).toBeTruthy();
+    expect(screen.getByText('Comprados')).toBeTruthy();
+    expect(screen.getByText('3')).toBeTruthy();
+    expect(screen.getByText('×2')).toBeTruthy();
+    expect(screen.getByText('1 docena')).toBeTruthy();
+    expect(screen.getByText('Sincronizado')).toBeTruthy();
+  });
+
+  it('tildar pasa el ítem a Comprados y destildar lo devuelve', async () => {
+    await render(<ListaScreen listId="supermercado" />);
+    await fireEvent.press(screen.getAllByLabelText('Marcar como comprado')[0]);
+    expect(screen.getByText('6')).toBeTruthy();
+    expect(screen.getByText('4')).toBeTruthy();
+    await fireEvent.press(screen.getAllByLabelText('Volver a pendientes')[0]);
+    expect(screen.getByText('7')).toBeTruthy();
+    expect(screen.getByText('3')).toBeTruthy();
+  });
+
+  it('agregar escribe arriba de Pendientes y vacía el campo', async () => {
+    await render(<ListaScreen listId="supermercado" />);
+    await fireEvent.changeText(screen.getByLabelText('Agregar ítem'), 'Sal');
+    await fireEvent.press(screen.getByLabelText('Agregar a la lista'));
+    expect(screen.getByText('Sal')).toBeTruthy();
+    expect(screen.getByText('8')).toBeTruthy();
+    expect(screen.getByLabelText('Agregar ítem').props.value).toBe('');
+  });
+
+  it('sin conexión avisa los cambios sin sincronizar y vuelve a sincronizar', async () => {
+    await render(<ListaScreen listId="supermercado" />);
+    await fireEvent.press(screen.getByText('Sincronizado'));
+    expect(screen.getByText('Sin conexión')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Los cambios se guardan en tu celular y se sincronizan cuando vuelva la conexión.',
+      ),
+    ).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Agregar ítem'), 'Pilas AA');
+    await fireEvent.press(screen.getByLabelText('Agregar a la lista'));
+    await fireEvent.press(screen.getAllByLabelText('Marcar como comprado')[1]);
+    expect(
+      screen.getByText('2 cambios sin sincronizar. Se enviarán solos cuando vuelva la conexión.'),
+    ).toBeTruthy();
+    expect(screen.getAllByLabelText('Sin sincronizar')).toHaveLength(2);
+    await fireEvent.press(screen.getByText('Sin conexión'));
+    expect(screen.getByText('Sincronizado')).toBeTruthy();
+    expect(screen.queryByLabelText('Sin sincronizar')).toBeNull();
+  });
+
+  it('Ferretería muestra el estado de lista vacía', async () => {
+    await render(<ListaScreen listId="ferreteria" />);
+    expect(screen.getByText('Esta lista está vacía')).toBeTruthy();
+    expect(
+      screen.getByText('Escribí arriba lo que falta comprar y se suma para todos en casa.'),
+    ).toBeTruthy();
+    expect(screen.queryByText('Pendientes')).toBeNull();
+  });
+
+  it('Inicio refleja los pendientes después de tildar', async () => {
+    await render(<ListaScreen listId="farmacia" />);
+    await fireEvent.press(screen.getAllByLabelText('Marcar como comprado')[0]);
+    await render(<InicioScreen />);
+    expect(screen.getByLabelText('Farmacia, 1 pendientes')).toBeTruthy();
+  });
+
+  it('la flecha avisa que se quiere volver', async () => {
+    const onBack = jest.fn();
+    await render(<ListaScreen listId="supermercado" onBack={onBack} />);
+    await fireEvent.press(screen.getByLabelText('Volver a las listas'));
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 });
