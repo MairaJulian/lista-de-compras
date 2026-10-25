@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 import { colors, fonts, fontSizes, heights, motion, radii, sizes } from '../theme';
-import { useInsets } from '../system/insets';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
 import { useAnimatedPresence } from './useAnimatedPresence';
 
@@ -23,7 +23,7 @@ type Props = {
 /** Panel inferior: velo, manija, título con ✕ y contenido. Sube en ~0,35 s. */
 export function BottomSheet({ visible, title, onClose, children }: Props) {
   const { mounted, progress } = useAnimatedPresence(visible, motion.panelDuration);
-  const { bottom } = useInsets();
+  const { bottom } = useSafeAreaInsets();
 
   if (!mounted) {
     return null;

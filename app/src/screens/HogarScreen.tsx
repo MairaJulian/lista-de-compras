@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Avatar, Button, Icon, ItemGroup, MemberRow } from '../components';
 import { useCurrentMember, useHousehold } from '../data/hooks';
 import type { Member } from '../data/types';
-import { useInsets } from '../system/insets';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, fonts, heights, radii, sizes } from '../theme';
 
 type Props = {
@@ -23,7 +23,7 @@ function roleLabel(member: Member, currentId: string) {
 export function HogarScreen({ onOpenProfile, onInvite, onMemberOptions, onLeave }: Props) {
   const household = useHousehold();
   const current = useCurrentMember();
-  const { top } = useInsets();
+  const { top } = useSafeAreaInsets();
   const count = household.members.length;
   // Solo quien creó el hogar puede sacar a otros miembros.
   const canRemove = current.role === 'creator';

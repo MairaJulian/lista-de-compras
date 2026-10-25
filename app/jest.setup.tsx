@@ -6,3 +6,8 @@ jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
     default: ({ name }: { name: string }) => <Text>{name}</Text>,
   };
 });
+
+jest.mock(
+  'react-native-safe-area-context',
+  () => jest.requireActual('react-native-safe-area-context/jest/mock').default,
+);

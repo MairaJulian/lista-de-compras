@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Fab, ListCard } from '../components';
 import { useHousehold, useLists } from '../data/hooks';
 import type { ListSummary } from '../data/types';
-import { useInsets } from '../system/insets';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, fonts } from '../theme';
 
 type Props = {
@@ -14,7 +14,7 @@ type Props = {
 export function InicioScreen({ onOpenList, onNewList }: Props) {
   const household = useHousehold();
   const lists = useLists();
-  const { top } = useInsets();
+  const { top } = useSafeAreaInsets();
 
   // Las tarjetas van de a dos por fila.
   const rows: ListSummary[][] = [];

@@ -115,12 +115,19 @@ Antes de empezar la Etapa 3 hay que diseñar, en Claude Design, el estado "sin h
 - [x] PR 1 · Tema y componentes base (íconos: `@expo/vector-icons` MaterialCommunityIcons; pendiente: márgenes seguros inferiores, ver PR)
 - [x] PR 2 · Navegación, Inicio y Hogar (navegación propia sin librerías nativas; ver sección "Decisión de navegación")
 - [x] Infra · Rutas largas resueltas con CMake 3.31.6 fijado por config plugin (rama `etapa-1/infra-rutas-largas`)
-- [ ] PR 2b · Navegación estándar
+- [x] PR 2b · Navegación estándar (Expo Router; ver sección "Decisión de navegación (PR 2b)")
 - [ ] PR 3 · Pantalla Lista
 - [ ] PR 4 · Paneles y avisos de la lista
 - [ ] PR 5 · Flujos del hogar y de la cuenta
 
-## Decisión de navegación (PR 2)
+## Decisión de navegación (PR 2b)
+
+- **Expo Router** (`expo-router` ~58, rutas en `app/src/app`, entrada `expo-router/entry`). Motivo: en la Etapa 3 el enlace de invitación (`changuito://...`, el esquema ya está en `app.json`) se resuelve como una ruta más, sin código propio de `Linking`. No hubo conflicto con la estructura del proyecto.
+- Rutas: `_layout` (raíz: fuentes, `SafeAreaProvider`, `Stack`, menú DEV), `(tabs)/_layout` (pestañas con la `TabBar` propia como `tabBar`, `backBehavior="initialRoute"`), `(tabs)/index` (Inicio) y `(tabs)/hogar`. Las pantallas siguen en `src/screens`; las rutas solo las re-exportan. Las pantallas internas de las PR 3 a 5 se agregan como rutas del `Stack` raíz.
+- Márgenes seguros: `react-native-safe-area-context` (`useSafeAreaInsets`). Se borró el módulo local `system-insets` y el contexto propio.
+- Nuevas dependencias: `expo-router`, `react-native-screens`, `react-native-safe-area-context`, `expo-linking`, `expo-constants`.
+
+## Decisión de navegación (PR 2, reemplazada por la PR 2b)
 
 - **Ni Expo Router ni React Navigation**: las dos necesitan `react-native-screens` y `react-native-safe-area-context` (más `gesture-handler` y `reanimated` en el caso de Expo Router), librerías nativas con código C++ generado que **no compilaban en Android desde la ruta del repo en Windows** (ninja supera los 260 caracteres). Probé acortar el directorio de build de CMake y `CMAKE_OBJECT_PATH_MAX` sin éxito. Mover el repo no es una opción. **Resuelto después** (rama `etapa-1/infra-rutas-largas`): fijando CMake 3.31.6, cuyo ninja sí soporta rutas largas, compilan con rutas de hasta 367 caracteres. La navegación estándar se retoma en la PR 2b.
 - Se hizo una navegación propia en `app/src/navigation` (por ahora, las pestañas Listas y Hogar; atrás en Hogar vuelve a Listas). Las pantallas internas se agregan como una pila en las PR 3 a 5.
