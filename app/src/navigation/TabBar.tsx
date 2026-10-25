@@ -33,7 +33,8 @@ export function TabBar({ state, navigateToTab }: BottomTabBarProps) {
             }}
             style={styles.tab}
           >
-            <View style={[styles.indicator, selected && styles.indicatorSelected]}>
+            <View style={styles.indicator}>
+              {selected && <View style={styles.indicatorFill} />}
               <Icon name={icon} color={selected ? colors.primaryText : colors.textSecondary} />
             </View>
             <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
@@ -59,7 +60,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  indicatorSelected: { backgroundColor: colors.primarySoftStrong },
+  indicatorFill: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primarySoftStrong,
+  },
   label: {
     fontFamily: fonts.bodyMedium,
     fontSize: fontSizes.caption,

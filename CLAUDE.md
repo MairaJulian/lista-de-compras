@@ -37,6 +37,9 @@ App Android de lista de compras compartida para una familia (3 adultos). Nombre 
 - Si `gh` no está instalado, hacé el push y dejá el enlace para abrir la PR a mano.
 - Al terminar un paso, actualizá el estado de la etapa en su archivo (qué quedó hecho y qué queda).
 
+- **Expo Router: en `app/src/app` solo van pantallas (rutas) y layouts.** Todo archivo de esa carpeta se empaqueta como ruta; un test ahí (`*.test.tsx`) rompe el bundle con "Unable to resolve module path". Los tests de rutas van en otra carpeta (por ejemplo `src/navigation`).
+- **Bordes redondeados en Android (Fabric):** una `View` que **recibe** `backgroundColor` después de montarse (por ejemplo `selected && styles.selected` con el fondo dentro del estilo condicional) pierde el `borderRadius` y queda cuadrada, aunque el radio esté bien y sea `radii.pill`. Lo vimos con el indicador pill de la barra inferior (PR 2b): el valor del radio no era el problema. Cómo evitarlo: que el fondo condicional sea una capa propia que se monta solo cuando corresponde (`{selected && <View style={styles.fill} />}` con `StyleSheet.absoluteFill` y su propio `borderRadius`), o que el `backgroundColor` esté siempre presente. Un recargado rápido o un montaje nuevo lo esconden: **probá siempre el cambio de estado tocando**, no solo la primera captura.
+
 ## Límites (no los cruces sin preguntar)
 
 - **Todo gratuito.** No actives el plan Blaze ni ningún servicio de pago. Si Firebase o cualquier otra herramienta pide tarjeta o facturación, frená y avisá.
