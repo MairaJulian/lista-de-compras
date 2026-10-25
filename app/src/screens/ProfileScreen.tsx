@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar, Button, Icon, ScreenHeader } from '../components';
-import { useAccount, useHousehold } from '../data/hooks';
+import { useAccount, useHasHousehold, useHousehold } from '../data/hooks';
 import { colors, fontSizes, fonts, radii } from '../theme';
 
 type Props = {
@@ -14,6 +14,7 @@ type Props = {
 export function ProfileScreen({ onBack, onSignOut }: Props) {
   const { member, email } = useAccount();
   const household = useHousehold();
+  const hasHousehold = useHasHousehold();
   const { bottom } = useSafeAreaInsets();
 
   return (
@@ -28,15 +29,17 @@ export function ProfileScreen({ onBack, onSignOut }: Props) {
         <Text style={styles.email}>{email}</Text>
       </View>
 
-      <View style={styles.householdCard}>
-        <View style={styles.householdIcon}>
-          <Icon name="home" color={colors.primary} />
+      {hasHousehold && (
+        <View style={styles.householdCard}>
+          <View style={styles.householdIcon}>
+            <Icon name="home" color={colors.primary} />
+          </View>
+          <View>
+            <Text style={styles.householdLabel}>Hogar</Text>
+            <Text style={styles.householdName}>{household.name}</Text>
+          </View>
         </View>
-        <View>
-          <Text style={styles.householdLabel}>Hogar</Text>
-          <Text style={styles.householdName}>{household.name}</Text>
-        </View>
-      </View>
+      )}
 
       <View style={styles.spacer} />
 

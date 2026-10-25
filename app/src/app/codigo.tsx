@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 
 import { useJoinHousehold } from '../data/hooks';
-import { enterApp } from '../navigation/session';
+import { goToStart } from '../navigation/session';
 import { JoinWithCodeScreen } from '../screens/JoinWithCodeScreen';
 
 export default function JoinWithCodeRoute() {
@@ -13,7 +13,7 @@ export default function JoinWithCodeRoute() {
       onBack={() => router.back()}
       onJoin={() => {
         join();
-        enterApp();
+        goToStart();
       }}
     />
   );

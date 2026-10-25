@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { enterDemoSession, signOut, useSession } from '../auth/sessionStore';
 import { colors, fontSizes, fonts } from '../theme';
 import { ComponentsScreen } from './ComponentsScreen';
 import { FirestorePing } from './FirestorePing';
@@ -14,6 +15,7 @@ export function DevMenu() {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState<Page>('menu');
   const { top } = useSafeAreaInsets();
+  const session = useSession();
 
   if (!open) {
     return (
@@ -51,6 +53,29 @@ export function DevMenu() {
       <Text accessibilityRole="header" style={styles.title}>
         Desarrollo
       </Text>
+      {session.status === 'signedOut' && (
+        // Todavía no existen hogares reales: con esto se sigue viendo toda la app con datos de ejemplo.
+        <DevButton
+          label="Entrar con datos de ejemplo"
+          onPress={() => {
+            close();
+            enterDemoSession();
+          }}
+        />
+      )}
+      {session.status === 'signedIn' && (
+        <>
+          {/* Sin hogar no hay pestaña Hogar, y Sin hogar (`17`) no trae acceso a Perfil. */}
+          <DevButton label="Ver perfil" onPress={() => go('/perfil')} />
+          <DevButton
+            label="Cerrar sesión"
+            onPress={() => {
+              close();
+              void signOut();
+            }}
+          />
+        </>
+      )}
       <DevButton label="Ver componentes" onPress={() => setPage('components')} />
       {/* La invitación se abre desde un enlace; mientras no haya enlaces reales, desde acá. */}
       <DevButton

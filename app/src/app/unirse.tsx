@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 
 import { useInvite, useJoinHousehold, useOnline } from '../data/hooks';
-import { enterApp, goToWelcome } from '../navigation/session';
+import { goToStart } from '../navigation/session';
 import { JoinScreen } from '../screens/JoinScreen';
 
 // Aquí llega el enlace de invitación (`changuito://unirse`).
@@ -19,9 +19,9 @@ export default function JoinRoute() {
       router.replace('/error-enlace');
     } else {
       join();
-      enterApp();
+      goToStart();
     }
   };
 
-  return <JoinScreen onJoin={onJoin} onDecline={goToWelcome} />;
+  return <JoinScreen onJoin={onJoin} onDecline={goToStart} />;
 }

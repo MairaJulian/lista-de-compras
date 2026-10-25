@@ -1,7 +1,9 @@
 import { useCallback } from 'react';
 
 import type { ListTone } from '../theme';
-import { getMockCurrentMember, mockAccountEmail, mockHousehold, mockInvites } from '../mock/data';
+import { useSession } from '../auth/sessionStore';
+import { demoAccount } from '../auth/sessionState';
+import { getMockCurrentMember, mockHousehold, mockInvites } from '../mock/data';
 import { joinMockHousehold, newItemId, newListId, setState, useMockStore } from '../mock/store';
 import { deactivateInvite, leaveHousehold, regenerateInvite, removeMember } from './householdLogic';
 import {
@@ -27,8 +29,11 @@ export function useHousehold(): Household {
   return { ...mockHousehold, name: householdName, members };
 }
 
+/** Con sesión, lo que dice `hogarActualId`; sin sesión (pantallas sueltas, tests) los datos de ejemplo. */
 export function useHasHousehold(): boolean {
-  return useMockStore().hasHousehold;
+  const session = useSession();
+  const { hasHousehold } = useMockStore();
+  return session.status === 'signedIn' ? session.hasHousehold : hasHousehold;
 }
 
 /** Sale del hogar (si era quien lo creó, el rol pasa a otro miembro) y queda sin hogar. */
@@ -115,9 +120,11 @@ export function useCurrentMember(): Member {
   return getMockCurrentMember();
 }
 
-/** Cuenta con la que se entró (el mail aparece en Perfil). */
+/** Cuenta con la que se entró (nombre y mail de Google, que aparecen en Perfil). */
 export function useAccount(): { member: Member; email: string } {
-  return { member: getMockCurrentMember(), email: mockAccountEmail };
+  const session = useSession();
+  const account = session.status === 'signedIn' ? session.account : demoAccount;
+  return { member: { ...getMockCurrentMember(), name: account.name }, email: account.email };
 }
 
 export function useList(listId: string): ListInfo | undefined {
