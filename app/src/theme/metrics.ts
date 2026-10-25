@@ -29,6 +29,7 @@ export const heights = {
 export const sizes = {
   avatar: 28,
   avatarLarge: 36,
+  avatarMember: 44,
   checkbox: 24,
   handleWidth: 36,
   handleHeight: 4,

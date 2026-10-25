@@ -19,6 +19,11 @@ const glyphs = {
   cloudOff: 'cloud-off-outline',
   clock: 'clock-outline',
   trash: 'trash-can-outline',
+  list: 'format-list-bulleted',
+  users: 'account-group-outline',
+  home: 'home-outline',
+  userPlus: 'account-plus-outline',
+  dots: 'dots-vertical',
 } as const satisfies Record<string, ComponentProps<typeof MaterialCommunityIcons>['name']>;
 
 export type IconName = keyof typeof glyphs;

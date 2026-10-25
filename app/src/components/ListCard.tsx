@@ -36,7 +36,7 @@ export function ListCard({ name, pendingCount, tone, icon, onPress }: Props) {
         </View>
       </View>
       <View>
-        <Text style={styles.name} numberOfLines={1}>
+        <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
           {name}
         </Text>
         <Text style={[styles.caption, { color: text }]}>{upToDate ? 'Al día' : 'pendientes'}</Text>

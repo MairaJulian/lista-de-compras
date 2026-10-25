@@ -14,6 +14,7 @@ import {
   StatusPill,
   TextField,
 } from '../components';
+import { useInsets } from '../system/insets';
 import { colors, fontSizes, fonts, listTones, ListTone } from '../theme';
 
 const vos = { name: 'Vos', tone: 'green' } as const;
@@ -22,6 +23,7 @@ const diego = { name: 'Diego', tone: 'blue' } as const;
 
 /** Pantalla de desarrollo (solo `__DEV__`): todos los componentes juntos para revisarlos de un vistazo. */
 export function ComponentsScreen({ onBack }: { onBack?: () => void }) {
+  const { top, bottom } = useInsets();
   const [online, setOnline] = useState(true);
   const [draft, setDraft] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -31,7 +33,13 @@ export function ComponentsScreen({ onBack }: { onBack?: () => void }) {
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: top + 32, paddingBottom: 40 + bottom },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Text accessibilityRole="header" style={styles.title}>
             Componentes
@@ -156,7 +164,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { paddingTop: 56, paddingHorizontal: 20, paddingBottom: 40, gap: 24 },
+  content: { paddingHorizontal: 20, gap: 24 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontFamily: fonts.heading, fontSize: fontSizes.screenTitle, color: colors.textPrimary },
   back: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 4 },

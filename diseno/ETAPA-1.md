@@ -100,7 +100,14 @@ Antes de empezar la Etapa 3 hay que diseñar, en Claude Design, el estado "sin h
 ## Estado
 
 - [x] PR 1 · Tema y componentes base (íconos: `@expo/vector-icons` MaterialCommunityIcons; pendiente: márgenes seguros inferiores, ver PR)
-- [ ] PR 2 · Navegación, Inicio y Hogar
+- [x] PR 2 · Navegación, Inicio y Hogar (navegación propia sin librerías nativas; ver sección "Decisión de navegación")
 - [ ] PR 3 · Pantalla Lista
 - [ ] PR 4 · Paneles y avisos de la lista
 - [ ] PR 5 · Flujos del hogar y de la cuenta
+
+## Decisión de navegación (PR 2)
+
+- **Ni Expo Router ni React Navigation**: las dos necesitan `react-native-screens` y `react-native-safe-area-context` (más `gesture-handler` y `reanimated` en el caso de Expo Router), librerías nativas con código C++ generado que **no compilan en Android desde la ruta del repo en Windows** (ninja supera los 260 caracteres). Probé acortar el directorio de build de CMake y `CMAKE_OBJECT_PATH_MAX` sin éxito. Mover el repo no es una opción.
+- Se hizo una navegación propia en `app/src/navigation` (por ahora, las pestañas Listas y Hogar; atrás en Hogar vuelve a Listas). Las pantallas internas se agregan como una pila en las PR 3 a 5.
+- Márgenes seguros: módulo nativo local `app/modules/system-insets` (solo Kotlin, sin C++), que se usa con `useInsets()`.
+- **Pendiente para la Etapa 3**: el enlace de invitación (`changuito://...`). Se puede resolver con `Linking` de React Native (no necesita librerías nativas nuevas) y con la pila propia; si para entonces se resuelve el problema de rutas, reevaluar Expo Router.
