@@ -106,3 +106,11 @@ cd android
 ```
 
 Si ya tenías una carpeta `android/` de antes, corré `npx expo prebuild --platform android` una vez para que se escriba `local.properties`. Si aparece `Filename longer than 260 characters`, es que falta ese archivo o apunta a otro CMake.
+
+## Autenticación nativa y Kotlin
+
+`@react-native-firebase/auth` 27.1.0 usa `firebase-auth` 25.0.0 (BoM 35.0.2), que está compilado con metadatos de Kotlin 2.4.0. Expo 58 compila con Kotlin 2.2.0, que solo lee hasta 2.3, y fallaba `:react-native-firebase_auth:compileDebugKotlin` con "Module was compiled with an incompatible version of Kotlin. The binary version of its metadata is 2.4.0, expected version is 2.2.0".
+
+**Solución:** `expo-build-properties` en `app/app.json` fija `android.kotlinVersion` en `2.4.0`. Se descartó fijar un BoM más viejo (34.0.0): Auth compilaba, pero `@react-native-firebase/firestore` 27.1.0 usa APIs de Firebase 35 y dejaba de compilar.
+
+Si se actualiza Expo o `@react-native-firebase/*`, revisá si este valor sigue haciendo falta. El primer build con Kotlin 2.4.0 tarda unos 10 minutos (descarga el compilador).
