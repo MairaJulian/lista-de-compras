@@ -110,12 +110,11 @@ describe('usuarios/{uid}', () => {
   });
 });
 
+// hogares e invitaciones tienen sus propias pruebas en hogares.rules.test.mjs.
 describe('colecciones que todavía no existen', () => {
   it('siguen bloqueadas, incluso con sesión', async () => {
     const db = env.authenticatedContext('maira').firestore();
     for (const path of [
-      ['hogares', 'h1'],
-      ['invitaciones', 'ABC123'],
       ['ping', 'ping'],
       ['usuarios', 'maira', 'dispositivos', 'd1'],
     ]) {

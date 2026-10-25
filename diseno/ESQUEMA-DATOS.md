@@ -51,6 +51,8 @@ Los ítems están **planos a nivel de hogar** (con `listaId`), no dentro de cada
 | nombre | Ej.: "Nuestra casa" |
 | creadoPor | uid del creador original |
 | creadoEn | |
+| invitacionActivaId | Código de la invitación vigente, o vacío. Como `invitaciones` no se puede listar, así se encuentra la actual con una lectura directa |
+| creadorActualId | uid de quien tiene hoy el rol `creador`. Cambia solo en el traspaso. Las reglas lo usan para comprobar que el hogar siempre tiene un creador activo y para no admitir miembros en un hogar archivado |
 
 Un hogar sin miembros activos se considera archivado (no hace falta un campo).
 
@@ -58,9 +60,9 @@ Un hogar sin miembros activos se considera archivado (no hace falta un campo).
 | Campo | Notas |
 |---|---|
 | rol | `creador` o `miembro` |
-| estado | `activo`, `salio` o `quitado` |
-| nombre, foto | Copia de los datos del usuario, para que los demás miembros los vean sin leer su perfil |
-| colorAvatar | Asignado por miembro |
+| estado | `activo` (es parte del hogar), `salio` (se fue por su cuenta) o `quitado` (lo sacó quien creó el hogar) |
+| nombre, foto | Copia de los datos del usuario, para que los demás miembros los vean sin leer su perfil. **No se guarda el correo.** Cada persona refresca la suya |
+| colorAvatar | Asignado al unirse: el primer color no usado por miembros activos |
 | desde, hasta | Fechas de entrada y salida |
 | invitacionId | Invitación con la que entró (para mostrar "te invitó X") |
 | invitadoPor | uid de quien creó esa invitación |
@@ -72,10 +74,12 @@ No se borra el documento al salir: queda como historial y permite seguir mostran
 |---|---|
 | hogarId | |
 | creadaPor | |
-| venceEn | Por defecto, 48 horas |
+| venceEn | 48 horas desde que se crea (las reglas aceptan hasta 48 h + 5 min por diferencias de reloj) |
 | estado | `activa` o `revocada` |
+| hogarNombre | Nombre del hogar, copiado al crearla (las reglas comprueban que sea el real). Quien recibe la invitación todavía no puede leer el hogar. Puede quedar desfasado si se renombra el hogar; se actualiza al regenerar |
+| invitadoPorNombre | Nombre de quien la creó, copiado al crearla (también verificado) |
 
-- El **id del documento es el código** que va dentro del enlace y que también se puede escribir a mano. Conviene que tenga entre 10 y 12 caracteres para que no se pueda adivinar (se pueden leer de a una, no listar).
+- El **id del documento es el código** que va dentro del enlace y que también se puede escribir a mano. Formato como `K7P2-9XQ-4MN`: al menos 10 caracteres aleatorios (sin contar guiones) de un alfabeto sin caracteres ambiguos (sin `0/O`, `1/I/L`), generados con una fuente criptográfica. Las reglas exigen letras, números y guiones, con al menos 10 caracteres que no sean guiones. Se pueden leer de a una, no listar.
 - Puede usarla más de una persona hasta que venza o se revoque. Regenerar = revocar la actual y crear otra.
 - Está en el nivel raíz porque quien llega con el enlace todavía no es miembro y no puede leer el hogar.
 
@@ -146,10 +150,11 @@ Detalle a tener presente: un cambio hecho sin conexión y enviado horas después
 ## Reglas de seguridad (qué controlan)
 
 - `usuarios/{uid}`: cada persona lee y escribe solo el suyo (incluidos sus dispositivos).
-- `hogares/{hogarId}` y todo lo que cuelga de él: solo lo leen y escriben los miembros con estado `activo`. La regla consulta el documento de miembro de quien hace el pedido.
-- `miembros`: cualquiera puede crear el suyo solo con una invitación válida (o siendo el creador al armar el hogar). Una persona solo puede cambiar su propio estado a `salio`. Solo el rol `creador` puede poner a otro en `quitado`.
-- Si se va quien creó el hogar, la app hace el traspaso en un solo lote: marca su salida y pasa el rol `creador` a la persona activa que lleva más tiempo (con aviso). Si era la última persona, el hogar queda sin miembros activos (archivado).
-- `invitaciones`: se puede leer una por una, nunca listarlas; las crean los miembros activos de ese hogar.
+- Los permisos salen siempre de la **membresía** (el documento de `miembros`), nunca de `hogarActualId` ni del email. Ninguna regla lee `usuarios/{otro}`.
+- `hogares/{hogarId}`: lo leen solo los miembros `activo`. Cualquier miembro activo edita `nombre` e `invitacionActivaId` (esta última solo apuntando a una invitación activa del mismo hogar, y revocando la anterior en el mismo lote). `creadoPor` y `creadoEn` no cambian. No se borra. Se crea solo junto con el miembro `creador` de quien lo crea, en el mismo lote.
+- `miembros`: un miembro activo lee a todos; cada persona siempre lee el suyo (así se entera de que la sacaron). Nunca se borra un documento. Crea el suyo solo (a) al armar un hogar nuevo, como `creador`, o (b) con una invitación que existe, está `activa`, no venció y es de ese hogar, siempre como `miembro` y con el hogar teniendo un creador activo. Quien salió o fue quitado puede volver con una invitación nueva y válida. Una persona solo puede cambiar su propio nombre y foto, o pasar su propio estado a `salio`. Solo el `creador` puede poner a otro `miembro` en `quitado` (nunca a sí mismo).
+- **Traspaso:** si se va quien creó el hogar y hay más gente, en un solo lote: su estado pasa a `salio` y su rol a `miembro`, el rol `creador` pasa a otro miembro activo y `creadorActualId` apunta a esa persona. Las reglas verifican con `getAfter` que el resultado tenga un creador activo; **no pueden verificar que sea quien lleva más tiempo ni que no queden otros miembros activos** (no pueden contar ni listar), eso lo decide la app. Si era la última persona, sale sin cambiar el rol: el hogar queda archivado y, como `creadorActualId` ya no apunta a alguien activo, nadie puede unirse.
+- `invitaciones`: se puede leer una por una (con sesión), nunca listarlas. Las crean los miembros activos del hogar, con vencimiento a 48 h, y lo único que se modifica es pasarlas de `activa` a `revocada`.
 - `items`: solo se pueden eliminar de verdad los marcados como borrados hace más de 30 días.
 
 **Costo de las reglas:** consultar el documento de miembro dentro de una regla cuenta como una lectura por pedido. Para una familia es despreciable frente al cupo diario.
@@ -169,5 +174,4 @@ Con cualquiera, la lógica es la misma: agrupar los cambios de una persona en un
 - Elegir cómo se envían las notificaciones (opciones de arriba).
 - Diseñar el estado "sin hogar" y los errores (enlace vencido, falla de login).
 - Diseñar el menú de lista (renombrar, silenciar, eliminar) y los ajustes de notificaciones.
-- Mostrar vencimiento, regenerar y revocar en la pantalla Invitar.
 - Definir si se usa Expo con development build o React Native sin Expo (al arrancar el proyecto).

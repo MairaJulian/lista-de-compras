@@ -4,7 +4,7 @@
   "description": "Reglas de Firestore y emulador de Changuito",
   "scripts": {
     "emulator": "firebase emulators:start --only firestore --config firebase.emulator.json",
-    "test:rules": "firebase emulators:exec --only firestore --config firebase.json --project changuito-rules-test \"node --test test/*.test.mjs\""
+    "test:rules": "firebase emulators:exec --only firestore --config firebase.json --project changuito-rules-test \"node --test --test-concurrency=1 test/*.test.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",
