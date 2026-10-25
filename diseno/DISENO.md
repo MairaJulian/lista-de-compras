@@ -10,8 +10,8 @@ App de lista de compras compartida para el hogar: 3 adultos de la misma casa, ca
 
 - `DISENO.md`: este documento (decisiones, estilo, pantallas, flujos).
 - `pantallas/`: una imagen PNG por pantalla (780 × 1688, el doble del tamaño de diseño) más el PDF original `Changuito-pantallas.pdf`. El número del archivo sigue el orden de la tabla de pantallas de abajo:
-  `01-bienvenida`, `02-invitacion-recibida`, `03-inicio`, `04-nueva-lista`, `05-lista`, `06-lista-vacia`, `07-lista-sin-conexion`, `08-salir-de-la-lista`, `09-notificacion`, `10-detalle-item`, `11-hogar`, `12-invitar`, `13-opciones-miembro`, `14-confirmar-quitar`, `15-confirmar-salir`, `16-perfil`.
-  Ojo: en `10-detalle-item` la cantidad se ve en 3 porque se tocó "+" antes de exportar; el valor de diseño inicial es 2. Las barras de desplazamiento visibles en `05-lista` son un detalle de la exportación, no parte del diseño.
+  `01-bienvenida`, `02-invitacion-recibida`, `03-inicio`, `04-nueva-lista`, `05-lista`, `06-lista-vacia`, `07-lista-sin-conexion`, `08-salir-de-la-lista`, `09-notificacion`, `10-detalle-item`, `11-hogar`, `12-invitar`, `13-opciones-miembro`, `14-confirmar-quitar`, `15-confirmar-salir`, `16-perfil`, `17-sin-hogar`, `18-sin-hogar-codigo`, `19-sin-hogar-te-sacaron`, `20-crear-hogar`, `21-hogar-creado`, `22-invitar-sin-enlace`, `23-desactivar-enlace`, `24-error-enlace-invalido`, `25-error-inicio-sesion`, `26-error-sin-conexion-unirse`, `27-salir-hogar-creador`, `28-salir-hogar-ultima-persona`.
+  Ojo: las barras de desplazamiento visibles en `05-lista` son un detalle de la exportación, no parte del diseño. En `12-invitar` el código aparece partido en dos líneas porque la captura es anterior a un ajuste; en el diseño final el código va en una sola línea (ver `referencia-html/Invitar.dc.html`).
 - `referencia-html/`: el código fuente de cada pantalla (`*.dc.html`). Sirve **solo para copiar valores exactos** (colores, tamaños, textos, márgenes). No es código de la app y no se ejecuta suelto (depende de un `support.js` que no está acá).
 
 ## Decisiones de producto (ya tomadas)
@@ -25,6 +25,11 @@ App de lista de compras compartida para el hogar: 3 adultos de la misma casa, ca
 - Se quiere saber **quién agregó / tildó** cada ítem (avatar con inicial en cada fila).
 - Los ítems **tildados (comprados) se borran al salir de la lista** (con un aviso de confirmación).
 - **Cualquiera puede salir del hogar**; **solo quien creó el hogar puede sacar a otros miembros**.
+- **Sin hogar**: quien entra con Google y no pertenece a ningún hogar (primera vez, después de salir o de que la saquen) ve la pantalla "Sin hogar" con dos caminos: crear un hogar o entrar con un código de invitación. Si la sacaron, antes ve un aviso "Ya no sos parte de Nuestra casa".
+- **Invitaciones**: se invita con un **enlace** o con un **código corto** (formato `K7P2-9XQ-4MN`). Ambos vencen (en el diseño "Vence en 47 h"; el total de **48 h** es una suposición). Se puede **generar un enlace nuevo** o **desactivar** el actual (con confirmación). Un enlace vencido, desactivado o inválido muestra un error que dice "Pedile otro enlace a quien te invitó".
+- **Unirse requiere conexión**: sin internet se muestra un error con "Reintentar".
+- **Quien crea el hogar y sale**: el rol de creador pasa a otro miembro (en el diseño: "Lucía será la nueva persona a cargo"). Falta decidir **a quién** pasa en la app real.
+- **Última persona del hogar que sale**: el hogar se **archiva** y no queda nadie con acceso.
 - Sin decidir todavía: tecnología/stack de la app y del backend.
 
 ## Estilo visual
@@ -91,11 +96,23 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 | 3e | `Notificacion` | Notificaciones de Android: "Lucía agregó 2 ítems", "Diego borró un ítem" | Tocar → 3 |
 | 4 | `Detalle` | Panel que sube desde abajo: nombre, cantidad (− / +), nota, "Agregado por", Guardar / Eliminar | 3 → vuelve a 3 |
 | 5 | `Hogar` | Nombre del hogar, miembros con rol, botón **Invitar**, "Salir del hogar", avatar de perfil arriba a la derecha | pestaña Hogar de 2 |
-| 5b | `Invitar` | Explicación + enlace de invitación + "Copiar" + "Compartir enlace" | 5 → "Invitar" |
+| 5b | `Invitar` | Enlace + código corto (`K7P2-9XQ-4MN`), cada uno con "Copiar", pill "Vence en 47 h", y los botones "Compartir enlace", "Generar enlace nuevo" y "Desactivar enlace" (peligro) | 5 → "Invitar"; "Desactivar enlace" → 23; también se llega desde 21 |
 | 5c | `MiembroOpciones` | Panel inferior de un miembro con "Quitar del hogar" (solo lo ve quien creó el hogar) | 5 → botón ⋯ |
 | 5d | `ConfirmarQuitar` | Aviso "¿Quitar a Lucía del hogar?" | 5c → "Quitar" / "Cancelar" → 5 |
-| 5e | `ConfirmarSalir` | Aviso "¿Salir de Nuestra casa?" | 5 → "Salir del hogar" → 1 |
+| 5e | `ConfirmarSalir` | Aviso "¿Salir de Nuestra casa?" (caso común: miembro que no creó el hogar) | 5 → "Salir del hogar" → 17. Si quien sale es el creador se muestra 27; si es la última persona, 28 |
 | 6 | `Perfil` | Avatar, nombre, cuenta de Google, hogar actual, "Cerrar sesión" | 5 (avatar) → "Cerrar sesión" → 1 |
+| 17 | `SinHogar` | Sin hogar: "Armá tu hogar o sumate a uno." con "Crear un hogar" y "Tengo un código de invitación" | Después de entrar con Google sin tener hogar; o al salir del hogar (5e, 27, 28); desde 19 → 20 / 18 |
+| 18 | `SinHogarCodigo` | Campo para escribir o pegar el código; "Unirme" se habilita al haber texto | 17 → Inicio (2) |
+| 19 | `SinHogarSacaron` | Aviso centrado "Ya no sos parte de Nuestra casa" con "Continuar" | Cuando sacan a la persona del hogar → 17 |
+| 20 | `CrearHogar` | Campo "Nombre del hogar"; "Crear hogar" se habilita al haber texto | 17 → 21 |
+| 21 | `HogarCreado` | "¡Listo, ya tenés hogar!" con "Invitar" y "Más tarde" | 20 → Invitar (5b) / Inicio (2) |
+| 22 | `InvitarSinEnlace` | "El enlace ya no está activo" (venció o se desactivó) con "Generar enlace nuevo" | 23 "Desactivar" (o cuando venció) → 5b |
+| 23 | `DesactivarEnlace` | Aviso "¿Desactivar el enlace?" con "Desactivar" (peligro) y "Cancelar" | 5b → 22 / 5b |
+| 24 | `ErrorEnlace` | Error en la pantalla de unirse: "Este enlace ya no sirve. Pedile otro enlace a quien te invitó." | Al abrir un enlace vencido, desactivado o inválido → Bienvenida (1) / código (18) |
+| 25 | `ErrorLogin` | Error: "No pudimos entrar / Algo salió mal" con "Reintentar" | Si falla el inicio de sesión con Google → Inicio (2) al reintentar |
+| 26 | `ErrorSinConexion` | Error: "Necesitás internet para unirte" con "Reintentar" y "Ahora no" | Al intentar unirse sin conexión → 1b / 1 |
+| 27 | `SalirCreador` | Variante del aviso de salir: avisa que el rol de creador pasa a otro miembro (muestra a Lucía) | Quien creó el hogar toca "Salir del hogar" en 5 → 17 / 5 |
+| 28 | `SalirUltimo` | Variante del aviso de salir: "Sos la última persona del hogar"; el hogar se archiva | La última persona del hogar toca "Salir del hogar" → 17 / 5 |
 
 ## Comportamientos que muestra el prototipo
 
@@ -111,11 +128,12 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 - Las tarjetas Verdulería y Farmacia (Inicio) y el ⋯ de Diego no tienen pantalla destino; en la app real se comportarían igual que sus equivalentes.
 - La flecha atrás de una lista siempre muestra el aviso 3d en el prototipo; en la app real solo cuando haya ítems comprados.
 - El detalle siempre muestra "Leche"; en la app real muestra el ítem tocado.
-- "Salir del hogar" lleva a Bienvenida en el prototipo; el estado "sin hogar" no está diseñado.
+- En el prototipo "Salir del hogar" de Hogar siempre abre la variante común (5e); las variantes 27 y 28 se ven directamente en el lienzo. En la app real se elige la variante según el caso.
+- El prototipo no conecta 19 (te sacaron) ni 24–26 (errores) con un disparador real: se ven en el lienzo para diseñar el estado.
+- Código de ejemplo `K7P2-9XQ-4MN`, "Vence en 47 h" y el nuevo "R4WD-3ZT-8HC / Vence en 48 h" son datos de ejemplo.
 
 ## No diseñado todavía
 
-- Estado "sin hogar" (después de salir o antes de crear/unirse a uno).
-- Errores (falló el login, enlace de invitación vencido, etc.).
+- Otros errores (por ejemplo, código mal escrito en la pantalla 18, o fallo al crear el hogar).
 - Edición del nombre del hogar o de una lista; borrar una lista.
 - Tema oscuro.

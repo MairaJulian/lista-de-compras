@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hogar creado</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+a:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="position:relative;height:430px;flex:none">
+    <div style="position:absolute;left:-65px;top:-210px;width:520px;height:520px;border-radius:50%;background:#E3F1E8"></div>
+    <div style="position:absolute;left:24px;top:56px;display:flex;align-items:center;gap:10px">
+      <span style="width:40px;height:40px;border-radius:12px;background:#2E7D57;color:#fff;display:flex;align-items:center;justify-content:center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2l2.4 11h10.2L20 8H6.2"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>
+      </span>
+      <span style="font-family:Nunito,sans-serif;font-weight:800;font-size:22px">Changuito</span>
+    </div>
+    <div style="position:absolute;left:45px;top:160px;width:300px;box-sizing:border-box;padding:28px 20px;border-radius:24px;background:#fff;box-shadow:0 14px 34px rgba(28,38,33,0.12);display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+      <span style="position:relative;width:72px;height:72px;margin-bottom:4px">
+        <span style="width:72px;height:72px;border-radius:22px;background:#2E7D57;color:#fff;display:flex;align-items:center;justify-content:center">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>
+        </span>
+        <span style="position:absolute;right:-8px;bottom:-8px;width:30px;height:30px;border-radius:50%;background:#fff;border:3px solid #fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center">
+          <span style="width:24px;height:24px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+        </span>
+      </span>
+      <div style="font-family:Nunito,sans-serif;font-weight:800;font-size:24px;line-height:1.1">Nuestra casa</div>
+      <div style="font-size:15px;color:#5B675F">1 miembro</div>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:0 24px 32px;gap:12px">
+    <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:32px;line-height:1.15;text-wrap:balance">¡Listo, ya tenés hogar!</h1>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#5B675F;text-wrap:pretty">¿Querés invitar a alguien ahora? También podés hacerlo después desde Hogar.</p>
+    <a href="Invitar.dc.html" style="display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:28px;background:#2E7D57;color:#fff;font-size:17px;font-weight:700">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>
+      Invitar
+    </a>
+    <a href="Inicio.dc.html" style="height:52px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#5B675F">Más tarde</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
