@@ -37,6 +37,272 @@ service cloud.firestore {
         && request.resource.data.creadoEn == resource.data.creadoEn;
     }
 
+    // ---------------------------------------------------------------
+    // Hogares, miembros e invitaciones (Etapa 3, ver diseno/ESQUEMA-DATOS.md).
+    // Los permisos salen siempre de la membresía (hogares/{id}/miembros/{uid}),
+    // nunca de usuarios/{uid}.hogarActualId ni del email.
+    // ---------------------------------------------------------------
+
+    function logueado() {
+      return request.auth != null;
+    }
+
+    function sinValor(valor) {
+      return valor == null || valor == '';
+    }
+
+    function nombreValido(nombre, maximo) {
+      return nombre is string && nombre.size() > 0 && nombre.size() <= maximo
+        && nombre.matches('.*\\S.*');
+    }
+
+    // Códigos como K7P2-9XQ-4MN: solo letras, números y guiones, con al menos
+    // 10 caracteres que no sean guiones. Sirve también para que el código no
+    // pueda armar rutas con "/".
+    function codigoValido(codigo) {
+      return codigo is string && codigo.size() <= 24
+        && codigo.matches('[A-Za-z0-9-]+')
+        && codigo.replace('-', '').size() >= 10;
+    }
+
+    function hogarDoc(hogarId) {
+      return /databases/$(database)/documents/hogares/$(hogarId);
+    }
+
+    function miembroDoc(hogarId, uid) {
+      return /databases/$(database)/documents/hogares/$(hogarId)/miembros/$(uid);
+    }
+
+    function invitacionDoc(codigo) {
+      return /databases/$(database)/documents/invitaciones/$(codigo);
+    }
+
+    function esMiembroActivo(hogarId) {
+      return logueado()
+        && exists(miembroDoc(hogarId, request.auth.uid))
+        && get(miembroDoc(hogarId, request.auth.uid)).data.estado == 'activo';
+    }
+
+    function esCreadorActivo(hogarId) {
+      return esMiembroActivo(hogarId)
+        && get(miembroDoc(hogarId, request.auth.uid)).data.rol == 'creador';
+    }
+
+    // El hogar tiene un creador activo (creadorActualId apunta a él). Un hogar
+    // archivado, o que quedó sin creador, no admite nuevos miembros.
+    function hogarTieneCreadorActivo(hogarId) {
+      let creadorId = get(hogarDoc(hogarId)).data.creadorActualId;
+      let creador = get(miembroDoc(hogarId, creadorId)).data;
+      return creador.rol == 'creador' && creador.estado == 'activo';
+    }
+
+    // ---- hogares/{hogarId} ----
+
+    function hogarNuevoValido(hogarId, datos) {
+      return logueado()
+        && datos.keys().hasOnly(['nombre', 'creadoPor', 'creadoEn', 'invitacionActivaId', 'creadorActualId'])
+        && datos.keys().hasAll(['nombre', 'creadoPor', 'creadoEn', 'creadorActualId'])
+        && nombreValido(datos.nombre, 60)
+        && datos.creadoPor == request.auth.uid
+        && datos.creadorActualId == request.auth.uid
+        && datos.creadoEn == request.time
+        && sinValor(datos.get('invitacionActivaId', null))
+        && existsAfter(miembroDoc(hogarId, request.auth.uid))
+        && getAfter(miembroDoc(hogarId, request.auth.uid)).data.rol == 'creador'
+        && getAfter(miembroDoc(hogarId, request.auth.uid)).data.estado == 'activo';
+    }
+
+    // invitacionActivaId solo puede apuntar a una invitación activa de este
+    // hogar, y al dejar la anterior esa invitación tiene que quedar revocada
+    // en el mismo lote.
+    function cambioInvitacionActivaValido(hogarId, anterior, nueva) {
+      return (sinValor(anterior) || getAfter(invitacionDoc(anterior)).data.estado == 'revocada')
+        && (sinValor(nueva)
+          || (getAfter(invitacionDoc(nueva)).data.hogarId == hogarId
+            && getAfter(invitacionDoc(nueva)).data.estado == 'activa'));
+    }
+
+    // Traspaso del rol de creador: solo quien lo es ahora, saliendo del hogar
+    // (queda `salio` y `miembro` en el mismo lote), hacia otra persona activa
+    // que en ese lote queda como `creador`.
+    function traspasoCreadorValido(hogarId, anterior, nuevo) {
+      return anterior == request.auth.uid
+        && nuevo is string && nuevo != anterior
+        && get(miembroDoc(hogarId, anterior)).data.rol == 'creador'
+        && getAfter(miembroDoc(hogarId, anterior)).data.estado == 'salio'
+        && getAfter(miembroDoc(hogarId, anterior)).data.rol == 'miembro'
+        && getAfter(miembroDoc(hogarId, nuevo)).data.rol == 'creador'
+        && getAfter(miembroDoc(hogarId, nuevo)).data.estado == 'activo';
+    }
+
+    function hogarEditadoValido(hogarId) {
+      let antes = resource.data;
+      let despues = request.resource.data;
+      let cambios = despues.diff(antes).affectedKeys();
+      return cambios.hasOnly(['nombre', 'invitacionActivaId', 'creadorActualId'])
+        && (!('nombre' in cambios) || nombreValido(despues.nombre, 60))
+        && (!('invitacionActivaId' in cambios)
+          || cambioInvitacionActivaValido(hogarId, antes.get('invitacionActivaId', null), despues.get('invitacionActivaId', null)))
+        && (!('creadorActualId' in cambios)
+          || traspasoCreadorValido(hogarId, antes.creadorActualId, despues.creadorActualId));
+    }
+
+    // ---- hogares/{hogarId}/miembros/{uid} ----
+
+    function miembroBaseValido(datos) {
+      return datos.keys().hasOnly(['nombre', 'foto', 'colorAvatar', 'rol', 'estado', 'desde', 'hasta', 'invitacionId', 'invitadoPor'])
+        && datos.keys().hasAll(['nombre', 'colorAvatar', 'rol', 'estado', 'desde'])
+        && nombreValido(datos.nombre, 100)
+        && esTextoOVacio(datos.get('foto', null))
+        && datos.colorAvatar is string && datos.colorAvatar.size() <= 20
+        && datos.rol in ['creador', 'miembro']
+        && datos.estado in ['activo', 'salio', 'quitado']
+        && datos.desde == request.time
+        && sinValor(datos.get('hasta', null));
+    }
+
+    // Primer miembro de un hogar nuevo: el hogar se crea en el mismo lote
+    // (no existía antes) y lo nombra creador.
+    function creadorAlCrearHogarValido(hogarId, uid, datos) {
+      return miembroBaseValido(datos)
+        && datos.rol == 'creador' && datos.estado == 'activo'
+        && sinValor(datos.get('invitacionId', null))
+        && sinValor(datos.get('invitadoPor', null))
+        && !exists(hogarDoc(hogarId))
+        && existsAfter(hogarDoc(hogarId))
+        && getAfter(hogarDoc(hogarId)).data.creadoPor == uid
+        && getAfter(hogarDoc(hogarId)).data.creadorActualId == uid;
+    }
+
+    // Unirse (o volver a unirse): rol `miembro`, con una invitación de este
+    // hogar que existe, está activa y no venció, y con un creador activo.
+    function unirseValido(hogarId, datos) {
+      return miembroBaseValido(datos)
+        && datos.rol == 'miembro' && datos.estado == 'activo'
+        && codigoValido(datos.get('invitacionId', null))
+        && get(invitacionDoc(datos.invitacionId)).data.hogarId == hogarId
+        && get(invitacionDoc(datos.invitacionId)).data.estado == 'activa'
+        && get(invitacionDoc(datos.invitacionId)).data.venceEn > request.time
+        && datos.get('invitadoPor', null) == get(invitacionDoc(datos.invitacionId)).data.creadaPor
+        && hogarTieneCreadorActivo(hogarId);
+    }
+
+    // Cada persona mantiene al día su nombre y foto (la copia que ven los demás).
+    function refrescoPropioValido(uid) {
+      let cambios = request.resource.data.diff(resource.data).affectedKeys();
+      return request.auth.uid == uid
+        && resource.data.estado == 'activo'
+        && cambios.hasOnly(['nombre', 'foto'])
+        && nombreValido(request.resource.data.nombre, 100)
+        && esTextoOVacio(request.resource.data.get('foto', null));
+    }
+
+    // Salir. Un creador sale sin cambiar de rol (era la última persona) o
+    // traspasando el rol: en ese caso el hogar apunta a otro creador activo.
+    function salidaPropiaValida(hogarId, uid) {
+      let cambios = request.resource.data.diff(resource.data).affectedKeys();
+      let despues = request.resource.data;
+      return request.auth.uid == uid
+        && resource.data.estado == 'activo'
+        && cambios.hasOnly(['estado', 'hasta', 'rol'])
+        && despues.estado == 'salio'
+        && despues.hasta == request.time
+        && (
+          (resource.data.rol == 'miembro' && despues.rol == 'miembro')
+          || (resource.data.rol == 'creador' && despues.rol == 'creador')
+          || (resource.data.rol == 'creador' && despues.rol == 'miembro'
+            && getAfter(hogarDoc(hogarId)).data.creadorActualId != uid
+            && getAfter(miembroDoc(hogarId, getAfter(hogarDoc(hogarId)).data.creadorActualId)).data.rol == 'creador'
+            && getAfter(miembroDoc(hogarId, getAfter(hogarDoc(hogarId)).data.creadorActualId)).data.estado == 'activo')
+        );
+    }
+
+    // Quitar: solo el creador, a otro miembro activo con rol `miembro`.
+    function quitarValido(hogarId, uid) {
+      let cambios = request.resource.data.diff(resource.data).affectedKeys();
+      return esCreadorActivo(hogarId)
+        && request.auth.uid != uid
+        && resource.data.estado == 'activo'
+        && resource.data.rol == 'miembro'
+        && cambios.hasOnly(['estado', 'hasta'])
+        && request.resource.data.estado == 'quitado'
+        && request.resource.data.hasta == request.time;
+    }
+
+    // Recibir el rol de creador de quien se va (el hogar lo valida igual).
+    function recibeTraspasoValido(hogarId, uid) {
+      let cambios = request.resource.data.diff(resource.data).affectedKeys();
+      return esCreadorActivo(hogarId)
+        && request.auth.uid != uid
+        && resource.data.estado == 'activo'
+        && resource.data.rol == 'miembro'
+        && cambios.hasOnly(['rol'])
+        && request.resource.data.rol == 'creador'
+        && getAfter(miembroDoc(hogarId, request.auth.uid)).data.estado == 'salio'
+        && getAfter(hogarDoc(hogarId)).data.creadorActualId == uid;
+    }
+
+    function reingresoValido(hogarId, uid) {
+      return request.auth.uid == uid
+        && resource.data.estado in ['salio', 'quitado']
+        && unirseValido(hogarId, request.resource.data);
+    }
+
+    match /hogares/{hogarId} {
+      allow read: if esMiembroActivo(hogarId);
+      allow create: if hogarNuevoValido(hogarId, request.resource.data);
+      allow update: if esMiembroActivo(hogarId) && hogarEditadoValido(hogarId);
+      allow delete: if false;
+
+      // Miembros activos leen a todos; cada persona siempre lee el suyo
+      // (así se entera de que la sacaron). Nada se borra: queda el historial.
+      match /miembros/{uid} {
+        allow get: if logueado() && (request.auth.uid == uid || esMiembroActivo(hogarId));
+        allow list: if esMiembroActivo(hogarId);
+        allow create: if logueado() && request.auth.uid == uid
+          && (creadorAlCrearHogarValido(hogarId, uid, request.resource.data)
+            || unirseValido(hogarId, request.resource.data));
+        allow update: if logueado()
+          && (refrescoPropioValido(uid)
+            || salidaPropiaValida(hogarId, uid)
+            || quitarValido(hogarId, uid)
+            || recibeTraspasoValido(hogarId, uid)
+            || reingresoValido(hogarId, uid));
+        allow delete: if false;
+      }
+    }
+
+    // ---- invitaciones/{codigo} ----
+
+    function invitacionNuevaValida(codigo, datos) {
+      let hogarId = datos.get('hogarId', null);
+      return hogarId is string
+        && codigoValido(codigo)
+        && datos.keys().hasOnly(['hogarId', 'creadaPor', 'venceEn', 'estado', 'hogarNombre', 'invitadoPorNombre'])
+        && datos.keys().hasAll(['hogarId', 'creadaPor', 'venceEn', 'estado', 'hogarNombre', 'invitadoPorNombre'])
+        && esMiembroActivo(hogarId)
+        && datos.creadaPor == request.auth.uid
+        && datos.estado == 'activa'
+        && datos.venceEn is timestamp
+        && datos.venceEn > request.time
+        && datos.venceEn <= request.time + duration.value(48, 'h') + duration.value(5, 'm')
+        && datos.hogarNombre == get(hogarDoc(hogarId)).data.nombre
+        && datos.invitadoPorNombre == get(miembroDoc(hogarId, request.auth.uid)).data.nombre;
+    }
+
+    match /invitaciones/{codigo} {
+      // Se lee de a una; no se puede listar.
+      allow get: if logueado();
+      allow list: if false;
+      allow create: if logueado() && invitacionNuevaValida(codigo, request.resource.data);
+      // Lo único que se modifica es revocarla.
+      allow update: if esMiembroActivo(resource.data.hogarId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado'])
+        && resource.data.estado == 'activa'
+        && request.resource.data.estado == 'revocada';
+      allow delete: if false;
+    }
+
     // Todo lo demás sigue bloqueado hasta que se necesite.
     match /{document=**} {
       allow read, write: if false;

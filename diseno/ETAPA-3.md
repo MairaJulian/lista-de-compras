@@ -38,8 +38,9 @@
 
 1. **`hogares/{hogarId}`** suma `invitacionActivaId` (código vigente o vacío). Como `invitaciones` no se puede listar, así se encuentra la invitación actual con una lectura directa.
 2. **`invitaciones/{codigo}`** suma `hogarNombre` e `invitadoPorNombre`, copiados al crearla. Quien recibe la invitación todavía no es miembro y no puede leer el hogar, y la pantalla `02` tiene que mostrar el nombre del hogar y quién invitó. Puede quedar desfasada si después se renombra el hogar: es aceptable; al regenerar la invitación se actualiza.
-3. **`miembros/{uid}`** guarda `nombre`, `foto`, `colorAvatar` (el primer color no usado por miembros activos), `rol`, `estado`, `desde`, `hasta`, `invitacionId`, `invitadoPor`.
-4. Documentar los estados de `miembros`: `activo`, `salio`, `quitado`.
+3. **`hogares/{hogarId}`** suma también `creadorActualId` (agregado en el PR 1): sin él las reglas no pueden comprobar que el hogar nunca queda con miembros activos y sin creador activo. Ver `ESQUEMA-DATOS.md`.
+4. **`miembros/{uid}`** guarda `nombre`, `foto`, `colorAvatar` (el primer color no usado por miembros activos), `rol`, `estado`, `desde`, `hasta`, `invitacionId`, `invitadoPor`.
+5. Documentar los estados de `miembros`: `activo`, `salio`, `quitado`.
 
 ## Operaciones y reglas (qué tiene que permitir y prohibir el servidor)
 
@@ -163,7 +164,7 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 
 ## Estado
 
-- [ ] PR 1 · Esquema y reglas de seguridad de hogares
+- [x] PR 1 · Esquema y reglas de seguridad de hogares (en revisión; 111 pruebas de reglas)
 - [ ] Maira publica las reglas
 - [ ] PR 2 · Crear hogar y Inicio sin listas
 - [ ] PR 3 · Hogar en tiempo real y editar nombre
