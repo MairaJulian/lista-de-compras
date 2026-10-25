@@ -23,6 +23,11 @@ jest.mock('../dev/FirestorePing', () => ({ FirestorePing: () => null }));
 
 jest.mock('expo-font', () => ({ useFonts: () => [true] }));
 
+const mockSignIn = jest.fn();
+jest.mock('../auth/googleSignIn', () => ({
+  signInWithGoogle: () => mockSignIn(),
+}));
+
 const routes = {
   _layout: RootLayout,
   '(tabs)/_layout': TabsLayout,
@@ -43,7 +48,11 @@ const routes = {
 };
 
 describe('navegación', () => {
-  beforeEach(() => resetMockStore());
+  beforeEach(() => {
+    resetMockStore();
+    mockSignIn.mockReset();
+    mockSignIn.mockResolvedValue({ status: 'success' });
+  });
 
   it('abre en Listas y cambia a Hogar con la barra inferior', async () => {
     await renderRouter(routes, { initialUrl: '/listas' });
@@ -71,12 +80,41 @@ describe('navegación', () => {
     expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
   });
 
-  it('la app abre en Bienvenida y "Entrar con Google" lleva a Listas', async () => {
+  it('la app abre en Bienvenida y "Entrar con Google" lleva a Sin hogar', async () => {
     await renderRouter(routes);
     expect(screen.getByText('Las compras de casa, entre todos.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Entrar con Google'));
-    expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
+    expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
     expect(screen.queryByText('Entrar con Google')).toBeNull();
+  });
+
+  it('si la persona cancela el login se queda en Bienvenida, sin error', async () => {
+    mockSignIn.mockResolvedValue({ status: 'cancelled' });
+    await renderRouter(routes);
+    await fireEvent.press(screen.getByText('Entrar con Google'));
+    await waitFor(() => expect(mockSignIn).toHaveBeenCalledTimes(1));
+    expect(screen.getByText('Entrar con Google')).toBeTruthy();
+    expect(screen.queryByText('Algo salió mal.')).toBeNull();
+  });
+
+  it('si falla el login abre el error y "Reintentar" entra cuando sale bien', async () => {
+    mockSignIn.mockResolvedValueOnce({ status: 'error' });
+    await renderRouter(routes);
+    await fireEvent.press(screen.getByText('Entrar con Google'));
+    expect(await screen.findByText('Algo salió mal.')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Reintentar'));
+    expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+  });
+
+  it('si el reintento falla de nuevo se queda en el error, y si cancela vuelve a Bienvenida', async () => {
+    mockSignIn.mockResolvedValue({ status: 'error' });
+    await renderRouter(routes, { initialUrl: '/error-login' });
+    await fireEvent.press(screen.getByText('Reintentar'));
+    await waitFor(() => expect(mockSignIn).toHaveBeenCalledTimes(1));
+    expect(screen.getByText('Algo salió mal.')).toBeTruthy();
+    mockSignIn.mockResolvedValue({ status: 'cancelled' });
+    await fireEvent.press(screen.getByText('Reintentar'));
+    expect(await screen.findByText('Entrar con Google')).toBeTruthy();
   });
 
   it('Unirse: "Entrar y unirme" lleva a Listas y "Ahora no" a Bienvenida', async () => {
@@ -154,15 +192,13 @@ describe('navegación', () => {
     expect(router.canGoBack()).toBe(false);
   });
 
-  it('entrar con Google sin hogar lleva a Sin hogar', async () => {
-    await renderRouter(routes);
-    await fireEvent.press(screen.getByText('Entrar con Google'));
-    await fireEvent.press(screen.getByRole('tab', { name: 'Hogar' }));
+  it('salir del hogar y volver a entrar con Google lleva a Sin hogar', async () => {
+    await renderRouter(routes, { initialUrl: '/hogar' });
     await fireEvent.press(screen.getByText('Salir del hogar'));
     await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
     await act(async () => router.replace('/'));
     await fireEvent.press(screen.getByText('Entrar con Google'));
-    expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
   });
 
   it('Unirse con el enlace desactivado muestra el error y "Entendido" vuelve a Bienvenida', async () => {
@@ -192,11 +228,11 @@ describe('navegación', () => {
     expect(screen.getByText('Escribí o pegá tu código')).toBeTruthy();
   });
 
-  it('error de inicio de sesión: "Reintentar" lleva a Listas', async () => {
+  it('error de inicio de sesión: "Reintentar" entra si el login sale bien', async () => {
     await renderRouter(routes, { initialUrl: '/error-login' });
     expect(screen.getByText('Algo salió mal.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Reintentar'));
-    expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
+    expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
   });
 
   it('"te sacaron" muestra el aviso encima de Sin hogar', async () => {
