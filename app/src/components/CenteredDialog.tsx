@@ -10,7 +10,9 @@ type Props = {
   visible: boolean;
   title: string;
   message: string;
-  icon: IconName;
+  /** Ícono en círculo; si el aviso lleva otra cosa arriba (p. ej. un avatar) se pasa `leading`. */
+  icon?: IconName;
+  leading?: React.ReactNode;
   tone?: Tone;
   onClose: () => void;
   /** Botones (Button), uno debajo del otro. */
@@ -28,6 +30,7 @@ export function CenteredDialog({
   title,
   message,
   icon,
+  leading,
   tone = 'amber',
   onClose,
   children,
@@ -58,9 +61,11 @@ export function CenteredDialog({
           accessibilityRole="alert"
           style={[styles.dialog, { opacity: progress, transform: [{ scale }] }]}
         >
-          <View style={[styles.iconCircle, { backgroundColor: toneColors[tone].background }]}>
-            <Icon name={icon} size={28} color={toneColors[tone].icon} />
-          </View>
+          {leading ?? (
+            <View style={[styles.iconCircle, { backgroundColor: toneColors[tone].background }]}>
+              {icon && <Icon name={icon} size={28} color={toneColors[tone].icon} />}
+            </View>
+          )}
           <Text accessibilityRole="header" style={styles.title}>
             {title}
           </Text>

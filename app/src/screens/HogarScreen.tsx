@@ -1,16 +1,18 @@
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-
-import { Avatar, Button, Icon, ItemGroup, MemberRow } from '../components';
-import { useCurrentMember, useHousehold } from '../data/hooks';
-import type { Member } from '../data/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Avatar, Button, CenteredDialog, Icon, ItemGroup, MemberRow } from '../components';
+import { useCurrentMember, useHousehold, useRemoveMember } from '../data/hooks';
+import type { Member } from '../data/types';
+import { MemberOptionsSheet } from '../sheets/MemberOptionsSheet';
 import { colors, fontSizes, fonts, heights, radii, sizes } from '../theme';
 
 type Props = {
   onOpenProfile?: () => void;
   onInvite?: () => void;
-  onMemberOptions?: (member: Member) => void;
-  onLeave?: () => void;
+  /** Después de confirmar "Salir del hogar". */
+  onLeft?: () => void;
 };
 
 function roleLabel(member: Member, currentId: string) {
@@ -20,71 +22,133 @@ function roleLabel(member: Member, currentId: string) {
   return 'Miembro';
 }
 
-export function HogarScreen({ onOpenProfile, onInvite, onMemberOptions, onLeave }: Props) {
+export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
   const household = useHousehold();
   const current = useCurrentMember();
+  const removeMember = useRemoveMember();
   const { top } = useSafeAreaInsets();
+  // El panel y el aviso guardan a quién se refieren aparte de si están abiertos, para que el
+  // contenido no desaparezca mientras se cierran.
+  const [optionsFor, setOptionsFor] = useState<Member>();
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [removeFor, setRemoveFor] = useState<Member>();
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const count = household.members.length;
   // Solo quien creó el hogar puede sacar a otros miembros.
   const canRemove = current.role === 'creator';
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={[styles.header, { paddingTop: top + 32 }]}>
-        <Text accessibilityRole="header" style={styles.title}>
-          Hogar
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Tu perfil"
-          onPress={onOpenProfile}
-          style={styles.profile}
-        >
-          <Avatar name={current.name} tone={current.tone} size={sizes.avatarMember} />
-        </Pressable>
-      </View>
-
-      <View style={styles.householdCard}>
-        <View style={styles.householdIcon}>
-          <Icon name="home" size={28} color={colors.onPrimary} />
-        </View>
-        <View>
-          <Text style={styles.householdName}>{household.name}</Text>
-          <Text style={styles.householdCount}>
-            {count === 1 ? '1 miembro' : `${count} miembros`}
+    <View style={styles.screen}>
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <View style={[styles.header, { paddingTop: top + 32 }]}>
+          <Text accessibilityRole="header" style={styles.title}>
+            Hogar
           </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Tu perfil"
+            onPress={onOpenProfile}
+            style={styles.profile}
+          >
+            <Avatar name={current.name} tone={current.tone} size={sizes.avatarMember} />
+          </Pressable>
         </View>
-      </View>
 
-      <View style={styles.membersHeader}>
-        <Text accessibilityRole="header" style={styles.membersTitle}>
-          Miembros
-        </Text>
-        <Pressable accessibilityRole="button" onPress={onInvite} style={styles.invite}>
-          <Icon name="userPlus" size={20} color={colors.onPrimary} />
-          <Text style={styles.inviteLabel}>Invitar</Text>
-        </Pressable>
-      </View>
+        <View style={styles.householdCard}>
+          <View style={styles.householdIcon}>
+            <Icon name="home" size={28} color={colors.onPrimary} />
+          </View>
+          <View>
+            <Text style={styles.householdName}>{household.name}</Text>
+            <Text style={styles.householdCount}>
+              {count === 1 ? '1 miembro' : `${count} miembros`}
+            </Text>
+          </View>
+        </View>
 
-      <View style={styles.members}>
-        <ItemGroup>
-          {household.members.map((member) => (
-            <MemberRow
-              key={member.id}
-              name={member.name}
-              tone={member.tone}
-              roleLabel={roleLabel(member, current.id)}
-              showOptions={canRemove && member.id !== current.id}
-              onOptions={onMemberOptions && (() => onMemberOptions(member))}
-            />
-          ))}
-        </ItemGroup>
-      </View>
+        <View style={styles.membersHeader}>
+          <Text accessibilityRole="header" style={styles.membersTitle}>
+            Miembros
+          </Text>
+          <Pressable accessibilityRole="button" onPress={onInvite} style={styles.invite}>
+            <Icon name="userPlus" size={20} color={colors.onPrimary} />
+            <Text style={styles.inviteLabel}>Invitar</Text>
+          </Pressable>
+        </View>
 
-      <View style={styles.leave}>
-        <Button label="Salir del hogar" variant="danger" onPress={onLeave} />
-      </View>
-    </ScrollView>
+        <View style={styles.members}>
+          <ItemGroup>
+            {household.members.map((member) => (
+              <MemberRow
+                key={member.id}
+                name={member.name}
+                tone={member.tone}
+                roleLabel={roleLabel(member, current.id)}
+                showOptions={canRemove && member.id !== current.id}
+                onOptions={() => {
+                  setOptionsFor(member);
+                  setOptionsOpen(true);
+                }}
+              />
+            ))}
+          </ItemGroup>
+        </View>
+
+        <View style={styles.leave}>
+          <Button label="Salir del hogar" variant="danger" onPress={() => setLeaveOpen(true)} />
+        </View>
+      </ScrollView>
+
+      <MemberOptionsSheet
+        visible={optionsOpen}
+        member={optionsFor}
+        householdName={household.name}
+        onClose={() => setOptionsOpen(false)}
+        onRemove={(member) => {
+          setOptionsOpen(false);
+          setRemoveFor(member);
+          setRemoveOpen(true);
+        }}
+      />
+
+      <CenteredDialog
+        visible={removeOpen}
+        leading={removeFor && <Avatar name={removeFor.name} tone={removeFor.tone} size={56} />}
+        title={`¿Quitar a ${removeFor?.name ?? ''} del hogar?`}
+        message={`Va a dejar de ver las listas de ${household.name}. Más adelante podés volver a invitar a ${removeFor?.name ?? ''}.`}
+        onClose={() => setRemoveOpen(false)}
+      >
+        <Button
+          label="Quitar"
+          variant="dangerFilled"
+          onPress={() => {
+            if (removeFor) removeMember(removeFor.id);
+            setRemoveOpen(false);
+          }}
+        />
+        <Button label="Cancelar" variant="secondary" onPress={() => setRemoveOpen(false)} />
+      </CenteredDialog>
+
+      <CenteredDialog
+        visible={leaveOpen}
+        icon="logout"
+        tone="danger"
+        title={`¿Salir de ${household.name}?`}
+        message="Vas a dejar de ver sus listas. Para volver, alguien del hogar tiene que invitarte de nuevo."
+        onClose={() => setLeaveOpen(false)}
+      >
+        <Button
+          label="Salir del hogar"
+          variant="dangerFilled"
+          onPress={() => {
+            setLeaveOpen(false);
+            onLeft?.();
+          }}
+        />
+        <Button label="Cancelar" variant="secondary" onPress={() => setLeaveOpen(false)} />
+      </CenteredDialog>
+    </View>
   );
 }
 

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -46,6 +47,14 @@ export function DevMenu() {
         Desarrollo
       </Text>
       <DevButton label="Ver componentes" onPress={() => setPage('components')} />
+      {/* La invitación se abre desde un enlace; mientras no haya enlaces reales, desde acá. */}
+      <DevButton
+        label="Ver invitación recibida"
+        onPress={() => {
+          close();
+          router.push('/unirse');
+        }}
+      />
       {page === 'firestore' ? (
         <FirestorePing />
       ) : (

@@ -13,3 +13,6 @@ export { Fab } from './Fab';
 export { MemberRow } from './MemberRow';
 export { QuantityStepper } from './QuantityStepper';
 export { SwatchPicker } from './SwatchPicker';
+export { GoogleButton } from './GoogleButton';
+export { IntroLayout } from './IntroLayout';
+export { ScreenHeader } from './ScreenHeader';

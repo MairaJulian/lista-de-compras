@@ -118,7 +118,7 @@ Antes de empezar la Etapa 3 hay que diseñar, en Claude Design, el estado "sin h
 - [x] PR 2b · Navegación estándar (Expo Router; ver sección "Decisión de navegación (PR 2b)")
 - [x] PR 3 · Pantalla Lista (ruta `lista/[id]`; estado en memoria en `src/mock/store.ts`, lógica pura en `src/data/listLogic.ts`)
 - [x] PR 4 · Paneles y avisos de la lista (paneles en `src/sheets`; el store en memoria ahora guarda también las listas; editar, eliminar, crear y salir actualizan Inicio y Lista)
-- [ ] PR 5 · Flujos del hogar y de la cuenta
+- [x] PR 5 · Flujos del hogar y de la cuenta (rutas `index` = Bienvenida, `unirse`, `perfil`, `invitar`; Inicio pasó a `(tabs)/listas`; opciones de miembro, quitar y salir viven en Hogar; falta la comprobación visual contra las capturas, ver PR)
 
 ## Decisión de navegación (PR 2b)
 
