@@ -24,4 +24,5 @@ jest.mock('./src/auth/sessionSource', () => ({
 jest.mock('./src/data/householdSource', () => ({
   watchHousehold: jest.fn(() => () => {}),
   createHousehold: jest.fn(),
+  renameHousehold: jest.fn(),
 }));

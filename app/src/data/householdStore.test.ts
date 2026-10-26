@@ -13,6 +13,7 @@ const household = {
   id: 'h1',
   name: 'Nuestra casa',
   me: { id: 'u1', name: 'Maira', role: 'creator' as const, tone: 'green' as const },
+  members: [{ id: 'u1', name: 'Maira', role: 'creator' as const, tone: 'green' as const }],
 };
 
 let emit: { data: (h: typeof household) => void; error: () => void };

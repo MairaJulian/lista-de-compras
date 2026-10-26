@@ -37,6 +37,7 @@ const glyphs = {
   alertTriangle: 'alert-outline',
   homeAlert: 'home-alert-outline',
   paste: 'content-paste',
+  pencil: 'pencil-outline',
 } as const satisfies Record<string, ComponentProps<typeof MaterialCommunityIcons>['name']>;
 
 export type IconName = keyof typeof glyphs;

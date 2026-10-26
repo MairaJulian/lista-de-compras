@@ -4,15 +4,17 @@ import {
   doc,
   getFirestore,
   onSnapshot,
+  query,
   runTransaction,
   serverTimestamp,
+  where,
 } from '@react-native-firebase/firestore';
 
-import { memberFromDocument, newHouseholdDocuments } from './householdLogic';
+import { activeMembers, memberFromDocument, newHouseholdDocuments } from './householdLogic';
 import type { Member } from './types';
 
-/** Lo que la app necesita saber del hogar: su nombre y la membresía de quien tiene la sesión. */
-export type LoadedHousehold = { id: string; name: string; me: Member };
+/** Lo que la app necesita saber del hogar: su nombre, la membresía de quien tiene la sesión y los miembros activos. */
+export type LoadedHousehold = { id: string; name: string; me: Member; members: Member[] };
 
 function currentUid(): string {
   const uid = getAuth().currentUser?.uid;
@@ -53,12 +55,31 @@ export async function createHousehold(
   if (!me) {
     throw new Error('El miembro creador no quedó activo.');
   }
-  return { id: householdRef.id, name, me };
+  return { id: householdRef.id, name, me, members: [me] };
 }
 
 /**
- * Escucha el hogar y la membresía de quien tiene la sesión (su propio documento de `miembros`).
- * Avisa cada vez que cambian y, si no se puede leer alguno, con `onError`. Devuelve la función
+ * Cambia el nombre del hogar. Es una transacción por lo mismo que crear el hogar: una escritura
+ * común sin conexión queda en cola y la pantalla se quedaría esperando; la transacción falla al
+ * instante y el panel muestra el error. Solo toca el campo `nombre`.
+ */
+export async function renameHousehold(householdId: string, name: string): Promise<void> {
+  currentUid();
+  const db = getFirestore();
+  const householdRef = doc(db, 'hogares', householdId);
+  await runTransaction(db, async (transaction) => {
+    // Leer primero obliga a hablar con el servidor: sin conexión la transacción falla acá.
+    const household = await transaction.get(householdRef);
+    if (!household.exists()) {
+      throw new Error('El hogar no existe.');
+    }
+    transaction.update(householdRef, { nombre: name });
+  });
+}
+
+/**
+ * Escucha el hogar, la membresía de quien tiene la sesión (su propio documento de `miembros`) y los
+ * miembros activos del hogar. Avisa cada vez que cambian y, si no se puede leer alguno, con `onError`. Devuelve la función
  * para dejar de escuchar.
  */
 export function watchHousehold(
@@ -76,9 +97,10 @@ export function watchHousehold(
   const db = getFirestore();
   let name: string | undefined;
   let me: Member | undefined;
+  let members: Member[] | undefined;
 
   const emit = () => {
-    if (name !== undefined && me) onData({ id: householdId, name, me });
+    if (name !== undefined && me && members) onData({ id: householdId, name, me, members });
   };
 
   const stopHousehold = onSnapshot(
@@ -108,8 +130,20 @@ export function watchHousehold(
     onError,
   );
 
+  const stopMembers = onSnapshot(
+    query(collection(db, 'hogares', householdId, 'miembros'), where('estado', '==', 'activo')),
+    (snapshot) => {
+      members = activeMembers(
+        snapshot.docs.map((document) => ({ id: document.id, data: document.data() })),
+      );
+      emit();
+    },
+    onError,
+  );
+
   return () => {
     stopHousehold();
     stopMember();
+    stopMembers();
   };
 }

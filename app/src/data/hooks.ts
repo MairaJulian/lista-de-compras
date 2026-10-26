@@ -12,7 +12,7 @@ import {
   regenerateInvite,
   removeMember,
 } from './householdLogic';
-import { createHousehold } from './householdSource';
+import { createHousehold, renameHousehold } from './householdSource';
 import { retryHousehold, seedHousehold, useHouseholdState } from './householdStore';
 import {
   addItem,
@@ -47,7 +47,7 @@ export function useHousehold(): Household {
   }
   // Mientras se lee, o si no se pudo, no hay datos que mostrar.
   return loaded.status === 'ready'
-    ? { id: loaded.household.id, name: loaded.household.name, members: [loaded.household.me] }
+    ? { id: loaded.household.id, name: loaded.household.name, members: loaded.household.members }
     : { id: '', name: '', members: [] };
 }
 
@@ -112,6 +112,35 @@ export function useCreateHousehold(): (name: string) => Promise<boolean> {
       return true;
     },
     [account],
+  );
+}
+
+/**
+ * Cambia el nombre del hogar. Devuelve `false` si el nombre no sirve (vacío o muy largo); si no se
+ * pudo guardar (sin conexión, reglas) rechaza. En la sesión real el nombre nuevo llega solo por la
+ * lectura en tiempo real del hogar.
+ */
+export function useRenameHousehold(): (name: string) => Promise<boolean> {
+  const real = useIsRealSession();
+  const loaded = useHouseholdState();
+  const householdId = loaded.status === 'ready' ? loaded.household.id : undefined;
+  return useCallback(
+    async (name) => {
+      const clean = cleanHouseholdName(name);
+      if (!clean) {
+        return false;
+      }
+      if (real) {
+        if (!householdId) {
+          throw new Error('El hogar todavía no se leyó.');
+        }
+        await renameHousehold(householdId, clean);
+      } else {
+        setState((s) => ({ ...s, householdName: clean }));
+      }
+      return true;
+    },
+    [real, householdId],
   );
 }
 

@@ -166,8 +166,8 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 
 - [x] PR 1 · Esquema y reglas de seguridad de hogares (111 pruebas de reglas)
 - [x] Maira publica las reglas
-- [x] PR 2 · Crear hogar y Inicio sin listas (en revisión; ver "Notas del PR 2")
-- [ ] PR 3 · Hogar en tiempo real y editar nombre
+- [x] PR 2 · Crear hogar y Inicio sin listas (mergeado; ver "Notas del PR 2")
+- [x] PR 3 · Hogar en tiempo real y editar nombre (en revisión; ver "Notas del PR 3")
 - [ ] PR 4 · Invitaciones
 - [ ] PR 5 · Unirse
 - [ ] PR 6 · Quitar, salir, traspaso y "te sacaron"
@@ -175,6 +175,14 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 
 ### Notas del PR 2
 
-- **Qué queda para PR 3 y siguientes:** en la sesión real, Hogar muestra solo a quien tiene la sesión (se lee su propio documento de `miembros`); la lista de miembros en tiempo real, Invitar, quitar y salir siguen con datos de ejemplo hasta los PR 3 a 6. El error `32` está en Inicio; Hogar lo suma en el PR 3.
+- **Qué queda para PR 3 y siguientes:** en la sesión real, Hogar muestra solo a quien tiene la sesión (se lee su propio documento de `miembros`); la lista de miembros en tiempo real, Invitar, quitar y salir siguen con datos de ejemplo hasta los PR 3 a 6. El error `32` está en Inicio; Hogar lo suma en el PR 3. *(La lista de miembros y el `32` en Hogar quedaron en el PR 3.)*
 - **Nueva lista** en un hogar real muestra un aviso temporal ("Las listas llegan en la próxima etapa") y no crea nada.
 - **Si la membresía deja de estar activa** (te sacaron) la lectura falla y hoy se ve el error `32`; el aviso `19` llega en el PR 6.
+
+### Notas del PR 3
+
+- **Miembros en tiempo real:** además del hogar y la membresía propia, se escucha la colección `miembros` filtrada por `estado == 'activo'` (las reglas dejan listarla solo a miembros activos). Se ordenan del que lleva más tiempo al que se sumó último; quien todavía no tiene la hora del servidor va al final. La fila propia dice "Vos".
+- **Editar el nombre (`33`):** lápiz en la tarjeta del hogar, visible para cualquier miembro (decisión de la etapa). Solo escribe el campo `nombre` (máximo 60, sin vacío).
+- **Sin conexión, editar el nombre:** usa una transacción, igual que crear hogar: falla al instante y el panel muestra "No pudimos guardar el nombre. Revisá tu conexión y probá de nuevo.", conserva lo escrito y deja reintentar. Así no queda una escritura en cola que se aplique sola horas después y pise el cambio de otra persona. El nombre nuevo se ve cuando llega la lectura en tiempo real. El texto del error es mío: el diseño no trae una variante para este caso.
+- **Error `32` en Hogar:** si falla alguna lectura, Hogar muestra el mismo estado que Inicio con "Reintentar"; el avatar de Perfil sigue disponible arriba.
+- **Qué sigue con datos de ejemplo:** Invitar, las opciones de miembro, quitar y salir (PR 4 a 6).
