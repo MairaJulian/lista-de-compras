@@ -5,7 +5,15 @@ import { useSession } from '../auth/sessionStore';
 import { demoAccount } from '../auth/sessionState';
 import { getMockCurrentMember, mockHousehold, mockInvites } from '../mock/data';
 import { joinMockHousehold, newItemId, newListId, setState, useMockStore } from '../mock/store';
-import { deactivateInvite, leaveHousehold, regenerateInvite, removeMember } from './householdLogic';
+import {
+  cleanHouseholdName,
+  deactivateInvite,
+  leaveHousehold,
+  regenerateInvite,
+  removeMember,
+} from './householdLogic';
+import { createHousehold } from './householdSource';
+import { retryHousehold, seedHousehold, useHouseholdState } from './householdStore';
 import {
   addItem,
   addList,
@@ -24,9 +32,36 @@ import type { Household, Invite, ListInfo, ListItem, ListSummary, Member } from 
 // Único punto de acceso a los datos para las pantallas. Hoy devuelve los datos de ejemplo;
 // con Firebase se reemplaza la implementación sin tocar las pantallas.
 
+/** Si la sesión es la real (de Google): los datos salen de Firestore y todavía no hay listas ni ítems. */
+export function useIsRealSession(): boolean {
+  const session = useSession();
+  return session.status === 'signedIn' && !session.demo;
+}
+
 export function useHousehold(): Household {
   const { members, householdName } = useMockStore();
-  return { ...mockHousehold, name: householdName, members };
+  const real = useIsRealSession();
+  const loaded = useHouseholdState();
+  if (!real) {
+    return { ...mockHousehold, name: householdName, members };
+  }
+  // Mientras se lee, o si no se pudo, no hay datos que mostrar.
+  return loaded.status === 'ready'
+    ? { id: loaded.household.id, name: loaded.household.name, members: [loaded.household.me] }
+    : { id: '', name: '', members: [] };
+}
+
+export type HouseholdLoad = { status: 'loading' | 'ready' | 'error'; retry: () => void };
+
+/** Si ya se leyó el hogar de la sesión real (`error` es la pantalla `32-error-carga`). Con datos de ejemplo está siempre listo. */
+export function useHouseholdLoad(): HouseholdLoad {
+  const session = useSession();
+  const loaded = useHouseholdState();
+  const reading = session.status === 'signedIn' && !session.demo && session.householdId !== null;
+  if (!reading || loaded.status === 'ready') {
+    return { status: 'ready', retry: retryHousehold };
+  }
+  return { status: loaded.status === 'error' ? 'error' : 'loading', retry: retryHousehold };
 }
 
 /** Con sesión, lo que dice `hogarActualId`; sin sesión (pantallas sueltas, tests) los datos de ejemplo. */
@@ -49,21 +84,35 @@ export function useLeaveHousehold(): () => void {
   );
 }
 
-/** Crea un hogar nuevo con una sola persona (nada si el nombre estaba vacío). */
-export function useCreateHousehold(): (name: string) => boolean {
-  return useCallback((name) => {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      return false;
-    }
-    setState((s) => ({
-      ...s,
-      householdName: trimmed,
-      members: [{ ...getMockCurrentMember(), role: 'creator' }],
-      hasHousehold: true,
-    }));
-    return true;
-  }, []);
+/**
+ * Crea un hogar nuevo con una sola persona. Devuelve `false` si el nombre no sirve (vacío o muy
+ * largo); si no se pudo crear (sin conexión, reglas) rechaza. En la sesión real lo crea en
+ * Firestore con una transacción; con los datos de ejemplo, en memoria.
+ */
+export function useCreateHousehold(): (name: string) => Promise<boolean> {
+  const session = useSession();
+  const account = session.status === 'signedIn' && !session.demo ? session.account : undefined;
+  return useCallback(
+    async (name) => {
+      const clean = cleanHouseholdName(name);
+      if (!clean) {
+        return false;
+      }
+      if (account) {
+        // El correo no viaja: en `miembros` solo se guardan nombre y foto.
+        seedHousehold(await createHousehold(clean, { name: account.name, photo: account.photo }));
+        return true;
+      }
+      setState((s) => ({
+        ...s,
+        householdName: clean,
+        members: [{ ...getMockCurrentMember(), role: 'creator' }],
+        hasHousehold: true,
+      }));
+      return true;
+    },
+    [account],
+  );
 }
 
 /** Se une al hogar de ejemplo (con un enlace o un código). */
@@ -110,6 +159,10 @@ export function useInvite(): InviteControls {
 
 export function useLists(): ListSummary[] {
   const { lists, items } = useMockStore();
+  // Las listas reales llegan en la Etapa 4: un hogar real todavía no tiene ninguna.
+  if (useIsRealSession()) {
+    return [];
+  }
   return lists.map((list) => ({
     ...list,
     pendingCount: countPending(items.filter((item) => item.listId === list.id)),
@@ -117,14 +170,17 @@ export function useLists(): ListSummary[] {
 }
 
 export function useCurrentMember(): Member {
-  return getMockCurrentMember();
+  const real = useIsRealSession();
+  const loaded = useHouseholdState();
+  return real && loaded.status === 'ready' ? loaded.household.me : getMockCurrentMember();
 }
 
 /** Cuenta con la que se entró (nombre y mail de Google, que aparecen en Perfil). */
 export function useAccount(): { member: Member; email: string } {
   const session = useSession();
+  const current = useCurrentMember();
   const account = session.status === 'signedIn' ? session.account : demoAccount;
-  return { member: { ...getMockCurrentMember(), name: account.name }, email: account.email };
+  return { member: { ...current, name: account.name }, email: account.email };
 }
 
 export function useList(listId: string): ListInfo | undefined {

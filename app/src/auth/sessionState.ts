@@ -17,13 +17,20 @@ export const demoAccount: Account = {
 export type AuthState =
   | { status: 'loading' }
   | { status: 'signedOut' }
-  | { status: 'signedIn'; account: Account; hasHousehold: boolean }
+  | { status: 'signedIn'; account: Account; hasHousehold: boolean; householdId: string | null }
   | { status: 'demo' };
 
 export type Session =
   | { status: 'loading' }
   | { status: 'signedOut' }
-  | { status: 'signedIn'; account: Account; hasHousehold: boolean; demo: boolean };
+  | {
+      status: 'signedIn';
+      account: Account;
+      hasHousehold: boolean;
+      /** `hogarActualId`; `null` sin hogar y en la sesión de ejemplo (que usa los datos de ejemplo). */
+      householdId: string | null;
+      demo: boolean;
+    };
 
 export type StartRoute = '/' | '/sin-hogar' | '/listas';
 
@@ -38,6 +45,8 @@ const text = (value: unknown): string | undefined =>
  * no existe (se crea justo después de entrar) o no se pudo leer, usa los datos de la cuenta.
  */
 export function signedInState(user: FirebaseUser, data: UserData | undefined): AuthState {
+  // `hogarActualId` vacío (null, ausente o texto vacío) = "sin hogar".
+  const householdId = text(data?.hogarActualId) ?? null;
   return {
     status: 'signedIn',
     account: {
@@ -45,8 +54,8 @@ export function signedInState(user: FirebaseUser, data: UserData | undefined): A
       email: text(data?.email) ?? user.email ?? '',
       photo: text(data?.foto) ?? user.photoURL ?? null,
     },
-    // `hogarActualId` vacío (null, ausente o texto vacío) = "sin hogar".
-    hasHousehold: text(data?.hogarActualId) !== undefined,
+    hasHousehold: householdId !== null,
+    householdId,
   };
 }
 
@@ -57,6 +66,7 @@ export function deriveSession(auth: AuthState, demoHasHousehold: boolean): Sessi
       status: 'signedIn',
       account: demoAccount,
       hasHousehold: demoHasHousehold,
+      householdId: null,
       demo: true,
     };
   }

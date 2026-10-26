@@ -21,6 +21,8 @@ import { Alert } from 'react-native';
 import { signOutEverywhere, watchSession } from '../auth/sessionSource';
 import { signedInState, type AuthState } from '../auth/sessionState';
 import { resetSession } from '../auth/sessionStore';
+import { createHousehold, watchHousehold } from '../data/householdSource';
+import { resetHouseholdStore } from '../data/householdStore';
 import { resetMockStore } from '../mock/store';
 
 jest.mock('../dev/FirestorePing', () => ({ FirestorePing: () => null }));
@@ -67,6 +69,9 @@ function firebaseSession(initial: AuthState) {
 describe('navegación', () => {
   beforeEach(() => {
     resetMockStore();
+    resetHouseholdStore();
+    (createHousehold as jest.Mock).mockReset();
+    (watchHousehold as jest.Mock).mockReset().mockImplementation(() => () => {});
     // Por defecto: sesión de ejemplo (con hogar), como en desarrollo.
     resetSession({ status: 'demo' });
     mockSignIn.mockReset();
@@ -366,6 +371,105 @@ describe('navegación', () => {
       await waitFor(() => expect(alert).toHaveBeenCalledTimes(1));
       expect(screen.getByText('maira@example.com')).toBeTruthy();
       alert.mockRestore();
+    });
+
+    describe('hogar real', () => {
+      const me = { id: 'u1', name: 'Maira', role: 'creator' as const, tone: 'green' as const };
+      const readsHousehold = (name: string) =>
+        (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
+          onData({ id, name, me });
+          return () => {};
+        });
+
+      it('con hogar y sin listas abre Inicio sin listas, y "Nueva lista" avisa que todavía no crea', async () => {
+        readsHousehold('Casa real');
+        firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+        await renderRouter(routes);
+        expect(screen.getByText('Casa real')).toBeTruthy();
+        expect(screen.getByText('Todavía no hay listas')).toBeTruthy();
+        expect(screen.queryByText('Supermercado')).toBeNull();
+        await fireEvent.press(screen.getByText('Nueva lista'));
+        expect(alert).toHaveBeenCalledTimes(1);
+        expect(screen.queryByText('Crear lista')).toBeNull();
+        alert.mockRestore();
+      });
+
+      it('si falla la lectura del hogar muestra el error y "Reintentar" vuelve a leer', async () => {
+        (watchHousehold as jest.Mock).mockImplementationOnce((_id, _onData, onError) => {
+          onError();
+          return () => {};
+        });
+        readsHousehold('Casa real');
+        firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        await renderRouter(routes);
+        expect(screen.getByText('No pudimos cargar tus datos')).toBeTruthy();
+        expect(screen.queryByText('Nueva lista')).toBeNull();
+        await fireEvent.press(screen.getByText('Reintentar'));
+        expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
+        expect(screen.getByText('Casa real')).toBeTruthy();
+      });
+
+      it('Sin hogar: el avatar abre Perfil y la flecha vuelve', async () => {
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByLabelText('Tu perfil'));
+        expect(screen.getByText('maira@example.com')).toBeTruthy();
+        expect(screen.getByText('Cerrar sesión')).toBeTruthy();
+        await fireEvent.press(screen.getByLabelText('Volver'));
+        expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+      });
+
+      it('crear el hogar: Hogar creado y "Más tarde" lleva a Inicio sin listas', async () => {
+        readsHousehold('Casa nueva');
+        (createHousehold as jest.Mock).mockImplementation(async (name: string) => {
+          await emitAuth(signedInState(account, { hogarActualId: 'h-nuevo' }));
+          return { id: 'h-nuevo', name, me };
+        });
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByText('Crear un hogar'));
+        await fireEvent.changeText(screen.getByLabelText('Nombre del hogar'), 'Casa nueva');
+        await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
+        expect(await screen.findByText('¡Listo, ya tenés hogar!')).toBeTruthy();
+        expect(createHousehold).toHaveBeenCalledWith('Casa nueva', {
+          name: 'Maira Julián',
+          photo: null,
+        });
+        await fireEvent.press(screen.getByText('Más tarde'));
+        expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
+        expect(screen.getByText('Casa nueva')).toBeTruthy();
+      });
+
+      it('si falla crear el hogar muestra el error con el nombre escrito; "Reintentar" lo crea', async () => {
+        readsHousehold('Casa nueva');
+        (createHousehold as jest.Mock)
+          .mockRejectedValueOnce(new Error('unavailable'))
+          .mockImplementation(async (name: string) => {
+            await emitAuth(signedInState(account, { hogarActualId: 'h-nuevo' }));
+            return { id: 'h-nuevo', name, me };
+          });
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByText('Crear un hogar'));
+        await fireEvent.changeText(screen.getByLabelText('Nombre del hogar'), 'Casa nueva');
+        await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
+        expect(await screen.findByText('No pudimos crear el hogar')).toBeTruthy();
+        expect(screen.getByDisplayValue('Casa nueva')).toBeTruthy();
+        await fireEvent.press(screen.getByText('Reintentar'));
+        expect(await screen.findByText('¡Listo, ya tenés hogar!')).toBeTruthy();
+      });
+
+      it('"Ahora no" del error de crear hogar vuelve a Sin hogar', async () => {
+        (createHousehold as jest.Mock).mockRejectedValue(new Error('unavailable'));
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByText('Crear un hogar'));
+        await fireEvent.changeText(screen.getByLabelText('Nombre del hogar'), 'Casa nueva');
+        await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
+        await fireEvent.press(await screen.findByText('Ahora no'));
+        expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+      });
     });
 
     it('el menú DEV entra con datos de ejemplo y se ve toda la app', async () => {

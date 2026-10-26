@@ -13,6 +13,7 @@ export default function NoHouseholdRoute() {
       removedFrom={sacaron ? household.name : undefined}
       onCreate={() => router.push('/crear-hogar')}
       onEnterCode={() => router.push('/codigo')}
+      onOpenProfile={() => router.push('/perfil')}
     />
   );
 }

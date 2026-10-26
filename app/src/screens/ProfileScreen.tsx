@@ -19,7 +19,11 @@ export function ProfileScreen({ onBack, onSignOut }: Props) {
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Perfil" backLabel="Volver a Hogar" onBack={onBack} />
+      <ScreenHeader
+        title="Perfil"
+        backLabel={hasHousehold ? 'Volver a Hogar' : 'Volver'}
+        onBack={onBack}
+      />
 
       <View style={styles.identity}>
         <View style={styles.avatar}>

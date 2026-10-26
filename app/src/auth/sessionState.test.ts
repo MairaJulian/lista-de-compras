@@ -15,6 +15,7 @@ describe('signedInState', () => {
       status: 'signedIn',
       account: { name: 'Maira', email: 'maira@gmail.com', photo: 'http://foto/2' },
       hasHousehold: true,
+      householdId: 'h1',
     });
   });
 
@@ -22,6 +23,7 @@ describe('signedInState', () => {
     for (const hogarActualId of [null, '', undefined]) {
       expect(signedInState(user, { nombre: 'Maira', hogarActualId })).toMatchObject({
         hasHousehold: false,
+        householdId: null,
       });
     }
   });
@@ -31,6 +33,7 @@ describe('signedInState', () => {
       status: 'signedIn',
       account: { name: 'Maira Julián', email: 'maira@example.com', photo: 'http://foto/1' },
       hasHousehold: false,
+      householdId: null,
     });
   });
 

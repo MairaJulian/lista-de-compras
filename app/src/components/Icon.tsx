@@ -34,6 +34,8 @@ const glyphs = {
   link: 'link-variant',
   alertCircle: 'alert-circle-outline',
   archive: 'archive-outline',
+  alertTriangle: 'alert-outline',
+  homeAlert: 'home-alert-outline',
   paste: 'content-paste',
 } as const satisfies Record<string, ComponentProps<typeof MaterialCommunityIcons>['name']>;
 
