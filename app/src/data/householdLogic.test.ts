@@ -5,6 +5,7 @@ import {
   formatExpiry,
   leaveCase,
   leaveHousehold,
+  activeMembers,
   memberFromDocument,
   newHouseholdDocuments,
   nextCreator,
@@ -176,5 +177,33 @@ describe('memberFromDocument', () => {
     expect(
       memberFromDocument('u1', { nombre: 'Maira', rol: 'miembro', estado: 'salio' }),
     ).toBeUndefined();
+  });
+});
+
+describe('activeMembers', () => {
+  const at = (millis: number) => ({ toMillis: () => millis });
+  const doc = (id: string, data: object) => ({ id, data });
+
+  it('deja solo a los activos, del más antiguo al más nuevo', () => {
+    const result = activeMembers([
+      doc('lucia', { nombre: 'Lucía', rol: 'miembro', estado: 'activo', desde: at(300) }),
+      doc('maira', { nombre: 'Maira', rol: 'creador', estado: 'activo', desde: at(100) }),
+      doc('diego', { nombre: 'Diego', rol: 'miembro', estado: 'quitado', desde: at(200) }),
+      doc('ana', { nombre: 'Ana', rol: 'miembro', estado: 'salio', desde: at(250) }),
+    ]);
+    expect(result.map((m) => m.id)).toEqual(['maira', 'lucia']);
+    expect(result[0].role).toBe('creator');
+  });
+
+  it('quien todavía no tiene la hora del servidor va al final', () => {
+    const result = activeMembers([
+      doc('nuevo', { nombre: 'Nuevo', rol: 'miembro', estado: 'activo', desde: null }),
+      doc('maira', { nombre: 'Maira', rol: 'creador', estado: 'activo', desde: at(100) }),
+    ]);
+    expect(result.map((m) => m.id)).toEqual(['maira', 'nuevo']);
+  });
+
+  it('sin documentos no hay miembros', () => {
+    expect(activeMembers([])).toEqual([]);
   });
 });

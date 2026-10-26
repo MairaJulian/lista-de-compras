@@ -115,3 +115,19 @@ export function memberFromDocument(
     tone: tone ?? avatarToneOrder[0],
   };
 }
+
+type MemberSnapshot = { id: string; data: (MemberDocument & { desde?: unknown }) | undefined };
+
+/** Milisegundos de un `Timestamp` de Firestore; `Infinity` si todavía no llegó la hora del servidor. */
+function sinceMillis(since: unknown): number {
+  const toMillis = (since as { toMillis?: () => number } | null | undefined)?.toMillis;
+  return typeof toMillis === 'function' ? toMillis.call(since) : Infinity;
+}
+
+/** Miembros activos del hogar, del que lleva más tiempo al que se sumó último. */
+export function activeMembers(documents: MemberSnapshot[]): Member[] {
+  return documents
+    .filter((document) => document.data?.estado === 'activo')
+    .sort((a, b) => sinceMillis(a.data?.desde) - sinceMillis(b.data?.desde))
+    .flatMap((document) => memberFromDocument(document.id, document.data) ?? []);
+}

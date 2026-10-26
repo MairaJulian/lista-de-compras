@@ -21,8 +21,9 @@ import { Alert } from 'react-native';
 import { signOutEverywhere, watchSession } from '../auth/sessionSource';
 import { signedInState, type AuthState } from '../auth/sessionState';
 import { resetSession } from '../auth/sessionStore';
-import { createHousehold, watchHousehold } from '../data/householdSource';
+import { createHousehold, renameHousehold, watchHousehold } from '../data/householdSource';
 import { resetHouseholdStore } from '../data/householdStore';
+import type { Member } from '../data/types';
 import { resetMockStore } from '../mock/store';
 
 jest.mock('../dev/FirestorePing', () => ({ FirestorePing: () => null }));
@@ -377,7 +378,7 @@ describe('navegación', () => {
       const me = { id: 'u1', name: 'Maira', role: 'creator' as const, tone: 'green' as const };
       const readsHousehold = (name: string) =>
         (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
-          onData({ id, name, me });
+          onData({ id, name, me, members: [me] });
           return () => {};
         });
 
@@ -410,6 +411,62 @@ describe('navegación', () => {
         expect(screen.getByText('Casa real')).toBeTruthy();
       });
 
+      it('Hogar muestra a los miembros reales, y uno nuevo aparece en tiempo real', async () => {
+        const lucia = { id: 'u2', name: 'Lucía', role: 'member' as const, tone: 'amber' as const };
+        let push: (members: Member[]) => void = () => {};
+        (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
+          push = (members) => onData({ id, name: 'Casa real', me, members });
+          push([me]);
+          return () => {};
+        });
+        firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByRole('tab', { name: 'Hogar' }));
+        expect(screen.getByText('1 miembro')).toBeTruthy();
+        expect(screen.getByText('Creaste el hogar')).toBeTruthy();
+        expect(screen.queryByText('Lucía')).toBeNull();
+        await act(async () => push([me, lucia]));
+        expect(screen.getByText('2 miembros')).toBeTruthy();
+        expect(screen.getByText('Lucía')).toBeTruthy();
+        expect(screen.getByLabelText('Opciones de Lucía')).toBeTruthy();
+      });
+
+      it('Hogar: editar el nombre lo guarda en el hogar real y lo cambia al llegar la lectura', async () => {
+        let push: (name: string) => void = () => {};
+        (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
+          push = (name) => onData({ id, name, me, members: [me] });
+          push('Casa real');
+          return () => {};
+        });
+        (renameHousehold as jest.Mock).mockImplementation(async () => push('Casa nueva'));
+        firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByRole('tab', { name: 'Hogar' }));
+        await fireEvent.press(screen.getByLabelText('Editar el nombre del hogar'));
+        await fireEvent.changeText(screen.getByLabelText('Nuevo nombre'), '  Casa nueva ');
+        await fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
+        await waitFor(() => expect(renameHousehold).toHaveBeenCalledWith('h1', 'Casa nueva'));
+        await waitFor(() => expect(screen.queryByText('Nombre del hogar')).toBeNull());
+        expect(screen.getByText('Casa nueva')).toBeTruthy();
+      });
+
+      it('Hogar: si falla la lectura muestra el error 32 y "Reintentar" vuelve a leer', async () => {
+        (watchHousehold as jest.Mock).mockImplementationOnce((_id, _onData, onError) => {
+          onError();
+          return () => {};
+        });
+        readsHousehold('Casa real');
+        firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByRole('tab', { name: 'Hogar' }));
+        expect(screen.getByText('No pudimos cargar tus datos')).toBeTruthy();
+        expect(screen.queryByText('Salir del hogar')).toBeNull();
+        expect(screen.getByLabelText('Tu perfil')).toBeTruthy();
+        await fireEvent.press(screen.getByText('Reintentar'));
+        expect(await screen.findByText('Salir del hogar')).toBeTruthy();
+        expect(screen.getByText('Casa real')).toBeTruthy();
+      });
+
       it('Sin hogar: el avatar abre Perfil y la flecha vuelve', async () => {
         firebaseSession(signedInState(account, { hogarActualId: null }));
         await renderRouter(routes);
@@ -424,7 +481,7 @@ describe('navegación', () => {
         readsHousehold('Casa nueva');
         (createHousehold as jest.Mock).mockImplementation(async (name: string) => {
           await emitAuth(signedInState(account, { hogarActualId: 'h-nuevo' }));
-          return { id: 'h-nuevo', name, me };
+          return { id: 'h-nuevo', name, me, members: [me] };
         });
         firebaseSession(signedInState(account, { hogarActualId: null }));
         await renderRouter(routes);
@@ -447,7 +504,7 @@ describe('navegación', () => {
           .mockRejectedValueOnce(new Error('unavailable'))
           .mockImplementation(async (name: string) => {
             await emitAuth(signedInState(account, { hogarActualId: 'h-nuevo' }));
-            return { id: 'h-nuevo', name, me };
+            return { id: 'h-nuevo', name, me, members: [me] };
           });
         firebaseSession(signedInState(account, { hogarActualId: null }));
         await renderRouter(routes);
