@@ -164,11 +164,17 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 
 ## Estado
 
-- [x] PR 1 · Esquema y reglas de seguridad de hogares (en revisión; 111 pruebas de reglas)
-- [ ] Maira publica las reglas
-- [ ] PR 2 · Crear hogar y Inicio sin listas
+- [x] PR 1 · Esquema y reglas de seguridad de hogares (111 pruebas de reglas)
+- [x] Maira publica las reglas
+- [x] PR 2 · Crear hogar y Inicio sin listas (en revisión; ver "Notas del PR 2")
 - [ ] PR 3 · Hogar en tiempo real y editar nombre
 - [ ] PR 4 · Invitaciones
 - [ ] PR 5 · Unirse
 - [ ] PR 6 · Quitar, salir, traspaso y "te sacaron"
 - [ ] PR 7 · Página puente para el enlace (opcional)
+
+### Notas del PR 2
+
+- **Qué queda para PR 3 y siguientes:** en la sesión real, Hogar muestra solo a quien tiene la sesión (se lee su propio documento de `miembros`); la lista de miembros en tiempo real, Invitar, quitar y salir siguen con datos de ejemplo hasta los PR 3 a 6. El error `32` está en Inicio; Hogar lo suma en el PR 3.
+- **Nueva lista** en un hogar real muestra un aviso temporal ("Las listas llegan en la próxima etapa") y no crea nada.
+- **Si la membresía deja de estar activa** (te sacaron) la lectura falla y hoy se ve el error `32`; el aviso `19` llega en el PR 6.

@@ -10,10 +10,13 @@ export default function CreateHouseholdRoute() {
   return (
     <CreateHouseholdScreen
       onBack={() => router.back()}
-      onCreate={(name) => {
-        if (createHousehold(name)) {
+      onDismiss={() => router.back()}
+      onCreate={async (name) => {
+        const created = await createHousehold(name);
+        if (created) {
           goToHouseholdCreated();
         }
+        return created;
       }}
     />
   );

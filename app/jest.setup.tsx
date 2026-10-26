@@ -18,3 +18,10 @@ jest.mock('./src/auth/sessionSource', () => ({
   watchSession: jest.fn(() => () => {}),
   signOutEverywhere: jest.fn(async () => {}),
 }));
+
+// Lo mismo con el hogar: la lectura y la creación en Firestore las controla cada prueba (la
+// implementación real se prueba en `householdSource.test.ts`).
+jest.mock('./src/data/householdSource', () => ({
+  watchHousehold: jest.fn(() => () => {}),
+  createHousehold: jest.fn(),
+}));

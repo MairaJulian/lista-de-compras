@@ -6,6 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { startSession, useSession } from '../auth/sessionStore';
+import { startHousehold } from '../data/householdStore';
 import { DevMenu } from '../dev/DevMenu';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { colors } from '../theme';
@@ -16,6 +17,10 @@ export default function RootLayout() {
   const session = useSession();
 
   useEffect(() => startSession(), []);
+
+  // Con un hogar real (no el de ejemplo) se lee el hogar y la membresía mientras la app está abierta.
+  const householdId = session.status === 'signedIn' && !session.demo ? session.householdId : null;
+  useEffect(() => (householdId ? startHousehold(householdId) : undefined), [householdId]);
 
   if (!fontsLoaded) {
     return <View style={styles.container} />;

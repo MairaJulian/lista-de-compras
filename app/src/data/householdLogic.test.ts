@@ -1,9 +1,12 @@
 import { mockHousehold, mockInvites } from '../mock/data';
 import {
+  cleanHouseholdName,
   deactivateInvite,
   formatExpiry,
   leaveCase,
   leaveHousehold,
+  memberFromDocument,
+  newHouseholdDocuments,
   nextCreator,
   regenerateInvite,
   removeMember,
@@ -83,5 +86,95 @@ describe('invitaciones', () => {
 
   it('formatea el vencimiento', () => {
     expect(formatExpiry(mockInvites[0])).toBe('Vence en 47 h');
+  });
+});
+
+describe('cleanHouseholdName', () => {
+  it('recorta los espacios', () => {
+    expect(cleanHouseholdName('  Nuestra casa ')).toBe('Nuestra casa');
+  });
+
+  it('rechaza el nombre vacío, solo con espacios o de más de 60 caracteres', () => {
+    expect(cleanHouseholdName('')).toBeUndefined();
+    expect(cleanHouseholdName('   ')).toBeUndefined();
+    expect(cleanHouseholdName('a'.repeat(61))).toBeUndefined();
+    expect(cleanHouseholdName('a'.repeat(60))).toBe('a'.repeat(60));
+  });
+});
+
+describe('newHouseholdDocuments', () => {
+  const profile = { uid: 'u1', name: 'Maira', photo: 'http://foto/1' };
+  const { household, member } = newHouseholdDocuments(profile, 'Nuestra casa', 'AHORA');
+
+  it('el hogar apunta a quien lo crea como creador, sin invitación', () => {
+    expect(household).toEqual({
+      nombre: 'Nuestra casa',
+      creadoPor: 'u1',
+      creadoEn: 'AHORA',
+      invitacionActivaId: null,
+      creadorActualId: 'u1',
+    });
+  });
+
+  it('el miembro es el creador activo, con el primer color y sin correo', () => {
+    expect(member).toEqual({
+      nombre: 'Maira',
+      foto: 'http://foto/1',
+      colorAvatar: 'green',
+      rol: 'creador',
+      estado: 'activo',
+      desde: 'AHORA',
+      hasta: null,
+      invitacionId: null,
+      invitadoPor: null,
+    });
+    expect(member).not.toHaveProperty('email');
+  });
+
+  it('si la cuenta no trae nombre usa uno que cumpla las reglas', () => {
+    const { member: unnamed } = newHouseholdDocuments({ ...profile, name: '  ' }, 'Casa', 'AHORA');
+    expect(unnamed.nombre).toBe('Sin nombre');
+  });
+});
+
+describe('memberFromDocument', () => {
+  it('convierte el documento de un miembro activo', () => {
+    expect(
+      memberFromDocument('u1', {
+        nombre: 'Maira',
+        rol: 'creador',
+        estado: 'activo',
+        colorAvatar: 'blue',
+      }),
+    ).toEqual({ id: 'u1', name: 'Maira', role: 'creator', tone: 'blue' });
+    expect(
+      memberFromDocument('u2', {
+        nombre: 'Lucía',
+        rol: 'miembro',
+        estado: 'activo',
+        colorAvatar: 'amber',
+      }),
+    ).toMatchObject({ role: 'member', tone: 'amber' });
+  });
+
+  it('un color desconocido cae en el primero', () => {
+    expect(
+      memberFromDocument('u1', {
+        nombre: 'Maira',
+        rol: 'miembro',
+        estado: 'activo',
+        colorAvatar: 'rosa',
+      }),
+    ).toMatchObject({ tone: 'green' });
+  });
+
+  it('no hay miembro si el documento no existe o ya no está activo', () => {
+    expect(memberFromDocument('u1', undefined)).toBeUndefined();
+    expect(
+      memberFromDocument('u1', { nombre: 'Maira', rol: 'miembro', estado: 'quitado' }),
+    ).toBeUndefined();
+    expect(
+      memberFromDocument('u1', { nombre: 'Maira', rol: 'miembro', estado: 'salio' }),
+    ).toBeUndefined();
   });
 });
