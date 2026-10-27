@@ -168,8 +168,8 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 - [x] Maira publica las reglas
 - [x] PR 2 · Crear hogar y Inicio sin listas (mergeado; ver "Notas del PR 2")
 - [x] PR 3 · Hogar en tiempo real y editar nombre (mergeado; ver "Notas del PR 3")
-- [x] PR 4 · Invitaciones (en revisión; ver "Notas del PR 4")
-- [ ] PR 5 · Unirse
+- [x] PR 4 · Invitaciones (mergeado; ver "Notas del PR 4")
+- [x] PR 5 · Unirse (en revisión; ver "Notas del PR 5")
 - [ ] PR 6 · Quitar, salir, traspaso y "te sacaron"
 - [ ] PR 7 · Página puente para el enlace (opcional)
 
@@ -197,3 +197,15 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 - **Reloj del celular:** `venceEn` se calcula con la hora del celular y las reglas aceptan hasta 48 h + 5 min. Si el reloj adelanta más de 5 minutos, generar falla (se vería como el aviso de arriba).
 - **Desde `21-hogar-creado`**, "Invitar" ya lleva a esta pantalla (lo hacía desde el PR 2; ahora con datos reales).
 - **Sigue con datos de ejemplo:** opciones de miembro, quitar y salir (PR 6).
+
+### Notas del PR 5
+
+- **Enlace `changuito://unirse/<codigo>`:** la ruta es `unirse/[codigo]`. Sin sesión **no se puede leer la invitación** (las reglas piden sesión), así que no hay forma de mostrar el nombre del hogar: el código se guarda en memoria, se muestra Bienvenida y, cuando la persona entra con Google, la app abre `02-invitacion-recibida` con el hogar y quién invitó. Si cierra la app antes de entrar, el código se pierde (no se guarda en el celular). `/unirse` sin código sigue existiendo solo para la invitación de ejemplo del menú DEV; con una sesión real es un enlace inválido.
+- **`02` con sesión abierta:** como ya entró, el botón dice **Unirme** (sin la "G") y el texto de abajo dice "Vas a ver y editar las listas de compras junto con los demás." **Ese texto es mío**: el diseño solo trae la variante sin sesión. Además, **la tarjeta no muestra "3 miembros · 4 listas"**: quien todavía no es miembro no puede leer el hogar. En su lugar dice "Te invitó <nombre>" (el nombre sale de la invitación).
+- **Con un código (`18`):** "Unirme" hace directamente la transacción (sin pasar por `02`). Pegar un mensaje o un enlace completo deja solo el código. Si no existe, está revocado o venció: `30-error-codigo` dentro de la pantalla, con lo escrito conservado; se limpia al editar.
+- **Unirse es una transacción:** lee la invitación, la valida (activa, sin vencer), y crea o reactiva su `miembros/{uid}` (rol `miembro`, con `invitacionId` e `invitadoPor`) y pone `hogarActualId`. Quien había salido o fue quitado vuelve con el mismo camino. Cualquier falla que no sea "código inválido" (sin conexión, servidor) muestra `26-error-sin-conexion-unirse`; "Reintentar" vuelve a la invitación con el mismo código. Un `permission-denied` (por ejemplo un hogar archivado) se ve como código inválido.
+- **Después de unirse:** no se navega hasta que la sesión sabe del hogar nuevo (llega por la lectura en tiempo real de `usuarios/{uid}`). Hasta entonces el botón queda en "Uniéndome…". Si se navegara antes, Inicio vería "sin hogar" y volvería a Sin hogar.
+- **Quien ya tiene un hogar** y abre un enlace de invitación: va a Inicio sin unirse (no hay diseño para cambiar de hogar y tendría dos membresías activas). Queda como pendiente de diseño.
+- **Color del avatar:** el esquema pide "el primer color no usado por miembros activos", pero quien se une todavía no puede leer a los demás miembros (las reglas no se lo permiten), así que no puede saber cuáles están usados. Se reparte según el id de la persona (siempre el mismo, parejo entre los tres). Dos personas pueden terminar con el mismo color. Corregirlo exige cambiar reglas o un paso después de unirse (propuesta para más adelante).
+- **Sin cambios en las reglas** (las del PR 1 ya cubren unirse, volver a unirse y los códigos inválidos, con sus pruebas).
+- **Campo con error:** `LargeField` suma la variante de error de `30` (borde y rótulo rojos, fondo `#FFF8F8`, mensaje debajo). El borde y el fondo van siempre presentes para no perder el `borderRadius` en Android; igual **conviene mirarlo en el celular tocando** (Claude Code no pudo verlo).

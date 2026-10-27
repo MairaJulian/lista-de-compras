@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { resetMockStore } from '../mock/store';
 import { CreateHouseholdScreen } from './CreateHouseholdScreen';
@@ -84,6 +84,42 @@ describe('Sin hogar y sus flujos', () => {
     expect(screen.getByDisplayValue('K7P2-9XQ-4MN')).toBeTruthy();
     await fireEvent.press(screen.getByText('Unirme'));
     expect(onJoin).toHaveBeenCalledWith('K7P2-9XQ-4MN');
+  });
+
+  it('Unirme con un código: pegar un mensaje completo deja solo el código', async () => {
+    const message =
+      'Sumate a Nuestra casa en Changuito.\nCódigo: K7P2-9XQ-4MN\nEnlace: changuito://unirse/K7P2-9XQ-4MN';
+    await render(<JoinWithCodeScreen readClipboard={async () => message} />);
+    await fireEvent.press(screen.getByText('Pegar'));
+    expect(screen.getByDisplayValue('K7P2-9XQ-4MN')).toBeTruthy();
+  });
+
+  it('Unirme con un código: une con el código normalizado y, mientras tanto, queda en "Uniéndome…"', async () => {
+    let finish: (result: 'joined') => void = () => {};
+    const onJoin = jest.fn(() => new Promise<'joined'>((resolve) => (finish = resolve)));
+    await render(<JoinWithCodeScreen onJoin={onJoin} />);
+    await fireEvent.changeText(screen.getByLabelText('Código de invitación'), ' k7p2-9xq-4mn ');
+    await fireEvent.press(screen.getByText('Unirme'));
+    expect(onJoin).toHaveBeenCalledWith('K7P2-9XQ-4MN');
+    const joining = screen.getByRole('button', { name: 'Uniéndome…' });
+    expect(joining).toBeDisabled();
+    await fireEvent.press(joining);
+    expect(onJoin).toHaveBeenCalledTimes(1);
+    await act(async () => finish('joined'));
+    expect(screen.getByRole('button', { name: 'Unirme' })).toBeEnabled();
+    expect(screen.queryByText(/Este código no existe/)).toBeNull();
+  });
+
+  it('Unirme con un código inválido muestra el error 30 y desaparece al editar', async () => {
+    await render(<JoinWithCodeScreen onJoin={async () => 'invalid' as const} />);
+    await fireEvent.changeText(screen.getByLabelText('Código de invitación'), 'K7P2-9XQ-4MM');
+    await fireEvent.press(screen.getByText('Unirme'));
+    expect(
+      await screen.findByText('Este código no existe o ya venció. Revisalo o pedí uno nuevo.'),
+    ).toBeTruthy();
+    expect(screen.getByDisplayValue('K7P2-9XQ-4MM')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Código de invitación'), 'K7P2-9XQ-4M');
+    expect(screen.queryByText(/Este código no existe/)).toBeNull();
   });
 
   it('Hogar creado muestra el hogar y avisa Invitar y Más tarde', async () => {

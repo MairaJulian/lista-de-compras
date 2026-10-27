@@ -1,20 +1,28 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, GoogleButton, Icon, IntroLayout } from '../components';
-import { useHousehold, useLists } from '../data/hooks';
 import { colors, fontSizes, fonts, radii } from '../theme';
 
 type Props = {
+  householdName: string;
+  /** Debajo del nombre: quién invitó (o, con datos de ejemplo, cuántos son). */
+  detail?: string;
+  /** Con la sesión abierta el botón es "Unirme"; sin ella, "Entrar y unirme" con la "G" de Google. */
+  signedIn?: boolean;
+  joining?: boolean;
   onJoin?: () => void;
   onDecline?: () => void;
 };
 
 /** Unirse (`02-invitacion-recibida`): lo que ve quien abre el enlace de invitación. */
-export function JoinScreen({ onJoin, onDecline }: Props) {
-  const household = useHousehold();
-  const lists = useLists();
-  const members = household.members.length;
-
+export function JoinScreen({
+  householdName,
+  detail,
+  signedIn = false,
+  joining = false,
+  onJoin,
+  onDecline,
+}: Props) {
   return (
     <IntroLayout
       heroHeight={430}
@@ -24,18 +32,28 @@ export function JoinScreen({ onJoin, onDecline }: Props) {
             <View style={styles.icon}>
               <Icon name="home" size={36} color={colors.onPrimary} />
             </View>
-            <Text style={styles.name}>{household.name}</Text>
-            <Text style={styles.count}>
-              {members === 1 ? '1 miembro' : `${members} miembros`} ·{' '}
-              {lists.length === 1 ? '1 lista' : `${lists.length} listas`}
-            </Text>
+            <Text style={styles.name}>{householdName}</Text>
+            {detail ? <Text style={styles.count}>{detail}</Text> : null}
           </View>
         </View>
       }
       title="Te invitaron a unirte al hogar."
-      message="Entrá con tu cuenta de Google para ver y editar las listas de compras junto con los demás."
+      message={
+        signedIn
+          ? 'Vas a ver y editar las listas de compras junto con los demás.'
+          : 'Entrá con tu cuenta de Google para ver y editar las listas de compras junto con los demás.'
+      }
     >
-      <GoogleButton label="Entrar y unirme" onPress={onJoin} />
+      {signedIn ? (
+        <Button
+          label={joining ? 'Uniéndome…' : 'Unirme'}
+          large
+          disabled={joining}
+          onPress={onJoin}
+        />
+      ) : (
+        <GoogleButton label="Entrar y unirme" onPress={onJoin} />
+      )}
       <Button label="Ahora no" variant="text" onPress={onDecline} />
     </IntroLayout>
   );

@@ -15,6 +15,8 @@ import {
 import { createHousehold, renameHousehold } from './householdSource';
 import { retryHousehold, seedHousehold, useHouseholdState } from './householdStore';
 import { inviteFromDocument } from './inviteLogic';
+import { joinFailure, normalizeInviteCode, type JoinResult } from './joinLogic';
+import { joinHousehold, readInvitePreview } from './joinSource';
 import { createInvite, revokeInvite, watchInvite } from './inviteSource';
 import {
   addItem,
@@ -146,9 +148,92 @@ export function useRenameHousehold(): (name: string) => Promise<boolean> {
   );
 }
 
-/** Se une al hogar de ejemplo (con un enlace o un código). */
-export function useJoinHousehold(): () => void {
-  return joinMockHousehold;
+/**
+ * Se une al hogar de una invitación (con un enlace o un código). Dice cómo terminó: `invalid` si el
+ * código no existe, venció o está revocado; `offline` si no se pudo llegar al servidor. En la sesión
+ * real es una transacción de Firestore; con los datos de ejemplo, el enlace de ejemplo.
+ */
+export function useJoinHousehold(): (code?: string) => Promise<JoinResult> {
+  const session = useSession();
+  const { invite, online } = useMockStore();
+  const account = session.status === 'signedIn' && !session.demo ? session.account : undefined;
+  return useCallback(
+    async (code) => {
+      if (account) {
+        try {
+          // El correo no viaja: en `miembros` solo se guardan nombre y foto.
+          await joinHousehold(normalizeInviteCode(code ?? ''), {
+            name: account.name,
+            photo: account.photo,
+          });
+          return 'joined';
+        } catch (error) {
+          return joinFailure(error);
+        }
+      }
+      // Con los datos de ejemplo, sin conexión es el indicador de la lista, y un enlace inválido es el
+      // que se desactivó desde Invitar.
+      if (!online) return 'offline';
+      if (!invite.active) return 'invalid';
+      joinMockHousehold();
+      return 'joined';
+    },
+    [account, invite.active, online],
+  );
+}
+
+export type InvitePreviewState =
+  | { status: 'loading' }
+  | { status: 'ready'; householdName: string; detail: string }
+  | { status: 'invalid' }
+  | { status: 'offline' };
+
+/**
+ * Lo que se ve de la invitación antes de unirse: el nombre del hogar y quién invitó (o, con los datos
+ * de ejemplo, cuántos son y cuántas listas tiene). Se lee una vez; `retry` vuelve a leer.
+ */
+export function useInvitePreview(code: string): InvitePreviewState & { retry: () => void } {
+  const real = useIsRealSession();
+  const household = useHousehold();
+  const lists = useLists();
+  const [attempt, setAttempt] = useState(0);
+  const [loaded, setLoaded] = useState<{ key: string; state: InvitePreviewState }>();
+  const key = `${code}#${attempt}`;
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  useEffect(() => {
+    if (!real) return;
+    let cancelled = false;
+    readInvitePreview(code).then(
+      (preview) => {
+        if (cancelled) return;
+        const by = preview.invitedByName;
+        setLoaded({
+          key,
+          state: {
+            status: 'ready',
+            householdName: preview.householdName,
+            detail: by ? `Te invitó ${by}` : '',
+          },
+        });
+      },
+      (error) => {
+        if (!cancelled) setLoaded({ key, state: { status: joinFailure(error) } });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [real, code, key]);
+
+  if (!real) {
+    const members = household.members.length;
+    const count = `${members === 1 ? '1 miembro' : `${members} miembros`} · ${
+      lists.length === 1 ? '1 lista' : `${lists.length} listas`
+    }`;
+    return { status: 'ready', householdName: household.name, detail: count, retry };
+  }
+  return { ...(loaded?.key === key ? loaded.state : { status: 'loading' as const }), retry };
 }
 
 /** Si hay conexión (las invitaciones necesitan internet; el indicador de la lista lo alterna). */
