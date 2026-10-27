@@ -202,6 +202,8 @@ function useWatchedInvite(inviteId: string | null | undefined, enabled: boolean)
       inviteId,
       (next) => {
         setData(next);
+        // La hora de referencia es la de esta lectura, no la de cuando se abrió la pantalla.
+        setNow(Date.now());
         setWatched({ code: inviteId, invite: inviteFromDocument(inviteId, next, Date.now()) });
       },
       () => setWatched({ code: inviteId, invite: 'error' }),

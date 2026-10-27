@@ -69,6 +69,17 @@ describe('useInvite con una sesión real', () => {
     expect(result.current.invite).toEqual({ code: 'K7P2-9XQ-4MN', hoursLeft: 47, active: true });
   });
 
+  it('una invitación recién creada dice 48 h aunque la pantalla se abrió antes', async () => {
+    (useHouseholdState as jest.Mock).mockReturnValue(ready('K7P2-9XQ-4MN'));
+    const { result } = await renderHook(() => useInvite());
+
+    await act(async () => void jest.advanceTimersByTime(30 * 1000));
+    await act(async () =>
+      emit.data({ estado: 'activa', venceEn: timestamp(Date.now() + 48 * HOUR) }),
+    );
+    expect(result.current.invite.hoursLeft).toBe(48);
+  });
+
   it('con el paso del tiempo baja las horas y al vencer queda inactiva, sin releer', async () => {
     (useHouseholdState as jest.Mock).mockReturnValue(ready('K7P2-9XQ-4MN'));
     const { result } = await renderHook(() => useInvite());
