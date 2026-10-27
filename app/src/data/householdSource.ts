@@ -13,8 +13,17 @@ import {
 import { activeMembers, memberFromDocument, newHouseholdDocuments } from './householdLogic';
 import type { Member } from './types';
 
-/** Lo que la app necesita saber del hogar: su nombre, la membresía de quien tiene la sesión y los miembros activos. */
-export type LoadedHousehold = { id: string; name: string; me: Member; members: Member[] };
+/**
+ * Lo que la app necesita saber del hogar: su nombre, la membresía de quien tiene la sesión, los
+ * miembros activos y el código de la invitación vigente (`null` si no hay).
+ */
+export type LoadedHousehold = {
+  id: string;
+  name: string;
+  activeInviteId: string | null;
+  me: Member;
+  members: Member[];
+};
 
 function currentUid(): string {
   const uid = getAuth().currentUser?.uid;
@@ -55,7 +64,7 @@ export async function createHousehold(
   if (!me) {
     throw new Error('El miembro creador no quedó activo.');
   }
-  return { id: householdRef.id, name, me, members: [me] };
+  return { id: householdRef.id, name, activeInviteId: null, me, members: [me] };
 }
 
 /**
@@ -96,11 +105,14 @@ export function watchHousehold(
   }
   const db = getFirestore();
   let name: string | undefined;
+  let activeInviteId: string | null = null;
   let me: Member | undefined;
   let members: Member[] | undefined;
 
   const emit = () => {
-    if (name !== undefined && me && members) onData({ id: householdId, name, me, members });
+    if (name !== undefined && me && members) {
+      onData({ id: householdId, name, activeInviteId, me, members });
+    }
   };
 
   const stopHousehold = onSnapshot(
@@ -112,6 +124,10 @@ export function watchHousehold(
         return;
       }
       name = data.nombre;
+      activeInviteId =
+        typeof data.invitacionActivaId === 'string' && data.invitacionActivaId
+          ? data.invitacionActivaId
+          : null;
       emit();
     },
     onError,

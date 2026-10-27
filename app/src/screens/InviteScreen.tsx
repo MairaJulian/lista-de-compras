@@ -1,3 +1,4 @@
+import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -5,29 +6,66 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, CenteredDialog, Icon, ScreenHeader } from '../components';
 import { formatExpiry } from '../data/householdLogic';
 import { useHousehold, useInvite } from '../data/hooks';
+import { inviteLink, inviteMessage } from '../data/inviteLogic';
 import { colors, fontSizes, fonts, radii } from '../theme';
+import { LoadErrorState } from './InicioStates';
 
 type Props = {
   onBack?: () => void;
   /** Cómo se comparte el enlace; por defecto abre el menú de compartir de Android. */
   onShare?: (message: string) => void;
+  /** Cómo se copia al portapapeles; por defecto el del sistema. */
+  onCopyText?: (text: string) => Promise<unknown>;
 };
 
-// Marcador del diseño (`12-invitar`): el enlace real llega con las invitaciones de la Etapa 3.
-const linkPlaceholder = '[enlace de invitación]';
+type Failure = 'generate' | 'deactivate';
+
+// Textos míos: el diseño no trae una variante para estos errores (ver las notas del PR 4).
+const failureMessages: Record<Failure, string> = {
+  generate: 'No pudimos generar el enlace. Revisá tu conexión y probá de nuevo.',
+  deactivate: 'No pudimos desactivar el enlace. Revisá tu conexión y probá de nuevo.',
+};
 
 /** Invitar (`12-invitar`) y su estado sin enlace (`22-invitar-sin-enlace`). */
-export function InviteScreen({ onBack, onShare = shareMessage }: Props) {
+export function InviteScreen({
+  onBack,
+  onShare = shareMessage,
+  onCopyText = Clipboard.setStringAsync,
+}: Props) {
   const household = useHousehold();
-  const { invite, regenerate, deactivate } = useInvite();
+  const { status, invite, regenerate, deactivate, retry } = useInvite();
   const [copied, setCopied] = useState<'link' | 'code'>();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<Failure>();
   const { bottom } = useSafeAreaInsets();
 
-  const generate = () => {
+  // Generar y desactivar necesitan al servidor: sin conexión fallan al instante y se avisa abajo.
+  const run = async (action: () => Promise<void>, onFail: Failure) => {
+    setBusy(true);
+    setFailure(undefined);
     setCopied(undefined);
-    regenerate();
+    try {
+      await action();
+    } catch {
+      setFailure(onFail);
+    }
+    setBusy(false);
   };
+
+  const copy = (kind: 'link' | 'code', text: string) => {
+    setCopied(kind);
+    onCopyText(text);
+  };
+
+  if (status !== 'ready') {
+    return (
+      <View style={styles.screen}>
+        <ScreenHeader title="Invitar" backLabel="Volver a Hogar" onBack={onBack} />
+        {status === 'error' && <LoadErrorState onRetry={retry} />}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -46,16 +84,16 @@ export function InviteScreen({ onBack, onShare = shareMessage }: Props) {
 
           <InviteCard
             label="Enlace"
-            value={linkPlaceholder}
+            value={inviteLink(invite.code)}
             copied={copied === 'link'}
-            onCopy={() => setCopied('link')}
+            onCopy={() => copy('link', inviteLink(invite.code))}
           />
           <InviteCard
             label="Código"
             value={invite.code}
             code
             copied={copied === 'code'}
-            onCopy={() => setCopied('code')}
+            onCopy={() => copy('code', invite.code)}
           />
 
           <View style={styles.expiry}>
@@ -69,23 +107,24 @@ export function InviteScreen({ onBack, onShare = shareMessage }: Props) {
           <View style={styles.spacer} />
 
           <View style={[styles.actions, { paddingBottom: 32 + bottom }]}>
+            <FailureNote failure={failure} />
             <Button
               label="Compartir enlace"
               icon="share"
               large
-              onPress={() =>
-                onShare(`Sumate a ${household.name} en Changuito. Código: ${invite.code}`)
-              }
+              onPress={() => onShare(inviteMessage(household.name, invite.code))}
             />
             <Button
               label="Generar enlace nuevo"
               icon="refresh"
               variant="secondary"
-              onPress={generate}
+              disabled={busy}
+              onPress={() => run(regenerate, 'generate')}
             />
             <Button
               label="Desactivar enlace"
               variant="danger"
+              disabled={busy}
               onPress={() => setConfirmOpen(true)}
             />
           </View>
@@ -107,7 +146,14 @@ export function InviteScreen({ onBack, onShare = shareMessage }: Props) {
           <View style={styles.spacer} />
 
           <View style={[styles.actions, { paddingBottom: 40 + bottom }]}>
-            <Button label="Generar enlace nuevo" icon="refresh" large onPress={generate} />
+            <FailureNote failure={failure} />
+            <Button
+              label="Generar enlace nuevo"
+              icon="refresh"
+              large
+              disabled={busy}
+              onPress={() => run(regenerate, 'generate')}
+            />
           </View>
         </>
       )}
@@ -124,8 +170,8 @@ export function InviteScreen({ onBack, onShare = shareMessage }: Props) {
           label="Desactivar"
           variant="dangerFilled"
           onPress={() => {
-            deactivate();
             setConfirmOpen(false);
+            run(deactivate, 'deactivate');
           }}
         />
         <Button label="Cancelar" variant="secondary" onPress={() => setConfirmOpen(false)} />
@@ -136,6 +182,14 @@ export function InviteScreen({ onBack, onShare = shareMessage }: Props) {
 
 function shareMessage(message: string) {
   Share.share({ message });
+}
+
+function FailureNote({ failure }: { failure?: Failure }) {
+  return failure ? (
+    <Text accessibilityRole="alert" style={styles.failure}>
+      {failureMessages[failure]}
+    </Text>
+  ) : null;
 }
 
 type CardProps = {
@@ -243,6 +297,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   spacer: { flex: 1 },
+  failure: {
+    textAlign: 'center',
+    fontFamily: fonts.body,
+    fontSize: fontSizes.label,
+    lineHeight: 22,
+    color: colors.danger,
+  },
   actions: { paddingHorizontal: 24, gap: 10 },
   inactive: { paddingTop: 72, paddingHorizontal: 32, alignItems: 'center', gap: 12 },
   inactiveCircle: {

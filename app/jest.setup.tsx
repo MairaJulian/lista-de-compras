@@ -26,3 +26,10 @@ jest.mock('./src/data/householdSource', () => ({
   createHousehold: jest.fn(),
   renameHousehold: jest.fn(),
 }));
+
+// Lo mismo con las invitaciones.
+jest.mock('./src/data/inviteSource', () => ({
+  watchInvite: jest.fn(() => () => {}),
+  createInvite: jest.fn(),
+  revokeInvite: jest.fn(),
+}));
