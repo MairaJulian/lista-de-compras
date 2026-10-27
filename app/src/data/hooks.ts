@@ -8,11 +8,18 @@ import { joinMockHousehold, newItemId, newListId, setState, useMockStore } from 
 import {
   cleanHouseholdName,
   deactivateInvite,
+  leaveCase,
   leaveHousehold,
+  nextCreator,
   regenerateInvite,
   removeMember,
 } from './householdLogic';
-import { createHousehold, renameHousehold } from './householdSource';
+import {
+  createHousehold,
+  leaveCurrentHousehold,
+  removeMemberFromHousehold,
+  renameHousehold,
+} from './householdSource';
 import { retryHousehold, seedHousehold, useHouseholdState } from './householdStore';
 import { inviteFromDocument } from './inviteLogic';
 import { joinFailure, normalizeInviteCode, type JoinResult } from './joinLogic';
@@ -75,17 +82,32 @@ export function useHasHousehold(): boolean {
   return session.status === 'signedIn' ? session.hasHousehold : hasHousehold;
 }
 
-/** Sale del hogar (si era quien lo creó, el rol pasa a otro miembro) y queda sin hogar. */
-export function useLeaveHousehold(): () => void {
-  return useCallback(
-    () =>
-      setState((s) => ({
-        ...s,
-        members: leaveHousehold(s.members, getMockCurrentMember().id),
-        hasHousehold: false,
-      })),
-    [],
-  );
+/**
+ * Sale del hogar (si era quien lo creó, el rol pasa al miembro que lleva más tiempo) y queda sin
+ * hogar. En la sesión real es una transacción: sin conexión rechaza en vez de quedar en cola.
+ */
+export function useLeaveHousehold(): () => Promise<void> {
+  const real = useIsRealSession();
+  const loaded = useHouseholdState();
+  const household = loaded.status === 'ready' ? loaded.household : undefined;
+  return useCallback(async () => {
+    if (real) {
+      if (!household) {
+        throw new Error('El hogar todavía no se leyó.');
+      }
+      const successor =
+        leaveCase(household.members, household.me.id) === 'creator'
+          ? nextCreator(household.members, household.me.id)
+          : undefined;
+      await leaveCurrentHousehold(household.id, successor?.id);
+      return;
+    }
+    setState((s) => ({
+      ...s,
+      members: leaveHousehold(s.members, getMockCurrentMember().id),
+      hasHousehold: false,
+    }));
+  }, [real, household]);
 }
 
 /**
@@ -241,15 +263,30 @@ export function useOnline(): boolean {
   return useMockStore().online;
 }
 
-/** Quita a un miembro del hogar (solo si quien lo pide creó el hogar). */
-export function useRemoveMember(): (memberId: string) => void {
+/**
+ * Quita a un miembro del hogar (solo si quien lo pide creó el hogar). En la sesión real es una
+ * transacción: sin conexión rechaza, y la lista de miembros se actualiza sola por la lectura en
+ * tiempo real.
+ */
+export function useRemoveMember(): (memberId: string) => Promise<void> {
+  const real = useIsRealSession();
+  const loaded = useHouseholdState();
+  const householdId = loaded.status === 'ready' ? loaded.household.id : undefined;
   return useCallback(
-    (memberId) =>
+    async (memberId) => {
+      if (real) {
+        if (!householdId) {
+          throw new Error('El hogar todavía no se leyó.');
+        }
+        await removeMemberFromHousehold(householdId, memberId);
+        return;
+      }
       setState((s) => ({
         ...s,
         members: removeMember(s.members, memberId, getMockCurrentMember().id),
-      })),
-    [],
+      }));
+    },
+    [real, householdId],
   );
 }
 

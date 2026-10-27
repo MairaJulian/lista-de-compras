@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-import { watchHousehold, type LoadedHousehold } from './householdSource';
+import { watchHousehold, type LoadedHousehold, type RemovalReason } from './householdSource';
 
 // Estado del hogar real (el de `hogarActualId`) fuera de las pantallas, para que Inicio, Hogar y
 // Crear hogar vean lo mismo. Con la sesión de ejemplo no se usa: esa lee los datos de ejemplo.
@@ -9,7 +9,9 @@ export type HouseholdState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'ready'; household: LoadedHousehold }
-  | { status: 'error' };
+  | { status: 'error' }
+  /** La membresía propia dejó de estar activa: te quitaron (`quitado`) o saliste (`salio`). */
+  | { status: 'removed'; reason: RemovalReason; householdName: string };
 
 let state: HouseholdState = { status: 'idle' };
 let watchedId: string | undefined;
@@ -24,10 +26,19 @@ function setState(next: HouseholdState) {
 function watch(householdId: string) {
   stopWatching?.();
   watchedId = householdId;
+  // Una vez que se supo que te sacaron, los errores de lectura que vienen detrás (el hogar ya no se
+  // puede leer) y las lecturas viejas no pisan ese estado.
+  const current = () => watchedId === householdId && state.status !== 'removed';
   stopWatching = watchHousehold(
     householdId,
-    (household) => setState({ status: 'ready', household }),
-    () => setState({ status: 'error' }),
+    (household) => current() && setState({ status: 'ready', household }),
+    () => current() && setState({ status: 'error' }),
+    (reason, householdName) => {
+      if (watchedId !== householdId) return;
+      stopWatching?.();
+      stopWatching = undefined;
+      setState({ status: 'removed', reason, householdName });
+    },
   );
 }
 

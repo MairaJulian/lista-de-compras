@@ -53,6 +53,16 @@ function leaveDialogProps(leaving: LeaveCase, householdName: string) {
   }
 }
 
+type ActionState = 'idle' | 'busy' | 'failed';
+
+function ActionError({ children }: { children: React.ReactNode }) {
+  return (
+    <Text accessibilityRole="alert" style={styles.actionError}>
+      {children}
+    </Text>
+  );
+}
+
 function roleLabel(member: Member, currentId: string) {
   if (member.role === 'creator') {
     return member.id === currentId ? 'Creaste el hogar' : 'Creó el hogar';
@@ -76,6 +86,10 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
   const [removeFor, setRemoveFor] = useState<Member>();
   const [removeOpen, setRemoveOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  // Quitar y salir hablan con el servidor: mientras corren los botones se bloquean, y si fallan
+  // (sin conexión, sin permiso) el aviso sigue abierto con el error para reintentar.
+  const [removeAction, setRemoveAction] = useState<ActionState>('idle');
+  const [leaveAction, setLeaveAction] = useState<ActionState>('idle');
   const [editOpen, setEditOpen] = useState(false);
   const count = household.members.length;
   // Solo quien creó el hogar puede sacar a otros miembros.
@@ -83,6 +97,31 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
   // Al salir se elige el aviso según el caso: miembro común, creador (el rol pasa a otro) o la última persona.
   const leaving = leaveCase(household.members, current.id);
   const successor = nextCreator(household.members, current.id);
+
+  const confirmRemove = async () => {
+    if (!removeFor) return;
+    setRemoveAction('busy');
+    try {
+      await removeMember(removeFor.id);
+      setRemoveOpen(false);
+      setRemoveAction('idle');
+    } catch {
+      setRemoveAction('failed');
+    }
+  };
+
+  const confirmLeave = async () => {
+    setLeaveAction('busy');
+    try {
+      await leaveHousehold();
+    } catch {
+      setLeaveAction('failed');
+      return;
+    }
+    setLeaveOpen(false);
+    setLeaveAction('idle');
+    onLeft?.();
+  };
 
   return (
     <View style={styles.screen}>
@@ -159,7 +198,14 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
             </View>
 
             <View style={styles.leave}>
-              <Button label="Salir del hogar" variant="danger" onPress={() => setLeaveOpen(true)} />
+              <Button
+                label="Salir del hogar"
+                variant="danger"
+                onPress={() => {
+                  setLeaveAction('idle');
+                  setLeaveOpen(true);
+                }}
+              />
             </View>
           </>
         )}
@@ -180,6 +226,7 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
         onRemove={(member) => {
           setOptionsOpen(false);
           setRemoveFor(member);
+          setRemoveAction('idle');
           setRemoveOpen(true);
         }}
       />
@@ -189,45 +236,72 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
         leading={removeFor && <Avatar name={removeFor.name} tone={removeFor.tone} size={56} />}
         title={`¿Quitar a ${removeFor?.name ?? ''} del hogar?`}
         message={`Va a dejar de ver las listas de ${household.name}. Más adelante podés volver a invitar a ${removeFor?.name ?? ''}.`}
-        onClose={() => setRemoveOpen(false)}
+        detail={
+          removeAction === 'failed' ? (
+            <ActionError>
+              No pudimos quitar a {removeFor?.name}. Revisá tu conexión y probá de nuevo.
+            </ActionError>
+          ) : undefined
+        }
+        onClose={() => removeAction !== 'busy' && setRemoveOpen(false)}
       >
         <Button
-          label="Quitar"
+          label={removeAction === 'busy' ? 'Quitando…' : 'Quitar'}
           variant="dangerFilled"
-          onPress={() => {
-            if (removeFor) removeMember(removeFor.id);
-            setRemoveOpen(false);
-          }}
+          disabled={removeAction === 'busy'}
+          onPress={() => void confirmRemove()}
         />
-        <Button label="Cancelar" variant="secondary" onPress={() => setRemoveOpen(false)} />
+        <Button
+          label="Cancelar"
+          variant="secondary"
+          disabled={removeAction === 'busy'}
+          onPress={() => setRemoveOpen(false)}
+        />
       </CenteredDialog>
 
       <CenteredDialog
         visible={leaveOpen}
         {...leaveDialogProps(leaving, household.name)}
         detail={
-          leaving === 'creator' && successor ? (
-            <View style={styles.successor}>
-              <Avatar name={successor.name} tone={successor.tone} size={40} />
-              <View>
-                <Text style={styles.successorName}>{successor.name}</Text>
-                <Text style={styles.successorNote}>Será la nueva persona a cargo</Text>
-              </View>
-            </View>
+          (leaving === 'creator' && successor) || leaveAction === 'failed' ? (
+            <>
+              {leaving === 'creator' && successor && (
+                <View style={styles.successor}>
+                  <Avatar name={successor.name} tone={successor.tone} size={40} />
+                  <View>
+                    <Text style={styles.successorName}>{successor.name}</Text>
+                    <Text style={styles.successorNote}>Será la nueva persona a cargo</Text>
+                  </View>
+                </View>
+              )}
+              {leaveAction === 'failed' && (
+                <ActionError>
+                  No pudimos sacarte del hogar. Revisá tu conexión y probá de nuevo.
+                </ActionError>
+              )}
+            </>
           ) : undefined
         }
-        onClose={() => setLeaveOpen(false)}
+        onClose={() => leaveAction !== 'busy' && setLeaveOpen(false)}
       >
         <Button
-          label={leaving === 'last' ? 'Salir y archivar' : 'Salir del hogar'}
+          label={
+            leaveAction === 'busy'
+              ? 'Saliendo…'
+              : leaving === 'last'
+                ? 'Salir y archivar'
+                : 'Salir del hogar'
+          }
           variant="dangerFilled"
-          onPress={() => {
-            setLeaveOpen(false);
-            leaveHousehold();
-            onLeft?.();
-          }}
+          disabled={leaveAction === 'busy'}
+          onPress={() => void confirmLeave()}
         />
-        <Button label="Cancelar" variant="secondary" onPress={() => setLeaveOpen(false)} />
+        <Button
+          label="Cancelar"
+          variant="secondary"
+          disabled={leaveAction === 'busy'}
+          onPress={() => setLeaveOpen(false)}
+        />
       </CenteredDialog>
     </View>
   );
@@ -315,6 +389,12 @@ const styles = StyleSheet.create({
   inviteLabel: { fontFamily: fonts.bodyBold, fontSize: fontSizes.label, color: colors.onPrimary },
   members: { marginHorizontal: 24 },
   leave: { marginHorizontal: 24, marginTop: 24 },
+  actionError: {
+    fontFamily: fonts.body,
+    fontSize: fontSizes.secondary,
+    lineHeight: 20,
+    color: colors.danger,
+  },
   successor: {
     padding: 12,
     borderRadius: 16,

@@ -22,7 +22,14 @@ import { Alert } from 'react-native';
 import { signOutEverywhere, watchSession } from '../auth/sessionSource';
 import { signedInState, type AuthState } from '../auth/sessionState';
 import { resetSession } from '../auth/sessionStore';
-import { createHousehold, renameHousehold, watchHousehold } from '../data/householdSource';
+import {
+  createHousehold,
+  forgetHousehold,
+  leaveCurrentHousehold,
+  removeMemberFromHousehold,
+  renameHousehold,
+  watchHousehold,
+} from '../data/householdSource';
 import { InviteInvalidError } from '../data/joinLogic';
 import { joinHousehold, readInvitePreview } from '../data/joinSource';
 import { clearPendingInvite } from '../data/pendingInvite';
@@ -465,6 +472,184 @@ describe('navegación', () => {
         await fireEvent.press(screen.getByText('Reintentar'));
         expect(await screen.findByText('Salir del hogar')).toBeTruthy();
         expect(screen.getByText('Casa real')).toBeTruthy();
+      });
+
+      describe('quitar, salir y "te sacaron"', () => {
+        const lucia = { id: 'u2', name: 'Lucía', role: 'member' as const, tone: 'amber' as const };
+        const luciaMe = { ...lucia, id: 'u1' };
+        const creatorMe = { ...me, id: 'u1' };
+        let removed: (reason: 'quitado' | 'salio', name: string) => void = () => {};
+
+        /** El hogar de `Casa real` con estos miembros, vistos por `self`. */
+        const readsMembers = (self: Member, members: Member[]) =>
+          (watchHousehold as jest.Mock).mockImplementation((id, onData, _onError, onRemoved) => {
+            removed = onRemoved;
+            onData({ id, name: 'Casa real', me: self, members });
+            return () => {};
+          });
+
+        beforeEach(() => {
+          (removeMemberFromHousehold as jest.Mock).mockReset();
+          (leaveCurrentHousehold as jest.Mock).mockReset();
+          (forgetHousehold as jest.Mock).mockReset().mockResolvedValue(undefined);
+        });
+
+        async function openHogar() {
+          firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+          await renderRouter(routes);
+          await fireEvent.press(screen.getByRole('tab', { name: 'Hogar' }));
+        }
+
+        it('quien creó el hogar quita a un miembro: se confirma y se pide al servidor', async () => {
+          readsMembers(creatorMe, [creatorMe, lucia]);
+          await openHogar();
+          await fireEvent.press(screen.getByLabelText('Opciones de Lucía'));
+          await fireEvent.press(screen.getByText('Quitar del hogar'));
+          await fireEvent.press(screen.getByText('Quitar'));
+          await waitFor(() => expect(removeMemberFromHousehold).toHaveBeenCalledWith('h1', 'u2'));
+          await waitFor(() => expect(screen.queryByText('¿Quitar a Lucía del hogar?')).toBeNull());
+        });
+
+        it('quien no creó el hogar no ve las opciones de los demás', async () => {
+          readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
+          await openHogar();
+          expect(screen.queryByLabelText(/Opciones de/)).toBeNull();
+        });
+
+        it('si no se pudo quitar (sin conexión) el aviso sigue con el error y se puede reintentar', async () => {
+          readsMembers(creatorMe, [creatorMe, lucia]);
+          (removeMemberFromHousehold as jest.Mock).mockRejectedValueOnce(new Error('unavailable'));
+          await openHogar();
+          await fireEvent.press(screen.getByLabelText('Opciones de Lucía'));
+          await fireEvent.press(screen.getByText('Quitar del hogar'));
+          await fireEvent.press(screen.getByText('Quitar'));
+          expect(
+            await screen.findByText(/No pudimos quitar a Lucía\. Revisá tu conexión/),
+          ).toBeTruthy();
+          expect(screen.getByText('¿Quitar a Lucía del hogar?')).toBeTruthy();
+          await fireEvent.press(screen.getByText('Quitar'));
+          await waitFor(() => expect(removeMemberFromHousehold).toHaveBeenCalledTimes(2));
+          await waitFor(() => expect(screen.queryByText('¿Quitar a Lucía del hogar?')).toBeNull());
+        });
+
+        it('un miembro común sale sin traspaso y va a Sin hogar', async () => {
+          readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
+          (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
+            await emitAuth(signedInState(account, { hogarActualId: null }));
+          });
+          await openHogar();
+          await fireEvent.press(screen.getByText('Salir del hogar'));
+          await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
+          expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined);
+          expect(screen.queryByText(/Ya no sos parte/)).toBeNull();
+        });
+
+        it('quien creó el hogar pasa el rol a quien lleva más tiempo y se muestra a quién', async () => {
+          const diego = { id: 'u3', name: 'Diego', role: 'member' as const, tone: 'blue' as const };
+          readsMembers(creatorMe, [creatorMe, lucia, diego]);
+          (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
+            await emitAuth(signedInState(account, { hogarActualId: null }));
+          });
+          await openHogar();
+          await fireEvent.press(screen.getByText('Salir del hogar'));
+          expect(screen.getByText('Será la nueva persona a cargo')).toBeTruthy();
+          await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
+          expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', 'u2');
+        });
+
+        it('la última persona sale sin traspaso ("Salir y archivar")', async () => {
+          readsMembers(creatorMe, [creatorMe]);
+          (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
+            await emitAuth(signedInState(account, { hogarActualId: null }));
+          });
+          await openHogar();
+          await fireEvent.press(screen.getByText('Salir del hogar'));
+          expect(screen.getByText('Sos la última persona del hogar')).toBeTruthy();
+          await fireEvent.press(screen.getByText('Salir y archivar'));
+          expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined);
+        });
+
+        it('si no se pudo salir (sin conexión) sigue en Hogar con el error y se puede reintentar', async () => {
+          readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
+          (leaveCurrentHousehold as jest.Mock).mockRejectedValueOnce(new Error('unavailable'));
+          await openHogar();
+          await fireEvent.press(screen.getByText('Salir del hogar'));
+          await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
+          expect(
+            await screen.findByText(/No pudimos sacarte del hogar\. Revisá tu conexión/),
+          ).toBeTruthy();
+          expect(screen.queryByText('Armá tu hogar o sumate a uno.')).toBeNull();
+          (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
+            await emitAuth(signedInState(account, { hogarActualId: null }));
+          });
+          await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
+          expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          expect(leaveCurrentHousehold).toHaveBeenCalledTimes(2);
+        });
+
+        it('si te quitan mientras la app está abierta: aviso, Sin hogar y hogarActualId vaciado', async () => {
+          readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
+          (forgetHousehold as jest.Mock).mockImplementation(async () => {
+            await emitAuth(signedInState(account, { hogarActualId: null }));
+          });
+          await openHogar();
+          await act(async () => removed('quitado', 'Casa real'));
+          expect(await screen.findByText('Ya no sos parte de Casa real')).toBeTruthy();
+          expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          expect(forgetHousehold).toHaveBeenCalledWith('h1');
+          await fireEvent.press(screen.getByText('Continuar'));
+          await waitFor(() =>
+            expect(screen.queryByText('Ya no sos parte de Casa real')).toBeNull(),
+          );
+          expect(router.canGoBack()).toBe(false);
+        });
+
+        it('si te quitaron con la app cerrada, al abrirla se muestra el aviso en vez de Inicio', async () => {
+          (watchHousehold as jest.Mock).mockImplementation((_id, _onData, _onError, onRemoved) => {
+            onRemoved('quitado', 'Casa real');
+            return () => {};
+          });
+          firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+          await renderRouter(routes);
+          expect(await screen.findByText('Ya no sos parte de Casa real')).toBeTruthy();
+          expect(forgetHousehold).toHaveBeenCalledWith('h1');
+        });
+
+        it('sin el nombre del hogar el aviso dice "tu hogar"', async () => {
+          (watchHousehold as jest.Mock).mockImplementation((_id, _onData, _onError, onRemoved) => {
+            onRemoved('quitado', '');
+            return () => {};
+          });
+          firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+          await renderRouter(routes);
+          expect(await screen.findByText('Ya no sos parte de tu hogar')).toBeTruthy();
+        });
+
+        it('si saliste desde otro celular va a Sin hogar sin el aviso de "te sacaron"', async () => {
+          (watchHousehold as jest.Mock).mockImplementation((_id, _onData, _onError, onRemoved) => {
+            onRemoved('salio', 'Casa real');
+            return () => {};
+          });
+          firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+          await renderRouter(routes);
+          expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          expect(screen.queryByText(/Ya no sos parte/)).toBeNull();
+          expect(forgetHousehold).toHaveBeenCalledWith('h1');
+        });
+
+        it('si no se puede vaciar hogarActualId (sin conexión) igual se muestra el aviso', async () => {
+          (forgetHousehold as jest.Mock).mockRejectedValue(new Error('unavailable'));
+          (watchHousehold as jest.Mock).mockImplementation((_id, _onData, _onError, onRemoved) => {
+            onRemoved('quitado', 'Casa real');
+            return () => {};
+          });
+          firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+          await renderRouter(routes);
+          expect(await screen.findByText('Ya no sos parte de Casa real')).toBeTruthy();
+        });
       });
 
       it('Sin hogar: el avatar abre Perfil y la flecha vuelve', async () => {

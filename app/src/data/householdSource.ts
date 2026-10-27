@@ -2,6 +2,7 @@ import { getAuth } from '@react-native-firebase/auth';
 import {
   collection,
   doc,
+  getDocFromCache,
   getFirestore,
   onSnapshot,
   query,
@@ -87,14 +88,115 @@ export async function renameHousehold(householdId: string, name: string): Promis
 }
 
 /**
+ * Quita a un miembro: pasa su estado a `quitado` con la hora de salida. Solo toca esos dos campos
+ * (las reglas exigen que quien lo hace sea el creador activo). Es una transacción por lo mismo que
+ * crear el hogar: sin conexión falla al instante en vez de quedar en cola. Si esa persona ya no
+ * estaba activa (se fue mientras tanto) no hay nada que hacer.
+ */
+export async function removeMemberFromHousehold(householdId: string, memberId: string) {
+  currentUid();
+  const db = getFirestore();
+  const memberRef = doc(db, 'hogares', householdId, 'miembros', memberId);
+  await runTransaction(db, async (transaction) => {
+    const member = await transaction.get(memberRef);
+    const data = member.data();
+    if (!member.exists() || data?.estado !== 'activo') {
+      return;
+    }
+    if (data.rol !== 'miembro') {
+      throw new Error('Quien creó el hogar no se puede quitar.');
+    }
+    transaction.update(memberRef, { estado: 'quitado', hasta: serverTimestamp() });
+  });
+}
+
+/**
+ * Sale del hogar y vacía `hogarActualId`, todo en una transacción. Si quien sale es el creador y
+ * queda alguien (`successorId`, el que lleva más tiempo), en el mismo lote le pasa el rol: la
+ * persona que sale queda como `miembro`, `successorId` como `creador` y el hogar apunta a ella en
+ * `creadorActualId`. Sin `successorId` (miembro común, o la última persona) solo sale.
+ */
+export async function leaveCurrentHousehold(householdId: string, successorId?: string) {
+  const uid = currentUid();
+  const db = getFirestore();
+  const memberRef = doc(db, 'hogares', householdId, 'miembros', uid);
+  const householdRef = doc(db, 'hogares', householdId);
+  const userRef = doc(db, 'usuarios', uid);
+
+  await runTransaction(db, async (transaction) => {
+    // Primero todas las lecturas (también obligan a hablar con el servidor).
+    const member = await transaction.get(memberRef);
+    const user = await transaction.get(userRef);
+    const successorRef = successorId
+      ? doc(db, 'hogares', householdId, 'miembros', successorId)
+      : undefined;
+    const successor = successorRef ? await transaction.get(successorRef) : undefined;
+    if (!user.exists()) {
+      throw new Error('Todavía no existe el documento de la persona.');
+    }
+
+    // Si ya no figuraba activa (salió desde otro celular) solo falta vaciar `hogarActualId`.
+    if (member.exists() && member.data()?.estado === 'activo') {
+      if (successorRef && successorId && member.data()?.rol === 'creador') {
+        if (successor?.data()?.estado !== 'activo' || successor.data()?.rol !== 'miembro') {
+          throw new Error('Esa persona ya no puede quedar a cargo del hogar.');
+        }
+        transaction.update(memberRef, {
+          estado: 'salio',
+          hasta: serverTimestamp(),
+          rol: 'miembro',
+        });
+        transaction.update(successorRef, { rol: 'creador' });
+        transaction.update(householdRef, { creadorActualId: successorId });
+      } else {
+        transaction.update(memberRef, { estado: 'salio', hasta: serverTimestamp() });
+      }
+    }
+    transaction.update(userRef, { hogarActualId: null });
+  });
+}
+
+/**
+ * Vacía el `hogarActualId` propio si todavía apunta a este hogar (cuando te sacaron o saliste desde
+ * otro celular). Condicional para no pisar un hogar al que la persona ya se unió después.
+ */
+export async function forgetHousehold(householdId: string) {
+  const uid = currentUid();
+  const db = getFirestore();
+  const userRef = doc(db, 'usuarios', uid);
+  await runTransaction(db, async (transaction) => {
+    const user = await transaction.get(userRef);
+    if (user.data()?.hogarActualId === householdId) {
+      transaction.update(userRef, { hogarActualId: null });
+    }
+  });
+}
+
+/** Por qué la membresía propia dejó de estar activa. */
+export type RemovalReason = 'quitado' | 'salio';
+
+/** Último nombre del hogar que quedó en el caché del celular (vacío si no hay). */
+async function cachedHouseholdName(householdId: string): Promise<string> {
+  try {
+    const snapshot = await getDocFromCache(doc(getFirestore(), 'hogares', householdId));
+    const name = snapshot.data()?.nombre;
+    return typeof name === 'string' ? name : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Escucha el hogar, la membresía de quien tiene la sesión (su propio documento de `miembros`) y los
- * miembros activos del hogar. Avisa cada vez que cambian y, si no se puede leer alguno, con `onError`. Devuelve la función
- * para dejar de escuchar.
+ * miembros activos del hogar. Avisa cada vez que cambian y, si no se puede leer alguno, con `onError`.
+ * Si la membresía propia deja de estar activa (te quitaron o saliste) avisa con `onRemoved`, con el
+ * nombre del hogar si se conoce. Devuelve la función para dejar de escuchar.
  */
 export function watchHousehold(
   householdId: string,
   onData: (household: LoadedHousehold) => void,
   onError: () => void,
+  onRemoved: (reason: RemovalReason, householdName: string) => void,
 ): () => void {
   let uid: string;
   try {
@@ -135,10 +237,19 @@ export function watchHousehold(
   const stopMember = onSnapshot(
     doc(db, 'hogares', householdId, 'miembros', uid),
     (snapshot) => {
-      // Si ya no está activa (la sacaron) la pantalla "te sacaron" llega en el PR 6.
-      me = memberFromDocument(uid, snapshot.data());
+      const data = snapshot.data();
+      me = memberFromDocument(uid, data);
       if (!me) {
-        onError();
+        // Su propio documento siempre se puede leer: si dice que ya no está activa, la sacaron.
+        const reason = snapshot.exists() ? data?.estado : undefined;
+        if (reason === 'quitado' || reason === 'salio') {
+          // Sin el nombre a mano (la app se abrió ya sin acceso) se busca el que quedó en el caché.
+          void (name !== undefined ? Promise.resolve(name) : cachedHouseholdName(householdId)).then(
+            (known) => onRemoved(reason, known),
+          );
+        } else {
+          onError();
+        }
         return;
       }
       emit();

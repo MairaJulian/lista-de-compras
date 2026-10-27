@@ -25,6 +25,9 @@ jest.mock('./src/data/householdSource', () => ({
   watchHousehold: jest.fn(() => () => {}),
   createHousehold: jest.fn(),
   renameHousehold: jest.fn(),
+  removeMemberFromHousehold: jest.fn(),
+  leaveCurrentHousehold: jest.fn(),
+  forgetHousehold: jest.fn(),
 }));
 
 // Lo mismo con las invitaciones.
