@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { ListTone } from '../theme';
 import { useSession } from '../auth/sessionStore';
@@ -14,6 +14,8 @@ import {
 } from './householdLogic';
 import { createHousehold, renameHousehold } from './householdSource';
 import { retryHousehold, seedHousehold, useHouseholdState } from './householdStore';
+import { inviteFromDocument } from './inviteLogic';
+import { createInvite, revokeInvite, watchInvite } from './inviteSource';
 import {
   addItem,
   addList,
@@ -167,23 +169,111 @@ export function useRemoveMember(): (memberId: string) => void {
 }
 
 export type InviteControls = {
+  /** `loading` mientras se lee, `error` si no se pudo leer (con `retry`). */
+  status: 'loading' | 'ready' | 'error';
   invite: Invite;
-  regenerate: () => void;
-  deactivate: () => void;
+  /** Genera una invitación nueva y revoca la anterior; rechaza si no se pudo (sin conexión, reglas). */
+  regenerate: () => Promise<void>;
+  /** Desactiva la invitación vigente; rechaza si no se pudo. */
+  deactivate: () => Promise<void>;
+  retry: () => void;
 };
+
+const noInvite: Invite = { code: '', hoursLeft: 0, active: false };
+
+type WatchedInvite = { code: string; invite: Invite | 'error' };
+
+/** Cuánto se espera para recalcular las horas que le quedan a la invitación. */
+const INVITE_TICK_MS = 60 * 1000;
+
+/**
+ * Lee en tiempo real la invitación vigente del hogar real (la de `invitacionActivaId`). Sin
+ * `inviteId` no hay invitación activa.
+ */
+function useWatchedInvite(inviteId: string | null | undefined, enabled: boolean) {
+  const [watched, setWatched] = useState<WatchedInvite>();
+  const [data, setData] = useState<{ estado?: unknown; venceEn?: unknown }>();
+  const [attempt, setAttempt] = useState(0);
+  const [now, setNow] = useState(Date.now);
+
+  useEffect(() => {
+    if (!enabled || !inviteId) return;
+    const stop = watchInvite(
+      inviteId,
+      (next) => {
+        setData(next);
+        // La hora de referencia es la de esta lectura, no la de cuando se abrió la pantalla.
+        setNow(Date.now());
+        setWatched({ code: inviteId, invite: inviteFromDocument(inviteId, next, Date.now()) });
+      },
+      () => setWatched({ code: inviteId, invite: 'error' }),
+    );
+    return stop;
+  }, [enabled, inviteId, attempt]);
+
+  // El vencimiento corre solo: se recalcula cada minuto sin volver a leer.
+  useEffect(() => {
+    if (!enabled || !inviteId) return;
+    const timer = setInterval(() => setNow(Date.now()), INVITE_TICK_MS);
+    return () => clearInterval(timer);
+  }, [enabled, inviteId]);
+
+  const retry = useCallback(() => {
+    setWatched(undefined);
+    setAttempt((n) => n + 1);
+  }, []);
+
+  if (!inviteId) {
+    return { status: 'ready' as const, invite: noInvite, retry };
+  }
+  // Hasta que llega la lectura de la invitación nueva no se muestra la anterior.
+  if (watched?.code !== inviteId) {
+    return { status: 'loading' as const, invite: noInvite, retry };
+  }
+  if (watched.invite === 'error') {
+    return { status: 'error' as const, invite: noInvite, retry };
+  }
+  return { status: 'ready' as const, invite: inviteFromDocument(inviteId, data, now), retry };
+}
 
 /** Enlace y código de invitación del hogar, con generar uno nuevo y desactivar. */
 export function useInvite(): InviteControls {
-  const { invite } = useMockStore();
-  const regenerate = useCallback(
-    () => setState((s) => ({ ...s, invite: regenerateInvite(mockInvites, s.invite) })),
-    [],
-  );
-  const deactivate = useCallback(
-    () => setState((s) => ({ ...s, invite: deactivateInvite(s.invite) })),
-    [],
-  );
-  return { invite, regenerate, deactivate };
+  const { invite: mockInvite } = useMockStore();
+  const real = useIsRealSession();
+  const loaded = useHouseholdState();
+  const household = loaded.status === 'ready' ? loaded.household : undefined;
+  const watched = useWatchedInvite(household?.activeInviteId, real);
+
+  const regenerate = useCallback(async () => {
+    if (!real) {
+      setState((s) => ({ ...s, invite: regenerateInvite(mockInvites, s.invite) }));
+      return;
+    }
+    if (!household) {
+      throw new Error('El hogar todavía no se leyó.');
+    }
+    await createInvite(household.id);
+  }, [real, household]);
+
+  const deactivate = useCallback(async () => {
+    if (!real) {
+      setState((s) => ({ ...s, invite: deactivateInvite(s.invite) }));
+      return;
+    }
+    if (!household) {
+      throw new Error('El hogar todavía no se leyó.');
+    }
+    await revokeInvite(household.id);
+  }, [real, household]);
+
+  if (!real) {
+    return { status: 'ready', invite: mockInvite, regenerate, deactivate, retry: () => {} };
+  }
+  // Sin el hogar leído todavía no se sabe cuál es la invitación vigente.
+  if (!household) {
+    return { status: 'loading', invite: noInvite, regenerate, deactivate, retry: retryHousehold };
+  }
+  return { ...watched, regenerate, deactivate };
 }
 
 export function useLists(): ListSummary[] {

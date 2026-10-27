@@ -68,6 +68,7 @@ describe('createHousehold', () => {
     expect(created).toEqual({
       id: 'nuevo-id',
       name: 'Nuestra casa',
+      activeInviteId: null,
       me: { id: 'u1', name: 'Maira', role: 'creator', tone: 'green' },
       members: [{ id: 'u1', name: 'Maira', role: 'creator', tone: 'green' }],
     });
@@ -157,9 +158,19 @@ describe('watchHousehold', () => {
     expect(onData).toHaveBeenCalledWith({
       id: 'h1',
       name: 'Nuestra casa',
+      activeInviteId: null,
       me: maira,
       members: [maira],
     });
+
+    snapshotHandlers['hogares/h1'].next(
+      snap({ nombre: 'Nuestra casa', invitacionActivaId: 'K7P2-9XQ-4MN' }),
+    );
+    expect(onData).toHaveBeenLastCalledWith(
+      expect.objectContaining({ activeInviteId: 'K7P2-9XQ-4MN' }),
+    );
+    snapshotHandlers['hogares/h1'].next(snap({ nombre: 'Nuestra casa', invitacionActivaId: null }));
+    expect(onData).toHaveBeenLastCalledWith(expect.objectContaining({ activeInviteId: null }));
 
     snapshotHandlers['hogares/h1'].next(snap({ nombre: 'Otro nombre' }));
     expect(onData).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Otro nombre' }));

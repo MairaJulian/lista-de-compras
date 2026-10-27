@@ -167,8 +167,8 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 - [x] PR 1 · Esquema y reglas de seguridad de hogares (111 pruebas de reglas)
 - [x] Maira publica las reglas
 - [x] PR 2 · Crear hogar y Inicio sin listas (mergeado; ver "Notas del PR 2")
-- [x] PR 3 · Hogar en tiempo real y editar nombre (en revisión; ver "Notas del PR 3")
-- [ ] PR 4 · Invitaciones
+- [x] PR 3 · Hogar en tiempo real y editar nombre (mergeado; ver "Notas del PR 3")
+- [x] PR 4 · Invitaciones (en revisión; ver "Notas del PR 4")
 - [ ] PR 5 · Unirse
 - [ ] PR 6 · Quitar, salir, traspaso y "te sacaron"
 - [ ] PR 7 · Página puente para el enlace (opcional)
@@ -186,3 +186,14 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 - **Sin conexión, editar el nombre:** usa una transacción, igual que crear hogar: falla al instante y el panel muestra "No pudimos guardar el nombre. Revisá tu conexión y probá de nuevo.", conserva lo escrito y deja reintentar. Así no queda una escritura en cola que se aplique sola horas después y pise el cambio de otra persona. El nombre nuevo se ve cuando llega la lectura en tiempo real. El texto del error es mío: el diseño no trae una variante para este caso.
 - **Error `32` en Hogar:** si falla alguna lectura, Hogar muestra el mismo estado que Inicio con "Reintentar"; el avatar de Perfil sigue disponible arriba.
 - **Qué sigue con datos de ejemplo:** Invitar, las opciones de miembro, quitar y salir (PR 4 a 6).
+
+### Notas del PR 4
+
+- **Invitación vigente:** el hogar guarda `invitacionActivaId`; Invitar lee ese documento de `invitaciones` en tiempo real (una lectura directa, sin listar). "Vence en N h" se redondea hacia arriba y se recalcula cada minuto sin volver a leer; al vencer, la pantalla pasa sola a `22-invitar-sin-enlace`. Una invitación revocada, vencida o que no existe se ve igual: sin enlace.
+- **Generar enlace nuevo:** una transacción que crea la invitación (vence a 48 h, con `hogarNombre` e `invitadoPorNombre`), revoca la anterior si seguía `activa` (aunque ya hubiera vencido) y apunta `invitacionActivaId` a la nueva. **Desactivar** revoca la vigente y vacía `invitacionActivaId`, también en transacción.
+- **Código:** `K7P2-9XQ-4MN`, 10 caracteres de un alfabeto de 31 (sin `0/O/1/I/L`), con bytes de `expo-crypto` y descartando los que darían un reparto desparejo. **Dependencia nueva: `expo-crypto`** (módulo nativo, hay que volver a compilar con `npx expo run:android`). React Native no trae una fuente criptográfica propia.
+- **Sin conexión:** generar y desactivar son transacciones, así que fallan al instante en vez de quedar en cola (una orden en cola podría aplicarse horas después y revocar o crear algo que ya no corresponde). La pantalla muestra un aviso rojo sobre los botones y se puede reintentar; mientras corre, los botones quedan deshabilitados. **Los textos de esos avisos son míos**, el diseño no trae variante: "No pudimos generar el enlace. Revisá tu conexión y probá de nuevo." y "No pudimos desactivar el enlace. …". Si falla la lectura de la invitación se muestra `32` con "Reintentar".
+- **Compartir:** el mensaje es `Sumate a <hogar> en Changuito.` + `Código: …` + `Enlace: changuito://unirse/<codigo>`. En el PR 7 el enlace pasa a ser el https de la página puente. **Copiar** copia el enlace o el código al portapapeles (antes solo cambiaba el rótulo a "Copiado").
+- **Reloj del celular:** `venceEn` se calcula con la hora del celular y las reglas aceptan hasta 48 h + 5 min. Si el reloj adelanta más de 5 minutos, generar falla (se vería como el aviso de arriba).
+- **Desde `21-hogar-creado`**, "Invitar" ya lleva a esta pantalla (lo hacía desde el PR 2; ahora con datos reales).
+- **Sigue con datos de ejemplo:** opciones de miembro, quitar y salir (PR 6).

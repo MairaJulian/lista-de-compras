@@ -12,6 +12,7 @@ import {
 const household = {
   id: 'h1',
   name: 'Nuestra casa',
+  activeInviteId: null,
   me: { id: 'u1', name: 'Maira', role: 'creator' as const, tone: 'green' as const },
   members: [{ id: 'u1', name: 'Maira', role: 'creator' as const, tone: 'green' as const }],
 };

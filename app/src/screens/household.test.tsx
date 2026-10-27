@@ -110,23 +110,35 @@ describe('InviteScreen', () => {
   it('muestra enlace, código y vencimiento', async () => {
     await render(<InviteScreen />);
     expect(screen.getByText('Sumá a alguien a Nuestra casa')).toBeTruthy();
-    expect(screen.getByText('[enlace de invitación]')).toBeTruthy();
+    expect(screen.getByText('changuito://unirse/K7P2-9XQ-4MN')).toBeTruthy();
     expect(screen.getByText('K7P2-9XQ-4MN')).toBeTruthy();
     expect(screen.getByText('Vence en 47 h')).toBeTruthy();
   });
 
-  it('Copiar cambia a Copiado solo en lo que se tocó', async () => {
-    await render(<InviteScreen />);
+  it('Copiar cambia a Copiado solo en lo que se tocó y copia el código', async () => {
+    const onCopyText = jest.fn(async () => {});
+    await render(<InviteScreen onCopyText={onCopyText} />);
     await fireEvent.press(screen.getByLabelText('Copiar código'));
     expect(screen.getByLabelText('Copiado código')).toBeTruthy();
     expect(screen.getByLabelText('Copiar enlace')).toBeTruthy();
+    expect(onCopyText).toHaveBeenCalledWith('K7P2-9XQ-4MN');
   });
 
-  it('Compartir enlace pasa el código al menú de compartir', async () => {
+  it('Copiar el enlace copia el enlace completo', async () => {
+    const onCopyText = jest.fn(async () => {});
+    await render(<InviteScreen onCopyText={onCopyText} />);
+    await fireEvent.press(screen.getByLabelText('Copiar enlace'));
+    expect(onCopyText).toHaveBeenCalledWith('changuito://unirse/K7P2-9XQ-4MN');
+  });
+
+  it('Compartir enlace pasa el código y el enlace al menú de compartir', async () => {
     const onShare = jest.fn();
     await render(<InviteScreen onShare={onShare} />);
     await fireEvent.press(screen.getByText('Compartir enlace'));
-    expect(onShare).toHaveBeenCalledWith(expect.stringContaining('K7P2-9XQ-4MN'));
+    expect(onShare).toHaveBeenCalledWith(expect.stringContaining('Código: K7P2-9XQ-4MN'));
+    expect(onShare).toHaveBeenCalledWith(
+      expect.stringContaining('Enlace: changuito://unirse/K7P2-9XQ-4MN'),
+    );
   });
 
   it('Generar enlace nuevo cambia el código y el vencimiento', async () => {
