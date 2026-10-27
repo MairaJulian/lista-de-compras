@@ -33,3 +33,9 @@ jest.mock('./src/data/inviteSource', () => ({
   createInvite: jest.fn(),
   revokeInvite: jest.fn(),
 }));
+
+// Y unirse a un hogar.
+jest.mock('./src/data/joinSource', () => ({
+  readInvitePreview: jest.fn(),
+  joinHousehold: jest.fn(),
+}));

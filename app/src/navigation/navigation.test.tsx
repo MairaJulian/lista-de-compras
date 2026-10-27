@@ -16,12 +16,16 @@ import SinHogar from '../app/sin-hogar';
 import Invitar from '../app/invitar';
 import Lista from '../app/lista/[id]';
 import Perfil from '../app/perfil';
-import Unirse from '../app/unirse';
+import Unirse from '../app/unirse/index';
+import UnirseConEnlace from '../app/unirse/[codigo]';
 import { Alert } from 'react-native';
 import { signOutEverywhere, watchSession } from '../auth/sessionSource';
 import { signedInState, type AuthState } from '../auth/sessionState';
 import { resetSession } from '../auth/sessionStore';
 import { createHousehold, renameHousehold, watchHousehold } from '../data/householdSource';
+import { InviteInvalidError } from '../data/joinLogic';
+import { joinHousehold, readInvitePreview } from '../data/joinSource';
+import { clearPendingInvite } from '../data/pendingInvite';
 import { resetHouseholdStore } from '../data/householdStore';
 import type { Member } from '../data/types';
 import { resetMockStore } from '../mock/store';
@@ -39,7 +43,8 @@ const routes = {
   _layout: RootLayout,
   '(tabs)/_layout': TabsLayout,
   index: Bienvenida,
-  unirse: Unirse,
+  'unirse/index': Unirse,
+  'unirse/[codigo]': UnirseConEnlace,
   perfil: Perfil,
   invitar: Invitar,
   '(tabs)/listas': Inicio,
@@ -163,11 +168,6 @@ describe('navegación', () => {
     await act(async () => router.push('/unirse'));
     await fireEvent.press(screen.getByText('Ahora no'));
     expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
-    // Sin sesión, "Ahora no" lleva a Bienvenida.
-    await act(async () => resetSession({ status: 'signedOut' }));
-    await act(async () => router.push('/unirse'));
-    await fireEvent.press(screen.getByText('Ahora no'));
-    expect(screen.getByText('Entrar con Google')).toBeTruthy();
   });
 
   it('Hogar abre Perfil y la flecha vuelve; Cerrar sesión lleva a Bienvenida', async () => {
@@ -526,6 +526,148 @@ describe('navegación', () => {
         await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
         await fireEvent.press(await screen.findByText('Ahora no'));
         expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+      });
+    });
+
+    describe('unirse con una invitación real', () => {
+      const CODE = 'K7P2-9XQ-4MN';
+      const me = { id: 'u1', name: 'Maira', role: 'member' as const, tone: 'green' as const };
+      const preview = { code: CODE, householdName: 'Nuestra casa', invitedByName: 'Lucía' };
+
+      beforeEach(() => {
+        (readInvitePreview as jest.Mock).mockReset().mockResolvedValue(preview);
+        (joinHousehold as jest.Mock).mockReset();
+        clearPendingInvite();
+        (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
+          onData({ id, name: 'Nuestra casa', me, members: [me] });
+          return () => {};
+        });
+      });
+
+      it('con el enlace muestra el hogar y quién invitó, y "Unirme" lleva a Inicio', async () => {
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        (joinHousehold as jest.Mock).mockImplementation(async () => {
+          await emitAuth(signedInState(account, { hogarActualId: 'h1' }));
+        });
+        await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
+        expect(await screen.findByText('Nuestra casa')).toBeTruthy();
+        expect(screen.getByText('Te invitó Lucía')).toBeTruthy();
+        expect(readInvitePreview).toHaveBeenCalledWith(CODE);
+        await fireEvent.press(screen.getByRole('button', { name: 'Unirme' }));
+        expect(joinHousehold).toHaveBeenCalledWith(CODE, { name: 'Maira Julián', photo: null });
+        expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
+        expect(router.canGoBack()).toBe(false);
+      });
+
+      it('mientras la sesión no sabe del hogar nuevo no navega: queda en "Uniéndome…"', async () => {
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        (joinHousehold as jest.Mock).mockResolvedValue(undefined);
+        await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
+        await fireEvent.press(await screen.findByRole('button', { name: 'Unirme' }));
+        expect(await screen.findByRole('button', { name: 'Uniéndome…' })).toBeDisabled();
+        expect(screen.queryByText('Armá tu hogar o sumate a uno.')).toBeNull();
+      });
+
+      it('un enlace cuya invitación no existe, venció o está revocada muestra el error de enlace', async () => {
+        (readInvitePreview as jest.Mock).mockRejectedValue(new InviteInvalidError());
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
+        expect(await screen.findByText('Este enlace ya no sirve.')).toBeTruthy();
+        await fireEvent.press(screen.getByText('Entendido'));
+        expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+      });
+
+      it('si la invitación se revoca antes de confirmar, "Unirme" muestra el error de enlace', async () => {
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        (joinHousehold as jest.Mock).mockRejectedValue(new InviteInvalidError());
+        await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
+        await fireEvent.press(await screen.findByRole('button', { name: 'Unirme' }));
+        expect(await screen.findByText('Este enlace ya no sirve.')).toBeTruthy();
+      });
+
+      it('sin conexión muestra el error 26 y "Reintentar" vuelve a leer con el mismo código', async () => {
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        (readInvitePreview as jest.Mock).mockRejectedValueOnce(new Error('unavailable'));
+        await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
+        expect(await screen.findByText('Necesitás internet para unirte.')).toBeTruthy();
+        await fireEvent.press(screen.getByText('Reintentar'));
+        expect(await screen.findByText('Te invitó Lucía')).toBeTruthy();
+        expect(readInvitePreview).toHaveBeenCalledTimes(2);
+        expect(readInvitePreview).toHaveBeenLastCalledWith(CODE);
+      });
+
+      it('sin conexión al confirmar muestra el error 26 y no se une', async () => {
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        (joinHousehold as jest.Mock).mockRejectedValue(new Error('unavailable'));
+        await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
+        await fireEvent.press(await screen.findByRole('button', { name: 'Unirme' }));
+        expect(await screen.findByText('Necesitás internet para unirte.')).toBeTruthy();
+        await fireEvent.press(screen.getByText('Ahora no'));
+        expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+      });
+
+      it('sin sesión conserva el código: entra con Google y sigue en la invitación', async () => {
+        firebaseSession({ status: 'signedOut' });
+        mockSignIn.mockImplementation(async () => {
+          await emitAuth(signedInState(account, { hogarActualId: null }));
+          return { status: 'success' };
+        });
+        await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
+        expect(await screen.findByText('Las compras de casa, entre todos.')).toBeTruthy();
+        expect(readInvitePreview).not.toHaveBeenCalled();
+        await fireEvent.press(screen.getByText('Entrar con Google'));
+        expect(await screen.findByText('Te invitó Lucía')).toBeTruthy();
+        expect(readInvitePreview).toHaveBeenCalledWith(CODE);
+        await fireEvent.press(screen.getByText('Ahora no'));
+        expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+      });
+
+      it('si ya tiene un hogar, el enlace no lo cambia de hogar: va a Inicio', async () => {
+        firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
+        expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
+        expect(joinHousehold).not.toHaveBeenCalled();
+      });
+
+      it('con el código: se une y va a Inicio', async () => {
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        (joinHousehold as jest.Mock).mockImplementation(async () => {
+          await emitAuth(signedInState(account, { hogarActualId: 'h1' }));
+        });
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByText('Tengo un código de invitación'));
+        await fireEvent.changeText(screen.getByLabelText('Código de invitación'), ' k7p2-9xq-4mn ');
+        await fireEvent.press(screen.getByText('Unirme'));
+        expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
+        expect(joinHousehold).toHaveBeenCalledWith(CODE, { name: 'Maira Julián', photo: null });
+      });
+
+      it('con un código que no sirve muestra el error 30 en el campo y se corrige escribiendo', async () => {
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        (joinHousehold as jest.Mock).mockRejectedValue(new InviteInvalidError());
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByText('Tengo un código de invitación'));
+        await fireEvent.changeText(screen.getByLabelText('Código de invitación'), CODE);
+        await fireEvent.press(screen.getByText('Unirme'));
+        expect(
+          await screen.findByText('Este código no existe o ya venció. Revisalo o pedí uno nuevo.'),
+        ).toBeTruthy();
+        expect(screen.getByDisplayValue(CODE)).toBeTruthy();
+        await fireEvent.changeText(screen.getByLabelText('Código de invitación'), 'K7P2-9XQ-4M');
+        expect(screen.queryByText(/Este código no existe/)).toBeNull();
+      });
+
+      it('con el código y sin conexión muestra el error 26; "Reintentar" abre la invitación', async () => {
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        (joinHousehold as jest.Mock).mockRejectedValue(new Error('unavailable'));
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByText('Tengo un código de invitación'));
+        await fireEvent.changeText(screen.getByLabelText('Código de invitación'), CODE);
+        await fireEvent.press(screen.getByText('Unirme'));
+        expect(await screen.findByText('Necesitás internet para unirte.')).toBeTruthy();
+        await fireEvent.press(screen.getByText('Reintentar'));
+        expect(await screen.findByText('Te invitó Lucía')).toBeTruthy();
+        expect(readInvitePreview).toHaveBeenCalledWith(CODE);
       });
     });
 

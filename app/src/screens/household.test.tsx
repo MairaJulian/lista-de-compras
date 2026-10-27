@@ -77,7 +77,14 @@ describe('WelcomeScreen y JoinScreen', () => {
   it('Unirse muestra el hogar y avisa "Entrar y unirme" y "Ahora no"', async () => {
     const onJoin = jest.fn();
     const onDecline = jest.fn();
-    await render(<JoinScreen onJoin={onJoin} onDecline={onDecline} />);
+    await render(
+      <JoinScreen
+        householdName="Nuestra casa"
+        detail="3 miembros · 4 listas"
+        onJoin={onJoin}
+        onDecline={onDecline}
+      />,
+    );
     expect(screen.getByText('Te invitaron a unirte al hogar.')).toBeTruthy();
     expect(screen.getByText('Nuestra casa')).toBeTruthy();
     expect(screen.getByText('3 miembros · 4 listas')).toBeTruthy();
@@ -85,6 +92,28 @@ describe('WelcomeScreen y JoinScreen', () => {
     await fireEvent.press(screen.getByText('Ahora no'));
     expect(onJoin).toHaveBeenCalledTimes(1);
     expect(onDecline).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('JoinScreen con la sesión abierta', () => {
+  it('muestra quién invitó y el botón es "Unirme", sin "Entrar con Google"', async () => {
+    const onJoin = jest.fn();
+    await render(
+      <JoinScreen householdName="Nuestra casa" detail="Te invitó Maira" signedIn onJoin={onJoin} />,
+    );
+    expect(screen.getByText('Te invitó Maira')).toBeTruthy();
+    expect(screen.queryByText('Entrar y unirme')).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Unirme' }));
+    expect(onJoin).toHaveBeenCalledTimes(1);
+  });
+
+  it('mientras se une queda en "Uniéndome…" y no se puede tocar de nuevo', async () => {
+    const onJoin = jest.fn();
+    await render(<JoinScreen householdName="Nuestra casa" signedIn joining onJoin={onJoin} />);
+    const button = screen.getByRole('button', { name: 'Uniéndome…' });
+    expect(button).toBeDisabled();
+    await fireEvent.press(button);
+    expect(onJoin).not.toHaveBeenCalled();
   });
 });
 

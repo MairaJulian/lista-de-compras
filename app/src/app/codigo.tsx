@@ -1,19 +1,24 @@
 import { router } from 'expo-router';
 
-import { useJoinHousehold } from '../data/hooks';
-import { goToStart } from '../navigation/session';
+import { normalizeInviteCode } from '../data/joinLogic';
+import { useJoinFlow } from '../navigation/useJoinFlow';
 import { JoinWithCodeScreen } from '../screens/JoinWithCodeScreen';
 
 export default function JoinWithCodeRoute() {
-  const join = useJoinHousehold();
+  const join = useJoinFlow();
 
-  // Por ahora cualquier código sirve; la validación llega con las invitaciones de la Etapa 3.
   return (
     <JoinWithCodeScreen
       onBack={() => router.back()}
-      onJoin={() => {
-        join();
-        goToStart();
+      onJoin={async (code) => {
+        const result = await join(code);
+        if (result === 'offline') {
+          router.push({
+            pathname: '/error-sin-conexion',
+            params: { codigo: normalizeInviteCode(code) },
+          });
+        }
+        return result;
       }}
     />
   );

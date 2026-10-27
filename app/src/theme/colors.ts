@@ -21,6 +21,7 @@ export const colors = {
   neutralText: '#3F4A44',
   danger: '#A12D2D',
   dangerSoft: '#FBEAEA',
+  dangerField: '#FFF8F8',
   onPrimary: '#FFFFFF',
   overlay: 'rgba(28,38,33,0.5)',
   overlayLight: 'rgba(255,255,255,0.7)',
