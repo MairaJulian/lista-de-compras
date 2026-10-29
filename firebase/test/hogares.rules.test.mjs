@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, it } from 'node:test';
 import {
   assertFails,
@@ -843,6 +844,54 @@ describe('miembros: salir y traspaso', () => {
     await assertFails(updateDoc(memberRef(db, 'saliente'), { estado: 'activo' }));
     await assertFails(updateDoc(memberRef(db, 'saliente'), { nombre: 'Vuelvo' }));
     await assertFails(updateDoc(hogarRef(db), { nombre: 'Vuelvo' }));
+  });
+});
+
+describe('lotes exactos de la app: salir, traspasar y vaciar hogarActualId', () => {
+  beforeEach(async () => {
+    await family();
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      for (const uid of ['ana', 'beto', 'cami']) {
+        await setDoc(doc(ctx.firestore(), 'usuarios', uid), {
+          nombre: uid,
+          email: `${uid}@example.com`,
+          creadoEn: Timestamp.now(),
+          hogarActualId: H,
+        });
+      }
+    });
+  });
+
+  const userRef = (db, uid) => doc(db, 'usuarios', uid);
+
+  it('el creador sale con traspaso y vacía su hogarActualId en el mismo lote', async () => {
+    const db = dbOf('ana');
+    const batch = writeBatch(db);
+    batch.update(memberRef(db, 'ana'), { estado: 'salio', hasta: serverTimestamp(), rol: 'miembro' });
+    batch.update(memberRef(db, 'beto'), { rol: 'creador' });
+    batch.update(hogarRef(db), { creadorActualId: 'beto' });
+    batch.update(userRef(db, 'ana'), { hogarActualId: null });
+    await assertSucceeds(batch.commit());
+  });
+
+  it('un miembro común sale y vacía su hogarActualId en el mismo lote', async () => {
+    const db = dbOf('cami');
+    const batch = writeBatch(db);
+    batch.update(memberRef(db, 'cami'), { estado: 'salio', hasta: serverTimestamp() });
+    batch.update(userRef(db, 'cami'), { hogarActualId: null });
+    await assertSucceeds(batch.commit());
+  });
+
+  it('quien fue quitado se entera por su propio documento y vacía su hogarActualId', async () => {
+    await updateDoc(memberRef(dbOf('ana'), 'beto'), { estado: 'quitado', hasta: serverTimestamp() });
+    const db = dbOf('beto');
+    const own = await assertSucceeds(getDoc(memberRef(db, 'beto')));
+    assert.equal(own.data().estado, 'quitado');
+    await assertSucceeds(updateDoc(userRef(db, 'beto'), { hogarActualId: null }));
+  });
+
+  it('nadie vacía el hogarActualId de otra persona', async () => {
+    await assertFails(updateDoc(userRef(dbOf('ana'), 'beto'), { hogarActualId: null }));
   });
 });
 

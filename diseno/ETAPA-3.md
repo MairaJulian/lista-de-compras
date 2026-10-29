@@ -169,8 +169,8 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 - [x] PR 2 · Crear hogar y Inicio sin listas (mergeado; ver "Notas del PR 2")
 - [x] PR 3 · Hogar en tiempo real y editar nombre (mergeado; ver "Notas del PR 3")
 - [x] PR 4 · Invitaciones (mergeado; ver "Notas del PR 4")
-- [x] PR 5 · Unirse (en revisión; ver "Notas del PR 5")
-- [ ] PR 6 · Quitar, salir, traspaso y "te sacaron"
+- [x] PR 5 · Unirse (mergeado; ver "Notas del PR 5")
+- [x] PR 6 · Quitar, salir, traspaso y "te sacaron" (en revisión; ver "Notas del PR 6")
 - [ ] PR 7 · Página puente para el enlace (opcional)
 
 ### Notas del PR 2
@@ -209,3 +209,16 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 - **Color del avatar:** el esquema pide "el primer color no usado por miembros activos", pero quien se une todavía no puede leer a los demás miembros (las reglas no se lo permiten), así que no puede saber cuáles están usados. Se reparte según el id de la persona (siempre el mismo, parejo entre los tres). Dos personas pueden terminar con el mismo color. Corregirlo exige cambiar reglas o un paso después de unirse (propuesta para más adelante).
 - **Sin cambios en las reglas** (las del PR 1 ya cubren unirse, volver a unirse y los códigos inválidos, con sus pruebas).
 - **Campo con error:** `LargeField` suma la variante de error de `30` (borde y rótulo rojos, fondo `#FFF8F8`, mensaje debajo). El borde y el fondo van siempre presentes para no perder el `borderRadius` en Android; igual **conviene mirarlo en el celular tocando** (Claude Code no pudo verlo).
+
+### Notas del PR 6
+
+- **Quitar (`13`, `14`):** las opciones de miembro las ve solo quien creó el hogar y solo sobre otros miembros. Confirmar es una transacción que pone al miembro en `quitado` con `hasta` (solo esos dos campos). Si esa persona ya no estaba activa no hace nada; a quien creó el hogar no lo quita. La lista de miembros se actualiza sola por la lectura en tiempo real.
+- **Salir (`15`, `27`, `28`):** la variante sale de los miembros reales. Es una transacción: marca `salio` con `hasta` y vacía `hogarActualId`. Si sale quien creó el hogar y queda alguien, en el mismo lote esa persona queda como `miembro`, el miembro que **lleva más tiempo** (menor `desde`, el primero de la lista) pasa a `creador` y el hogar apunta a él en `creadorActualId`. El aviso `27` muestra a esa misma persona. Si la elegida dejó de estar activa mientras tanto, la transacción falla (sin escribir nada) y al reintentar se elige de nuevo. La última persona solo sale: el hogar queda sin miembros activos (archivado, sin campo nuevo).
+- **Sin conexión, quitar y salir:** son transacciones, así que fallan al instante en vez de quedar en cola (una orden en cola podría aplicarse horas después, cuando ya no corresponde). El aviso se queda abierto con un mensaje rojo y se puede reintentar; mientras corre, los botones quedan bloqueados ("Quitando…", "Saliendo…"). **Los textos son míos**, el diseño no trae variante: "No pudimos quitar a <nombre>. Revisá tu conexión y probá de nuevo." y "No pudimos sacarte del hogar. Revisá tu conexión y probá de nuevo."
+- **Te sacaron (`19`):** `watchHousehold` mira el documento propio de `miembros` (siempre legible). Si pasa a `quitado` o `salio`, el estado del hogar queda en `removed`, deja de leer y no lo pisan los errores de permiso que llegan detrás. El layout raíz vacía `hogarActualId` (transacción condicional: solo si todavía apunta a ese hogar, para no pisar uno al que la persona ya se unió) y lleva a Sin hogar. Funciona con la app abierta y al abrirla. Si no se puede vaciar el puntero (sin conexión) igual se muestra el aviso, y se vuelve a detectar al abrir.
+- **`salio` desde otro celular:** va a Sin hogar **sin** el aviso (la persona salió por su cuenta). Decisión mía.
+- **Nombre del hogar en el aviso:** si la app se abre cuando ya te sacaron, el hogar ya no se puede leer; se usa el nombre que haya quedado en el caché de Firestore del celular. Si no hay ninguno dice "Ya no sos parte de tu hogar" (texto mío).
+- **Volver:** quien fue quitado o salió vuelve con una invitación nueva por el mismo camino de unirse (PR 5); las reglas ya lo cubrían.
+- **Reglas:** sin cambios. Se sumaron 4 pruebas con los lotes exactos que escribe la app (salir con traspaso, salir común, quitado que vacía su puntero, nadie vacía el de otra persona). Ahora son 115.
+- **Pendiente que viene de las reglas del PR 1 (no se tocó acá):** una persona creadora puede salir "sin traspaso" aunque queden otros miembros activos, porque las reglas no pueden contar miembros. La app solo lo hace cuando es la última, pero un cliente modificado podría dejar un hogar con miembros activos y sin creador. Cerrarlo exigiría un contador de miembros activos en el hogar.
+- **Dev:** `/sin-hogar?sacaron=1` (menú DEV) sigue mostrando el aviso con el hogar de ejemplo; con un nombre (`?sacaron=Casa`) usa ese nombre.

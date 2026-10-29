@@ -6,7 +6,9 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { startSession, useSession } from '../auth/sessionStore';
-import { startHousehold } from '../data/householdStore';
+import { forgetHousehold } from '../data/householdSource';
+import { startHousehold, useHouseholdState } from '../data/householdStore';
+import { goToNoHousehold, goToRemoved } from '../navigation/session';
 import { takePendingInvite } from '../data/pendingInvite';
 import { DevMenu } from '../dev/DevMenu';
 import { LoadingScreen } from '../screens/LoadingScreen';
@@ -35,6 +37,21 @@ export default function RootLayout() {
     const timer = setTimeout(() => router.push(`/unirse/${code}`), 0);
     return () => clearTimeout(timer);
   }, [navigationReady, realSignedIn, hasHousehold]);
+
+  // Si la membresía deja de estar activa (te quitaron, o saliste desde otro celular) se vacía el
+  // `hogarActualId` propio y se va a Sin hogar; solo a quien quitaron se le muestra el aviso.
+  const household = useHouseholdState();
+  useEffect(() => {
+    if (!navigationReady || !householdId || household.status !== 'removed') return;
+    forgetHousehold(householdId).catch(() => {
+      // Sin conexión no se puede vaciar ahora; se vuelve a detectar al abrir la app.
+    });
+    if (household.reason === 'quitado') {
+      goToRemoved(household.householdName);
+    } else {
+      goToNoHousehold();
+    }
+  }, [navigationReady, householdId, household]);
 
   if (!fontsLoaded) {
     return <View style={styles.container} />;
