@@ -18,26 +18,27 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{
 </style>
 </helmet>
 <div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
-  <div style="padding:48px 16px 0 8px;display:flex;align-items:center;gap:4px">
-    <a href="SalirLista.dc.html" aria-label="Volver a las listas" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;flex:none">
+  <div style="padding:48px 12px 0 4px;display:flex;align-items:center;gap:2px">
+    <a href="SalirLista.dc.html" aria-label="Volver a las listas" style="width:44px;height:48px;display:flex;align-items:center;justify-content:center;flex:none">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
     </a>
     <div style="flex:1;min-width:0">
-      <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:24px;line-height:1.1">Supermercado</h1>
+      <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:22px;line-height:1.1">Supermercado</h1>
       <div style="font-size:13px;color:#5B675F;margin-top:2px">Nuestra casa</div>
     </div>
     <sc-if value="{{ online }}" hint-placeholder-val="{{ true }}">
-      <button onClick="{{ toggleOffline }}" aria-label="Estado: sincronizado. Tocá para simular que no hay conexión" style="height:44px;padding:0 14px 0 12px;border:0;border-radius:22px;background:#E3F1E8;color:#1F5C3E;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;flex:none">
+      <button onClick="{{ toggleOffline }}" aria-label="Estado: sincronizado. Tocá para simular que no hay conexión" style="height:40px;padding:0 10px 0 8px;border:0;border-radius:20px;background:#E3F1E8;color:#1F5C3E;font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;flex:none">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 1 1 .8-8.9A6 6 0 0 1 19 11.5 3.3 3.3 0 0 1 18 18z"/><path d="M9.5 13.5l2 2 3.5-4"/></svg>
         Sincronizado
       </button>
     </sc-if>
     <sc-if value="{{ offline }}" hint-placeholder-val="{{ false }}">
-      <button onClick="{{ toggleOffline }}" aria-label="Estado: sin conexión. Tocá para simular que volvió la conexión" style="height:44px;padding:0 14px 0 12px;border:0;border-radius:22px;background:#FCEBCB;color:#7A4300;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;flex:none">
+      <button onClick="{{ toggleOffline }}" aria-label="Estado: sin conexión. Tocá para simular que volvió la conexión" style="height:40px;padding:0 10px 0 8px;border:0;border-radius:20px;background:#FCEBCB;color:#7A4300;font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;flex:none">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18a4.5 4.5 0 1 1 .8-8.9A6 6 0 0 1 19 11.5 3.3 3.3 0 0 1 18 18z"/><path d="M4 4l16 16"/></svg>
         Sin conexión
       </button>
     </sc-if>
+    <a href="MenuLista.dc.html" aria-label="Opciones de la lista" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none;color:#3F4A44"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></a>
   </div>
 
   <sc-if value="{{ offline }}" hint-placeholder-val="{{ false }}">

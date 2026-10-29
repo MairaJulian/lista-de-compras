@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Error al guardar un cambio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+@keyframes subir{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes velo{from{opacity:0}to{opacity:1}}
+@keyframes aparecer{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+    <div style="padding:48px 12px 0 4px;display:flex;align-items:center;gap:2px">
+      <a href="SalirLista.dc.html" aria-label="Volver a las listas" style="width:44px;height:48px;display:flex;align-items:center;justify-content:center;flex:none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+      <div style="flex:1;min-width:0;margin-left:2px"><h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:22px;line-height:1.1;white-space:nowrap">Supermercado</h1><div style="font-size:13px;color:#5B675F;margin-top:2px">Nuestra casa</div></div>
+      <span style="height:40px;padding:0 10px 0 8px;border-radius:20px;background:#FBEAEA;color:#A12D2D;font-size:12px;font-weight:700;display:flex;align-items:center;gap:4px;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 1 1 .8-8.9A6 6 0 0 1 19 11.5 3.3 3.3 0 0 1 18 18z"/><path d="M12 10v3.5M12 16.2v.01"/></svg>Sin guardar</span>
+      <a href="MenuLista.dc.html" aria-label="Opciones de la lista" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none;color:#3F4A44"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></a>
+    </div>
+
+    <div role="alert" style="margin:10px 20px 0;padding:14px 16px;border-radius:18px;background:#FBEAEA;color:#A12D2D">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>
+        <div><div style="font-size:15px;font-weight:700;line-height:1.3">No pudimos guardar 2 cambios</div><div style="font-size:13px;line-height:1.4;margin-top:2px;color:#7A2323">Siguen en tu celular, marcados abajo. Probá de nuevo.</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <a href="Lista.dc.html" style="flex:1;height:44px;border-radius:22px;background:#A12D2D;color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v5h-5"/></svg>Reintentar</a>
+        <a href="Lista.dc.html" style="height:44px;padding:0 18px;box-sizing:border-box;border:1.5px solid #E3B8B8;border-radius:22px;color:#A12D2D;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center">Descartar</a>
+      </div>
+    </div>
+
+    <div style="margin:12px 20px 8px;display:flex;align-items:center;gap:10px"><div style="flex:1;height:52px;box-sizing:border-box;padding:0 20px;border:1.5px solid #D5DAD0;border-radius:26px;background:#fff;display:flex;align-items:center;font-size:17px;color:#5B675F">Agregar ítem…</div><span style="width:52px;height:52px;border-radius:50%;background:#2E7D57;color:#fff;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span></div>
+    <div style="padding:4px 20px"><div style="padding:8px 4px;font-size:15px;font-weight:700">Pendientes <span style="color:#5B675F">8</span></div>
+    <div style="border-radius:20px;overflow:hidden;background:#EEF1EA;display:flex;flex-direction:column;gap:1px"><div style="height:64px;padding:0 16px 0 6px;background:#fff;display:flex;align-items:center;gap:4px"><span style="width:44px;display:flex;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box"></span></span><div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:17px;font-weight:500">Mermelada</span><span style="font-size:14px;color:#5B675F"></span></div><div style="font-size:13px;font-weight:700;color:#A12D2D;margin-top:1px">No se guardó: ítem nuevo</div></div><span role="img" aria-label="No se guardó" style="width:28px;height:28px;border-radius:50%;background:#FBEAEA;color:#A12D2D;display:flex;align-items:center;justify-content:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v8M12 18v.01"/></svg></span></div><div style="height:56px;padding:0 16px 0 6px;background:#fff;display:flex;align-items:center;gap:4px"><span style="width:44px;display:flex;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box"></span></span><span style="flex:1;font-size:17px;font-weight:500">Leche</span><span style="font-size:14px;color:#5B675F;margin-right:8px">×2</span><span style="width:28px;height:28px;border-radius:50%;background:#F8DDAE;color:#7A4300;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">L</span></div><div style="height:56px;padding:0 16px 0 6px;background:#fff;display:flex;align-items:center;gap:4px"><span style="width:44px;display:flex;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box"></span></span><span style="flex:1;font-size:17px;font-weight:500">Pan lactal</span><span style="font-size:14px;color:#5B675F;margin-right:8px"></span><span style="width:28px;height:28px;border-radius:50%;background:#CFE8D9;color:#1F5C3E;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">V</span></div><div style="height:64px;padding:0 16px 0 6px;background:#fff;display:flex;align-items:center;gap:4px"><span style="width:44px;display:flex;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box"></span></span><div style="flex:1;min-width:0"><div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:17px;font-weight:500">Yerba mate</span><span style="font-size:14px;color:#5B675F">2 kg</span></div><div style="font-size:13px;font-weight:700;color:#A12D2D;margin-top:1px">No se guardó: cantidad (antes 1 kg)</div></div><span role="img" aria-label="No se guardó" style="width:28px;height:28px;border-radius:50%;background:#FBEAEA;color:#A12D2D;display:flex;align-items:center;justify-content:center;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v8M12 18v.01"/></svg></span></div><div style="height:56px;padding:0 16px 0 6px;background:#fff;display:flex;align-items:center;gap:4px"><span style="width:44px;display:flex;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box"></span></span><span style="flex:1;font-size:17px;font-weight:500">Huevos</span><span style="font-size:14px;color:#5B675F;margin-right:8px">1 docena</span><span style="width:28px;height:28px;border-radius:50%;background:#CFE0F2;color:#1D4E75;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">D</span></div><div style="height:56px;padding:0 16px 0 6px;background:#fff;display:flex;align-items:center;gap:4px"><span style="width:44px;display:flex;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box"></span></span><span style="flex:1;font-size:17px;font-weight:500">Fideos</span><span style="font-size:14px;color:#5B675F;margin-right:8px">×3</span><span style="width:28px;height:28px;border-radius:50%;background:#F8DDAE;color:#7A4300;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">L</span></div><div style="height:56px;padding:0 16px 0 6px;background:#fff;display:flex;align-items:center;gap:4px"><span style="width:44px;display:flex;justify-content:center;flex:none"><span style="width:24px;height:24px;border-radius:50%;border:2px solid #7C8A82;box-sizing:border-box"></span></span><span style="flex:1;font-size:17px;font-weight:500">Aceite de girasol</span><span style="font-size:14px;color:#5B675F;margin-right:8px"></span><span style="width:28px;height:28px;border-radius:50%;background:#CFE0F2;color:#1D4E75;font:800 13px/1 Nunito,sans-serif;display:flex;align-items:center;justify-content:center;flex:none">D</span></div></div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
