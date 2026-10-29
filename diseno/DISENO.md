@@ -10,7 +10,7 @@ App de lista de compras compartida para el hogar: 3 adultos de la misma casa, ca
 
 - `DISENO.md`: este documento (decisiones, estilo, pantallas, flujos).
 - `pantallas/`: una imagen PNG por pantalla (780 × 1688, el doble del tamaño de diseño) más el PDF original `Changuito-pantallas.pdf`. El número del archivo sigue el orden de la tabla de pantallas de abajo:
-  `01-bienvenida`, `02-invitacion-recibida`, `03-inicio`, `04-nueva-lista`, `05-lista`, `06-lista-vacia`, `07-lista-sin-conexion`, `08-salir-de-la-lista`, `09-notificacion`, `10-detalle-item`, `11-hogar`, `12-invitar`, `13-opciones-miembro`, `14-confirmar-quitar`, `15-confirmar-salir`, `16-perfil`, `17-sin-hogar`, `18-sin-hogar-codigo`, `19-sin-hogar-te-sacaron`, `20-crear-hogar`, `21-hogar-creado`, `22-invitar-sin-enlace`, `23-desactivar-enlace`, `24-error-enlace-invalido`, `25-error-inicio-sesion`, `26-error-sin-conexion-unirse`, `27-salir-hogar-creador`, `28-salir-hogar-ultima-persona`.
+  `01-bienvenida`, `02-invitacion-recibida`, `03-inicio`, `04-nueva-lista`, `05-lista`, `06-lista-vacia`, `07-lista-sin-conexion`, `08-salir-de-la-lista`, `09-notificacion`, `10-detalle-item`, `11-hogar`, `12-invitar`, `13-opciones-miembro`, `14-confirmar-quitar`, `15-confirmar-salir`, `16-perfil`, `17-sin-hogar`, `18-sin-hogar-codigo`, `19-sin-hogar-te-sacaron`, `20-crear-hogar`, `21-hogar-creado`, `22-invitar-sin-enlace`, `23-desactivar-enlace`, `24-error-enlace-invalido`, `25-error-inicio-sesion`, `26-error-sin-conexion-unirse`, `27-salir-hogar-creador`, `28-salir-hogar-ultima-persona`, `29-inicio-sin-listas`, `30-error-codigo`, `31-error-crear-hogar`, `32-error-carga`, `33-editar-hogar`, `34-menu-lista`, `35-renombrar-lista`, `36-eliminar-lista`, `37-error-guardar`, `38-lista-eliminada`.
   Ojo: las barras de desplazamiento visibles en `05-lista` son un detalle de la exportación, no parte del diseño. En `12-invitar` la pill "Vence en 47 h" se ve partida en dos líneas porque la captura es anterior a un ajuste; en el diseño final va en una sola línea (ver `referencia-html/Invitar.dc.html`).
 - `referencia-html/`: el código fuente de cada pantalla (`*.dc.html`). Sirve **solo para copiar valores exactos** (colores, tamaños, textos, márgenes). No es código de la app y no se ejecuta suelto (depende de un `support.js` que no está acá).
 
@@ -30,6 +30,9 @@ App de lista de compras compartida para el hogar: 3 adultos de la misma casa, ca
 - **Unirse requiere conexión**: sin internet se muestra un error con "Reintentar".
 - **Quien crea el hogar y sale**: el rol de creador pasa a otro miembro (en el diseño: "Lucía será la nueva persona a cargo"). Falta decidir **a quién** pasa en la app real.
 - **Última persona del hogar que sale**: el hogar se **archiva** y no queda nadie con acceso.
+- **Menú de lista**: cualquier miembro puede renombrar o eliminar una lista (no se restringe al creador del hogar; falta confirmar). Al eliminar, se borran todos los ítems para todo el hogar y no hay deshacer; la confirmación dice cuántos ítems se pierden. El ⋯ aparece en el encabezado de la lista (3, 3b, 3c).
+- **Error al guardar** (distinto de "Sin conexión"): sin conexión no es un error, se guarda en el celular y se sincroniza solo (3c). Si hay conexión pero el servidor rechaza el cambio, el cambio **no se pierde ni se oculta**: queda en la lista marcado en rojo, con un aviso para **Reintentar** o **Descartar** (descartar lo revierte). El indicador de estado pasa a **Sin guardar**.
+- **Lista eliminada por otra persona**: quien la tiene abierta ve un aviso que no se puede cerrar con "Volver a las listas". Los cambios que no se habían sincronizado se pierden (se avisa en el texto). Las notificaciones (agregar/borrar ítems) no cubren este caso.
 - Sin decidir todavía: tecnología/stack de la app y del backend.
 
 ## Estilo visual
@@ -89,7 +92,7 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 | 1b | `Unirse` | Lo que ve la persona invitada al abrir el enlace ("Te invitaron a unirte al hogar") | Se abre desde el enlace de invitación (no hay pantalla previa) → 2 Inicio / "Ahora no" → 1 |
 | 2 | `Inicio` | Tarjetas de listas del hogar (nombre + cantidad de pendientes), FAB "Nueva lista", barra inferior | 1 → tarjeta Supermercado → 3; tarjeta Ferretería → 3b; FAB → 2b; pestaña Hogar → 5 |
 | 2b | `NuevaLista` | Panel inferior: nombre + color (4 opciones) + "Crear lista" | 2 → vuelve a 2 |
-| 3 | `Lista` | Campo de agregar rápido arriba, **Pendientes**, **Comprados** (tachados) al final, indicador **Sincronizado / Sin conexión** | 2 → tocar ítem → 4; flecha atrás → 3d |
+| 3 | `Lista` | Campo de agregar rápido arriba, **Pendientes**, **Comprados** (tachados) al final, indicador **Sincronizado / Sin conexión** | 2 → tocar ítem → 4; flecha atrás → 3d; botón ⋯ (arriba a la derecha) → 34 |
 | 3b | `ListaVacia` | Estado vacío ("Esta lista está vacía") | 2 (tarjeta Ferretería) |
 | 3c | `ListaSinConexion` | Estado sin conexión: pill ámbar, aviso "2 cambios sin sincronizar", ítems con reloj | Variante de 3 (el indicador de 3 alterna entre ambos estados) |
 | 3d | `SalirLista` | Aviso: "¿Salir de la lista? Se van a borrar los N ítems comprados" | 3 → "Salir y borrar" → 2 / "Quedarme" → 3 |
@@ -118,6 +121,11 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 | 31 | `ErrorCrearHogar` | Variante de 20 si falla la creación: "No pudimos crear el hogar", el nombre escrito se conserva, aviso rojo y botón **Reintentar** | 20 al tocar "Crear hogar" y fallar → "Reintentar" → 21 / "Ahora no" → 17 |
 | 32 | `ErrorCarga` | Error general de lectura de datos: "No pudimos cargar tus datos" con **Reintentar**; conserva el título y la barra inferior | Cuando falla la lectura (Inicio, Hogar, etc.) → "Reintentar" → 2 |
 | 33 | `EditarHogar` | Panel inferior "Nombre del hogar": nombre actual, campo editable, **Guardar** (se deshabilita si el campo queda vacío) y Cancelar | 5 (tarjeta del hogar) → Guardar / Cancelar → 5 |
+| 34 | `MenuLista` | Panel inferior de la lista (se abre con el ⋯ del encabezado de 3): nombre, cantidad de ítems, **Renombrar** y **Eliminar lista** (peligro) | 3 → ⋯ → Renombrar → 35 / Eliminar lista → 36 / Cancelar → 3 |
+| 35 | `RenombrarLista` | Panel inferior como el de 33: "Nombre de la lista", nombre actual, campo editable, **Guardar** (se deshabilita si queda vacío) y Cancelar | 34 → Guardar / Cancelar → 3 |
+| 36 | `EliminarLista` | Aviso centrado "¿Eliminar Supermercado?": dice cuántos ítems se pierden (10: 7 pendientes y 3 comprados), que desaparece para todo el hogar y que no se puede deshacer. Botones **Eliminar lista** (rojo) y Cancelar | 34 → Eliminar lista → 2 / Cancelar → 3 |
+| 37 | `ErrorGuardar` | Lista con un cambio que no se pudo guardar (agregar, tildar o editar un ítem): pill roja **Sin guardar** en el encabezado, aviso rojo "No pudimos guardar 2 cambios" con **Reintentar** y **Descartar**, y las filas afectadas marcadas con "!" y el motivo ("No se guardó: ítem nuevo", "No se guardó: cantidad (antes 1 kg)") | Cuando falla una escritura con conexión: Reintentar → 3 (queda sincronizada) / Descartar → 3 (vuelve a como estaba) |
+| 38 | `ListaEliminada` | Aviso centrado, sin forma de cerrarlo, "Esta lista ya no existe": "Lucía eliminó Supermercado…", botón **Volver a las listas** | Cuando otra persona elimina la lista que tenés abierta → 2 |
 
 ## Comportamientos que muestra el prototipo
 
@@ -134,12 +142,12 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 - La flecha atrás de una lista siempre muestra el aviso 3d en el prototipo; en la app real solo cuando haya ítems comprados.
 - El detalle siempre muestra "Leche"; en la app real muestra el ítem tocado.
 - En el prototipo "Salir del hogar" de Hogar siempre abre la variante común (5e); las variantes 27 y 28 se ven directamente en el lienzo. En la app real se elige la variante según el caso.
-- El prototipo no conecta 19 (te sacaron), 24–26 ni 30–32 (errores) con un disparador real: se ven en el lienzo para diseñar el estado.
+- El ⋯ de 3b y 3c abre el menú de Supermercado (el prototipo tiene un solo menú). En 36 "Eliminar lista" vuelve a 2 donde la tarjeta sigue; en la app real desaparece.
+- El prototipo no conecta 19 (te sacaron), 24–26, 30–32, 37 ni 38 (errores y avisos) con un disparador real: se ven en el lienzo para diseñar el estado.
 - En 33 el nombre nuevo no se refleja al volver a 5 (el prototipo no guarda datos). Quién puede editar el nombre no está decidido en el diseño: el panel no dice nada al respecto.
 - Código de ejemplo `K7P2-9XQ-4MN`, "Vence en 47 h" y el nuevo "R4WD-3ZT-8HC / Vence en 48 h" son datos de ejemplo.
 
 ## No diseñado todavía
 
-- Otros errores puntuales (por ejemplo, fallo al guardar un cambio de nombre o al crear una lista).
-- Edición del nombre de una lista; borrar una lista.
+- Otros errores puntuales (por ejemplo, fallo al renombrar o eliminar una lista, o al crear una lista).
 - Tema oscuro.

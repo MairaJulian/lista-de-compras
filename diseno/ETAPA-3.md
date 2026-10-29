@@ -170,8 +170,8 @@ Antes de la Etapa 4 conviene diseñar, en Claude Design, el menú de lista (reno
 - [x] PR 3 · Hogar en tiempo real y editar nombre (mergeado; ver "Notas del PR 3")
 - [x] PR 4 · Invitaciones (mergeado; ver "Notas del PR 4")
 - [x] PR 5 · Unirse (mergeado; ver "Notas del PR 5")
-- [x] PR 6 · Quitar, salir, traspaso y "te sacaron" (en revisión; ver "Notas del PR 6")
-- [ ] PR 7 · Página puente para el enlace (opcional)
+- [x] PR 6 · Quitar, salir, traspaso y "te sacaron" (mergeado; ver "Notas del PR 6")
+- [ ] PR 7 · Página puente para el enlace (pendiente, opcional; se hace al final, después de la Etapa 4)
 
 ### Notas del PR 2
 
