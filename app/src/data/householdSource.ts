@@ -243,6 +243,9 @@ export function watchHousehold(
         // Su propio documento siempre se puede leer: si dice que ya no está activa, la sacaron.
         const reason = snapshot.exists() ? data?.estado : undefined;
         if (reason === 'quitado' || reason === 'salio') {
+          // El caché puede traer todavía la baja vieja (por ejemplo al volver a unirse al mismo
+          // hogar): se espera a la lectura del servidor antes de dar por hecho que la sacaron.
+          if (snapshot.metadata.fromCache) return;
           // Sin el nombre a mano (la app se abrió ya sin acceso) se busca el que quedó en el caché.
           void (name !== undefined ? Promise.resolve(name) : cachedHouseholdName(householdId)).then(
             (known) => onRemoved(reason, known),

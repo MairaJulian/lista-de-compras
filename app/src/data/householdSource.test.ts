@@ -143,7 +143,11 @@ describe('renameHousehold', () => {
   });
 });
 
-const snapshotOf = (data: object | undefined) => ({ exists: () => !!data, data: () => data });
+const snapshotOf = (data: object | undefined, fromCache = false) => ({
+  exists: () => !!data,
+  data: () => data,
+  metadata: { fromCache },
+});
 
 /** Hace que `transaction.get` devuelva, según el documento, lo que se le indique. */
 function readsDocuments(documents: Record<string, object | undefined>) {
@@ -422,6 +426,22 @@ describe('watchHousehold', () => {
         expect(mockGetFromCache).not.toHaveBeenCalled();
       },
     );
+
+    it('no da por hecho que la sacaron con una baja vieja que viene del caché', async () => {
+      const onRemoved = jest.fn();
+      const onError = jest.fn();
+      watchHousehold('h1', jest.fn(), onError, onRemoved);
+      snapshotHandlers['hogares/h1/miembros/u1'].next(
+        snap({ ...memberDoc, estado: 'quitado' }, true),
+      );
+      await Promise.resolve();
+      expect(onRemoved).not.toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+
+      snapshotHandlers['hogares/h1/miembros/u1'].next(snap(memberDoc));
+      snapshotHandlers['hogares/h1'].next(snap({ nombre: 'Nuestra casa' }));
+      expect(onRemoved).not.toHaveBeenCalled();
+    });
 
     it('si la app se abrió ya sin acceso busca el nombre en el caché', async () => {
       const onRemoved = jest.fn();
