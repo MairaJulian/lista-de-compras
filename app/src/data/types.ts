@@ -23,6 +23,8 @@ export type ListInfo = {
   icon: IconName;
   /** Lista eliminada (solo las reales; la app no la muestra pero detecta el cambio). */
   deleted?: boolean;
+  /** Quién la eliminó (`eliminadaPor`), para el aviso a quien la tenía abierta. */
+  deletedBy?: string;
   /** Milisegundos de `creadaEn`, para ordenar las listas reales. */
   createdAt?: number;
 };

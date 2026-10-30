@@ -186,3 +186,15 @@ export function addList(lists: ListInfo[], name: string, tone: ListTone, id: str
   if (!trimmed) return lists;
   return [...lists, { id, name: trimmed, tone, icon: 'list' }];
 }
+
+/** Cambia el nombre de una lista. Un nombre vacío no cambia nada. */
+export function renameList(lists: ListInfo[], listId: string, name: string): ListInfo[] {
+  const trimmed = cleanListName(name);
+  if (!trimmed) return lists;
+  return lists.map((list) => (list.id === listId ? { ...list, name: trimmed } : list));
+}
+
+/** Elimina una lista: queda marcada (como en Firestore), no se muestra y sus ítems se ignoran. */
+export function deleteList(lists: ListInfo[], listId: string): ListInfo[] {
+  return lists.map((list) => (list.id === listId ? { ...list, deleted: true } : list));
+}

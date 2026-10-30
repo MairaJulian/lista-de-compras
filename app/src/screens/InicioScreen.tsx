@@ -1,8 +1,15 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Fab, ListCard } from '../components';
-import { useCreateList, useHousehold, useLists, useListsLoad } from '../data/hooks';
+import { Fab, ListCard, SaveErrorNotice } from '../components';
+import { noticeCopy } from '../data/failureLogic';
+import {
+  useCreateList,
+  useHomeFailures,
+  useHousehold,
+  useLists,
+  useListsLoad,
+} from '../data/hooks';
 import type { ListSummary } from '../data/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NewListSheet } from '../sheets/NewListSheet';
@@ -19,6 +26,7 @@ export function InicioScreen({ onOpenList }: Props) {
   const createList = useCreateList();
   const [newListOpen, setNewListOpen] = useState(false);
   const load = useListsLoad();
+  const failures = useHomeFailures();
   const { top } = useSafeAreaInsets();
 
   // Las tarjetas van de a dos por fila.
@@ -37,6 +45,17 @@ export function InicioScreen({ onOpenList }: Props) {
     </View>
   );
 
+  // Crear o eliminar una lista que el servidor rechazó (no hay fila que marcar: va todo en el aviso).
+  const notice = failures.failures.length > 0 && (
+    <View style={styles.notice}>
+      <SaveErrorNotice
+        {...noticeCopy(failures.failures)}
+        onRetry={failures.retry}
+        onDiscard={failures.discard}
+      />
+    </View>
+  );
+
   let body: React.ReactNode;
   if (load.status === 'error') {
     body = <LoadErrorState onRetry={load.retry} />;
@@ -51,11 +70,13 @@ export function InicioScreen({ onOpenList }: Props) {
       {body ? (
         <>
           {header}
+          {notice}
           {body}
         </>
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
           {header}
+          {notice}
           <View style={styles.grid}>
             {rows.map((row) => (
               <View key={row[0].id} style={styles.row}>
@@ -108,6 +129,7 @@ const styles = StyleSheet.create({
     lineHeight: 37,
     color: colors.textPrimary,
   },
+  notice: { marginHorizontal: 24, marginTop: 12 },
   grid: { paddingHorizontal: 24, paddingVertical: 16, gap: 16 },
   row: { flexDirection: 'row', gap: 16 },
   spacer: { flex: 1 },

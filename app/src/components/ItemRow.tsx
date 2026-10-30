@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { AvatarTone, colors, fontSizes, fonts, heights, radii } from '../theme';
+import { AvatarTone, colors, fontSizes, fonts, heights, radii, sizes } from '../theme';
 import { Avatar } from './Avatar';
 import { Icon } from './Icon';
 
@@ -10,15 +10,27 @@ type Props = {
   done?: boolean;
   /** Cambio sin sincronizar: muestra el reloj ámbar. */
   pendingSync?: boolean;
+  /** Por qué no se guardó ("No se guardó: ítem nuevo"): la fila se marca en rojo, con "!" en vez del avatar. */
+  error?: string;
   addedBy: { name: string; tone: AvatarTone };
   onToggle?: () => void;
   onPress?: () => void;
 };
 
 /** Fila de ítem: checkbox, nombre, cantidad y avatar. Va dentro de un ItemGroup. */
-export function ItemRow({ name, quantity, done, pendingSync, addedBy, onToggle, onPress }: Props) {
+export function ItemRow({
+  name,
+  quantity,
+  done,
+  pendingSync,
+  error,
+  addedBy,
+  onToggle,
+  onPress,
+}: Props) {
+  const height = done ? heights.rowDone : heights.rowPending;
   return (
-    <View style={[styles.row, { height: done ? heights.rowDone : heights.rowPending }]}>
+    <View style={[styles.row, error ? { minHeight: heights.rowError } : { height }]}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: !!done }}
@@ -35,17 +47,26 @@ export function ItemRow({ name, quantity, done, pendingSync, addedBy, onToggle, 
         )}
       </Pressable>
       <Pressable accessibilityRole="button" onPress={onPress} style={styles.content}>
-        <Text style={[styles.name, done && styles.nameDone]} numberOfLines={1}>
-          {name}
-        </Text>
-        {!!quantity && <Text style={styles.quantity}>{quantity}</Text>}
+        <View style={styles.line}>
+          <Text style={[styles.name, done && styles.nameDone]} numberOfLines={1}>
+            {name}
+          </Text>
+          {!!quantity && <Text style={styles.quantity}>{quantity}</Text>}
+        </View>
+        {!!error && <Text style={styles.error}>{error}</Text>}
       </Pressable>
       {pendingSync && (
         <View accessibilityRole="image" accessibilityLabel="Sin sincronizar">
           <Icon name="clock" size={20} color={colors.amberIcon} />
         </View>
       )}
-      <Avatar name={addedBy.name} tone={addedBy.tone} />
+      {error ? (
+        <View accessibilityRole="image" accessibilityLabel="No se guardó" style={styles.errorBadge}>
+          <Text style={styles.errorBadgeMark}>!</Text>
+        </View>
+      ) : (
+        <Avatar name={addedBy.name} tone={addedBy.tone} />
+      )}
     </View>
   );
 }
@@ -88,10 +109,30 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     minWidth: 0,
-    height: '100%',
-    flexDirection: 'row',
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  line: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  error: {
+    marginTop: 2,
+    fontFamily: fonts.bodyBold,
+    fontSize: fontSizes.secondary,
+    color: colors.danger,
+  },
+  errorBadge: {
+    width: sizes.avatar,
+    height: sizes.avatar,
+    borderRadius: sizes.avatar / 2,
+    backgroundColor: colors.dangerSoft,
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+  },
+  errorBadgeMark: {
+    fontFamily: fonts.bodyBold,
+    fontSize: fontSizes.label,
+    includeFontPadding: false,
+    color: colors.danger,
   },
   name: {
     flexShrink: 1,
