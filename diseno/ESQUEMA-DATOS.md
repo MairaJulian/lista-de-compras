@@ -86,23 +86,30 @@ No se borra el documento al salir: queda como historial y permite seguir mostran
 ### `hogares/{hogarId}/listas/{listaId}`
 | Campo | Notas |
 |---|---|
-| nombre, color, icono | |
-| creadaPor, creadaEn | |
-| eliminada, eliminadaEn | Marca de borrado (se purga como los ítems) |
+| nombre, color | Nombre: texto no vacío, máximo 80 caracteres. Color: uno de los cuatro del diseño (`green`, `amber`, `blue`, `neutral`) |
+| icono | Sin uso por ahora (las reglas no lo admiten hasta que haga falta) |
+| creadaPor, creadaEn | `creadaEn` usa la hora del servidor. No cambian |
+| eliminada, eliminadaPor, eliminadaEn | Marca de borrado (se purga como los ítems). `eliminada` se escribe siempre (`false` al crear) y solo puede pasar de `false` a `true`, en una sola escritura con los tres campos (`eliminadaPor` = quien la elimina, `eliminadaEn` con la hora del servidor). Una lista eliminada no se modifica más |
+
+- Cualquier miembro activo puede crear, renombrar (o cambiar el color) y eliminar una lista.
+- Eliminar una lista **no toca sus ítems**: la app ignora los ítems cuya lista está eliminada, y la purga de la Etapa 6 los limpia junto con la lista. Solo se borra de verdad una lista eliminada hace más de 30 días.
 
 ### `hogares/{hogarId}/items/{itemId}`
 | Campo | Notas |
 |---|---|
-| listaId | |
-| nombre | |
-| cantidad | Número opcional (el del − / +) |
-| unidad | Texto opcional: "kg", "docena", "pack" |
-| nota | Opcional |
-| comprado | Sí / no |
-| agregadoPor, agregadoEn | `agregadoEn` usa la hora del servidor |
-| tildadoPor, tildadoEn | Vacíos si no está comprado |
-| borrado, borradoEn, borradoPor | Marca de borrado (ver "Borrado y deshacer") |
+| listaId | No cambia |
+| nombre | Texto no vacío, máximo 120 caracteres |
+| cantidad | Entero positivo opcional (el del − / +). Ausente = 1 |
+| unidad | Texto opcional (máximo 30): "kg", "docena", "pack". Existe en el esquema, pero **todavía no tiene interfaz** |
+| nota | Opcional, máximo 500 caracteres |
+| comprado | Booleano, **se escribe siempre** (`false` al crear) |
+| agregadoPor, agregadoEn | `agregadoEn` usa la hora del servidor. Ninguno de los dos cambia |
+| tildadoPor, tildadoEn | Al tildar: uid de quien tilda y hora del servidor. Vacíos (o ausentes) si no está comprado |
+| borrado, borradoPor, borradoEn | Marca de borrado (ver "Borrado y deshacer"). `borrado` **se escribe siempre** (`false` al crear). Al borrar: uid de quien borra y hora del servidor; al deshacer se vacían |
 
+- **Consulta de ítems del hogar:** `borrado == false`. Por eso `borrado` tiene que existir siempre. Un ítem que pasa a borrado sale del resultado y los demás celulares lo ven desaparecer.
+- Los ítems de una lista eliminada se ignoran en la app; los purga la Etapa 6 junto con la lista.
+- Las reglas no comprueban que `listaId` exista (un ítem huérfano es inofensivo y evita una lectura por escritura).
 - El id del ítem lo genera el celular, así se pueden crear ítems sin conexión sin chocar con otros.
 - Avatar de la fila: el de `agregadoPor` mientras está pendiente, el de `tildadoPor` cuando pasa a comprados.
 - **Regla de programación:** los cambios se hacen siempre con actualizaciones de campos sueltos, nunca reescribiendo el documento entero. De eso depende que "gana el último, por campo" funcione.
@@ -155,7 +162,8 @@ Detalle a tener presente: un cambio hecho sin conexión y enviado horas después
 - `miembros`: un miembro activo lee a todos; cada persona siempre lee el suyo (así se entera de que la sacaron). Nunca se borra un documento. Crea el suyo solo (a) al armar un hogar nuevo, como `creador`, o (b) con una invitación que existe, está `activa`, no venció y es de ese hogar, siempre como `miembro` y con el hogar teniendo un creador activo. Quien salió o fue quitado puede volver con una invitación nueva y válida. Una persona solo puede cambiar su propio nombre y foto, o pasar su propio estado a `salio`. Solo el `creador` puede poner a otro `miembro` en `quitado` (nunca a sí mismo).
 - **Traspaso:** si se va quien creó el hogar y hay más gente, en un solo lote: su estado pasa a `salio` y su rol a `miembro`, el rol `creador` pasa a otro miembro activo y `creadorActualId` apunta a esa persona. Las reglas verifican con `getAfter` que el resultado tenga un creador activo; **no pueden verificar que sea quien lleva más tiempo ni que no queden otros miembros activos** (no pueden contar ni listar), eso lo decide la app. Si era la última persona, sale sin cambiar el rol: el hogar queda archivado y, como `creadorActualId` ya no apunta a alguien activo, nadie puede unirse.
 - `invitaciones`: se puede leer una por una (con sesión), nunca listarlas. Las crean los miembros activos del hogar, con vencimiento a 48 h, y lo único que se modifica es pasarlas de `activa` a `revocada`.
-- `items`: solo se pueden eliminar de verdad los marcados como borrados hace más de 30 días.
+- `listas`: leen, crean, renombran y eliminan (marcan) los miembros activos. Al crear: `creadaPor` propio, `creadaEn` del servidor, `eliminada` en `false`, nombre de 1 a 80 caracteres y uno de los cuatro colores. Al editar: solo `nombre` y `color`, o la eliminación (`eliminada` de `false` a `true` con `eliminadaPor` propio y `eliminadaEn` del servidor); una lista eliminada no se modifica. Solo se borra de verdad una lista eliminada hace más de 30 días.
+- `items`: leen y escriben los miembros activos. Al crear: `agregadoPor` propio, `agregadoEn` del servidor, `comprado` y `borrado` en `false`, sin marcas de tildado ni borrado. Al editar: `listaId`, `agregadoPor` y `agregadoEn` no cambian; tildar y borrar exigen el uid propio y la hora del servidor, y destildar y deshacer vacían sus marcas. Solo se pueden eliminar de verdad los marcados como borrados hace más de 30 días.
 
 **Costo de las reglas:** consultar el documento de miembro dentro de una regla cuenta como una lectura por pedido. Para una familia es despreciable frente al cupo diario.
 
