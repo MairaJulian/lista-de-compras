@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,9 +10,16 @@ import {
   ItemRow,
   QuickAddField,
   StatusPill,
+  UndoToast,
 } from '../components';
-import { useHousehold, useList, useListContents, useMemberLookup } from '../data/hooks';
-import { formatQuantity } from '../data/listLogic';
+import {
+  useHousehold,
+  useIsRealSession,
+  useList,
+  useListContents,
+  useMemberLookup,
+} from '../data/hooks';
+import { formatQuantity, MAX_ITEM_NAME } from '../data/listLogic';
 import type { ListItem } from '../data/types';
 import { ItemDetailSheet } from '../sheets/ItemDetailSheet';
 import { colors, fontSizes, fonts, radii } from '../theme';
@@ -29,11 +36,13 @@ export function ListaScreen({ listId, onBack }: Props) {
     pending,
     done,
     online,
+    showConnection,
     unsyncedCount,
     toggle,
     add,
     update,
     remove,
+    restore,
     removeDone,
     toggleOnline,
   } = useListContents(listId);
@@ -42,10 +51,15 @@ export function ListaScreen({ listId, onBack }: Props) {
   const [detailId, setDetailId] = useState<string>();
   const [detailOpen, setDetailOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  // Último ítem eliminado, mientras todavía se puede deshacer.
+  const [undoId, setUndoId] = useState<string>();
+  const dismissUndo = useCallback(() => setUndoId(undefined), []);
+  const realSession = useIsRealSession();
   const { top, bottom } = useSafeAreaInsets();
-  const hasDone = done.length > 0;
+  // Con los datos de ejemplo, salir con ítems comprados pide confirmación y los borra (`08`). En la
+  // sesión real esa limpieza es de la Etapa 6: la flecha vuelve directo a Inicio y no borra nada.
+  const hasDone = done.length > 0 && !realSession;
 
-  // Con ítems comprados, salir de la lista (flecha o botón atrás de Android) pide confirmación.
   const goBack = () => (hasDone ? setLeaveOpen(true) : onBack?.());
 
   useEffect(() => {
@@ -112,17 +126,22 @@ export function ListaScreen({ listId, onBack }: Props) {
           </Text>
           <Text style={styles.household}>{household.name}</Text>
         </View>
-        <StatusPill online={online} onPress={toggleOnline} />
+        {showConnection && <StatusPill online={online} onPress={toggleOnline} />}
       </View>
 
-      {!online && (
+      {showConnection && !online && (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>{offlineMessage(unsyncedCount)}</Text>
         </View>
       )}
 
       <View style={styles.quickAdd}>
-        <QuickAddField value={draft} onChangeText={setDraft} onSubmit={submit} />
+        <QuickAddField
+          value={draft}
+          onChangeText={setDraft}
+          onSubmit={submit}
+          maxLength={MAX_ITEM_NAME}
+        />
       </View>
 
       {empty ? (
@@ -165,8 +184,23 @@ export function ListaScreen({ listId, onBack }: Props) {
         onDelete={(itemId) => {
           setDetailOpen(false);
           remove(itemId);
+          setUndoId(itemId);
         }}
       />
+
+      {undoId !== undefined && (
+        <UndoToast
+          key={undoId}
+          message="Ítem eliminado"
+          actionLabel="Deshacer"
+          bottomInset={bottom}
+          onAction={() => {
+            restore(undoId);
+            dismissUndo();
+          }}
+          onTimeout={dismissUndo}
+        />
+      )}
 
       <CenteredDialog
         visible={leaveOpen}

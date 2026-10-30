@@ -42,3 +42,14 @@ jest.mock('./src/data/joinSource', () => ({
   readInvitePreview: jest.fn(),
   joinHousehold: jest.fn(),
 }));
+
+// Las listas y los ítems del hogar, igual: la lectura y las escrituras en Firestore las controla cada
+// prueba (la implementación real se prueba en `listSource.test.ts`).
+jest.mock('./src/data/listSource', () => ({
+  watchHouseholdData: jest.fn(() => () => {}),
+  createList: jest.fn(() => ({ id: 'lista-nueva', saved: Promise.resolve() })),
+  addItem: jest.fn(() => ({ id: 'item-nuevo', saved: Promise.resolve() })),
+  setItemDone: jest.fn(() => Promise.resolve()),
+  updateItemFields: jest.fn(() => Promise.resolve()),
+  setItemDeleted: jest.fn(() => Promise.resolve()),
+}));

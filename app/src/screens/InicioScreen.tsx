@@ -1,14 +1,8 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Fab, ListCard } from '../components';
-import {
-  useCreateList,
-  useHousehold,
-  useHouseholdLoad,
-  useIsRealSession,
-  useLists,
-} from '../data/hooks';
+import { useCreateList, useHousehold, useLists, useListsLoad } from '../data/hooks';
 import type { ListSummary } from '../data/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NewListSheet } from '../sheets/NewListSheet';
@@ -24,8 +18,7 @@ export function InicioScreen({ onOpenList }: Props) {
   const lists = useLists();
   const createList = useCreateList();
   const [newListOpen, setNewListOpen] = useState(false);
-  const load = useHouseholdLoad();
-  const realSession = useIsRealSession();
+  const load = useListsLoad();
   const { top } = useSafeAreaInsets();
 
   // Las tarjetas van de a dos por fila.
@@ -43,15 +36,6 @@ export function InicioScreen({ onOpenList }: Props) {
       </Text>
     </View>
   );
-
-  // Las listas reales llegan en la Etapa 4: hasta entonces "Nueva lista" avisa en vez de crear.
-  const onNewList = () => {
-    if (realSession) {
-      Alert.alert('Todavía no se pueden crear listas', 'Las listas llegan en la próxima etapa.');
-    } else {
-      setNewListOpen(true);
-    }
-  };
 
   let body: React.ReactNode;
   if (load.status === 'error') {
@@ -93,7 +77,7 @@ export function InicioScreen({ onOpenList }: Props) {
       )}
       {load.status === 'ready' && (
         <View style={styles.fab}>
-          <Fab label="Nueva lista" icon="plus" onPress={onNewList} />
+          <Fab label="Nueva lista" icon="plus" onPress={() => setNewListOpen(true)} />
         </View>
       )}
       <NewListSheet

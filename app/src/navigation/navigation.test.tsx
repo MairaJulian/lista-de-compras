@@ -34,6 +34,16 @@ import { InviteInvalidError } from '../data/joinLogic';
 import { joinHousehold, readInvitePreview } from '../data/joinSource';
 import { clearPendingInvite } from '../data/pendingInvite';
 import { resetHouseholdStore } from '../data/householdStore';
+import {
+  addItem,
+  createList,
+  setItemDeleted,
+  setItemDone,
+  updateItemFields,
+  watchHouseholdData,
+} from '../data/listSource';
+import { resetListData } from '../data/listStore';
+import type { HouseholdData } from '../data/listSource';
 import type { Member } from '../data/types';
 import { resetMockStore } from '../mock/store';
 
@@ -79,11 +89,25 @@ function firebaseSession(initial: AuthState) {
   resetSession();
 }
 
+/** Qué lee Firestore de listas, ítems y miembros del hogar real. */
+function readsListData(data: HouseholdData) {
+  (watchHouseholdData as jest.Mock).mockReset().mockImplementation((_id, onData) => {
+    onData(data);
+    return () => {};
+  });
+}
+
 describe('navegación', () => {
   beforeEach(() => {
     resetMockStore();
     resetHouseholdStore();
+    resetListData();
+    [createList, addItem, setItemDone, updateItemFields, setItemDeleted].forEach((write) =>
+      (write as jest.Mock).mockClear(),
+    );
     (createHousehold as jest.Mock).mockReset();
+    // Por defecto el hogar real no tiene listas ni ítems.
+    readsListData({ lists: [], items: [], members: [] });
     (watchHousehold as jest.Mock).mockReset().mockImplementation(() => () => {});
     // Por defecto: sesión de ejemplo (con hogar), como en desarrollo.
     resetSession({ status: 'demo' });
@@ -389,18 +413,148 @@ describe('navegación', () => {
           return () => {};
         });
 
-      it('con hogar y sin listas abre Inicio sin listas, y "Nueva lista" avisa que todavía no crea', async () => {
+      it('con hogar y sin listas abre Inicio sin listas, y "Nueva lista" crea la lista de verdad', async () => {
         readsHousehold('Casa real');
         firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
-        const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
         await renderRouter(routes);
         expect(screen.getByText('Casa real')).toBeTruthy();
         expect(screen.getByText('Todavía no hay listas')).toBeTruthy();
         expect(screen.queryByText('Supermercado')).toBeNull();
         await fireEvent.press(screen.getByText('Nueva lista'));
-        expect(alert).toHaveBeenCalledTimes(1);
-        expect(screen.queryByText('Crear lista')).toBeNull();
-        alert.mockRestore();
+        await fireEvent.changeText(screen.getByLabelText('Nombre'), '  Panadería ');
+        await fireEvent.press(screen.getByText('Crear lista'));
+        // No espera al servidor: el panel se cierra y la escritura sale con el nombre limpio.
+        expect(createList).toHaveBeenCalledWith('h1', 'u1', 'Panadería', 'green');
+        await waitFor(() => expect(screen.queryByText('Crear lista')).toBeNull());
+      });
+
+      describe('con listas e ítems reales', () => {
+        const lucia = { id: 'u2', name: 'Lucía', role: 'member' as const, tone: 'amber' as const };
+        // Quien salió del hogar sigue estando en `miembros`, con su nombre.
+        const diego = { id: 'u3', name: 'Diego', role: 'member' as const, tone: 'blue' as const };
+        const row = (
+          id: string,
+          name: string,
+          addedBy: string,
+          addedAt: number,
+          rest: Record<string, unknown> = {},
+        ) => ({ id, listId: 'l1', name, done: false, addedBy, addedAt, ...rest });
+        const data: HouseholdData = {
+          lists: [
+            { id: 'l1', name: 'Supermercado', tone: 'green', icon: 'list', createdAt: 1 },
+            { id: 'l2', name: 'Verdulería', tone: 'amber', icon: 'list', createdAt: 2 },
+            { id: 'l3', name: 'Vieja', tone: 'blue', icon: 'list', createdAt: 3, deleted: true },
+          ],
+          items: [
+            row('i1', 'Leche', 'u2', 10, { quantity: 2, note: 'Sin lactosa' }),
+            row('i2', 'Pan', 'u1', 30),
+            row('i3', 'Arroz', 'u3', 5, { done: true, doneBy: 'u2', doneAt: 50 }),
+            row('i4', 'Café', 'u1', 6, { done: true, doneBy: 'u3', doneAt: 70 }),
+            { ...row('i5', 'Fantasma', 'u1', 7), listId: 'l3' },
+          ],
+          members: [me, lucia, diego],
+        };
+
+        beforeEach(() => {
+          readsHousehold('Casa real');
+          readsListData(data);
+          firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        });
+
+        it('Inicio muestra las listas con sus pendientes, sin las eliminadas', async () => {
+          await renderRouter(routes);
+          expect(screen.getByLabelText('Supermercado, 2 pendientes')).toBeTruthy();
+          expect(screen.getByLabelText('Verdulería, al día')).toBeTruthy();
+          expect(screen.queryByText('Vieja')).toBeNull();
+        });
+
+        it('la lista ordena pendientes y comprados, con el avatar de quien agregó o tildó', async () => {
+          await renderRouter(routes);
+          await fireEvent.press(screen.getByText('Supermercado'));
+          const names = screen
+            .getAllByText(/^(Pan|Leche|Café|Arroz)$/)
+            .map((n) => n.props.children);
+          // Pendientes: el más nuevo arriba. Comprados: el último tildado arriba.
+          expect(names).toEqual(['Pan', 'Leche', 'Café', 'Arroz']);
+          expect(screen.getByText('×2')).toBeTruthy();
+          // Pendiente: avatar de quien lo agregó. Comprado: de quien lo tildó (Diego ya salió).
+          expect(screen.getAllByLabelText('Lucía')).toHaveLength(2);
+          expect(screen.getAllByLabelText('Diego')).toHaveLength(1);
+          expect(screen.queryByText('Fantasma')).toBeNull();
+          // Todavía no hay indicador de conexión: no puede decir un "Sincronizado" que sea falso.
+          expect(screen.queryByText('Sincronizado')).toBeNull();
+        });
+
+        it('agrega un ítem con el nombre limpio y deja el campo listo; uno vacío no agrega', async () => {
+          await renderRouter(routes);
+          await fireEvent.press(screen.getByText('Supermercado'));
+          await fireEvent.press(screen.getByLabelText('Agregar a la lista'));
+          expect(addItem).not.toHaveBeenCalled();
+          await fireEvent.changeText(screen.getByLabelText('Agregar ítem'), '  Yerba ');
+          await fireEvent.press(screen.getByLabelText('Agregar a la lista'));
+          expect(addItem).toHaveBeenCalledWith('h1', 'u1', 'l1', 'Yerba');
+          expect(screen.getByLabelText('Agregar ítem').props.value).toBe('');
+        });
+
+        it('tilda y destilda tocando solo la marca de comprado', async () => {
+          await renderRouter(routes);
+          await fireEvent.press(screen.getByText('Supermercado'));
+          await fireEvent.press(screen.getAllByLabelText('Marcar como comprado')[0]);
+          expect(setItemDone).toHaveBeenCalledWith('h1', 'u1', 'i2', true);
+          await fireEvent.press(screen.getAllByLabelText('Volver a pendientes')[0]);
+          expect(setItemDone).toHaveBeenCalledWith('h1', 'u1', 'i4', false);
+        });
+
+        it('el detalle guarda solo lo que cambió, y si no cambió nada solo cierra', async () => {
+          await renderRouter(routes);
+          await fireEvent.press(screen.getByText('Supermercado'));
+          await fireEvent.press(screen.getByText('Leche'));
+          expect(screen.getByText('Agregado por')).toBeTruthy();
+          await fireEvent.press(screen.getByText('Guardar'));
+          expect(updateItemFields).not.toHaveBeenCalled();
+          await fireEvent.press(screen.getByText('Leche'));
+          await fireEvent.press(screen.getByLabelText('Una más'));
+          await fireEvent.press(screen.getByText('Guardar'));
+          expect(updateItemFields).toHaveBeenCalledTimes(1);
+          expect(updateItemFields).toHaveBeenCalledWith('h1', 'i1', { quantity: 3 });
+        });
+
+        it('eliminar muestra "Ítem eliminado" y Deshacer lo restaura', async () => {
+          await renderRouter(routes);
+          await fireEvent.press(screen.getByText('Supermercado'));
+          await fireEvent.press(screen.getByText('Leche'));
+          await fireEvent.press(screen.getByText('Eliminar'));
+          expect(setItemDeleted).toHaveBeenCalledWith('h1', 'u1', 'i1', true);
+          expect(screen.getByText('Ítem eliminado')).toBeTruthy();
+          await fireEvent.press(screen.getByLabelText('Deshacer'));
+          expect(setItemDeleted).toHaveBeenLastCalledWith('h1', 'u1', 'i1', false);
+          expect(screen.queryByText('Ítem eliminado')).toBeNull();
+        });
+
+        it('la flecha vuelve directo a Inicio aunque haya comprados, sin aviso ni borrar nada', async () => {
+          await renderRouter(routes);
+          await fireEvent.press(screen.getByText('Supermercado'));
+          await fireEvent.press(screen.getByLabelText('Volver a las listas'));
+          expect(screen.queryByText('¿Salir de la lista?')).toBeNull();
+          expect(screen.getByText('Nueva lista')).toBeTruthy();
+          expect(setItemDeleted).not.toHaveBeenCalled();
+        });
+      });
+
+      it('si falla la lectura de listas e ítems muestra el error y "Reintentar" vuelve a leer', async () => {
+        readsHousehold('Casa real');
+        (watchHouseholdData as jest.Mock)
+          .mockReset()
+          .mockImplementationOnce((_id, _onData, onError) => {
+            onError();
+            return () => {};
+          });
+        firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        await renderRouter(routes);
+        expect(screen.getByText('No pudimos cargar tus datos')).toBeTruthy();
+        readsListData({ lists: [], items: [], members: [] });
+        await fireEvent.press(screen.getByText('Reintentar'));
+        expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
       });
 
       it('si falla la lectura del hogar muestra el error y "Reintentar" vuelve a leer', async () => {

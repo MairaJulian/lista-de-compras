@@ -21,6 +21,10 @@ export type ListInfo = {
   name: string;
   tone: ListTone;
   icon: IconName;
+  /** Lista eliminada (solo las reales; la app no la muestra pero detecta el cambio). */
+  deleted?: boolean;
+  /** Milisegundos de `creadaEn`, para ordenar las listas reales. */
+  createdAt?: number;
 };
 
 export type ListSummary = ListInfo & {
@@ -38,6 +42,12 @@ export type ListItem = {
   addedBy: string;
   /** Quién lo tildó; vacío mientras está pendiente. */
   doneBy?: string;
+  /** Borrado (`borrado: true`): ya no se muestra ni se cuenta; "deshacer" lo restaura. */
+  deleted?: boolean;
+  /** Milisegundos de `agregadoEn`: ordena los pendientes (el nuevo arriba). */
+  addedAt?: number;
+  /** Milisegundos de `tildadoEn`: ordena los comprados (el último tildado arriba). */
+  doneAt?: number;
   /** Cambio hecho sin conexión que todavía no se sincronizó. */
   pendingSync?: boolean;
 };

@@ -1,13 +1,19 @@
 import {
   addItem,
   addList,
+  changedFields,
+  cleanItemName,
+  cleanListName,
   countPending,
   countUnsynced,
   formatQuantity,
   markSynced,
   removeDone,
   removeItem,
+  restoreItem,
+  sortLists,
   splitItems,
+  summarizeLists,
   toggleItem,
   updateItem,
 } from './listLogic';
@@ -80,6 +86,165 @@ describe('formatQuantity', () => {
     expect(formatQuantity({ quantity: 1, unit: 'kg' })).toBe('1 kg');
     expect(formatQuantity({})).toBeUndefined();
   });
+
+  it('una cantidad ausente o 1 vale 1: sin unidad no se muestra nada, con unidad sí', () => {
+    expect(formatQuantity({ quantity: 1 })).toBeUndefined();
+    expect(formatQuantity({ unit: 'docena' })).toBe('1 docena');
+  });
+});
+
+describe('orden de pendientes y comprados', () => {
+  const at = (id: string, done: boolean, addedAt: number, doneAt?: number): ListItem => ({
+    id,
+    listId: 'l',
+    name: id,
+    done,
+    addedBy: 'vos',
+    addedAt,
+    doneAt,
+  });
+
+  it('pendientes por agregadoEn descendente: el nuevo arriba', () => {
+    const { pending } = splitItems([at('a', false, 10), at('c', false, 30), at('b', false, 20)]);
+    expect(pending.map((i) => i.id)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('comprados por tildadoEn descendente: el último tildado arriba, sin importar cuándo se agregó', () => {
+    const { done } = splitItems([
+      at('a', true, 30, 100),
+      at('b', true, 10, 300),
+      at('c', true, 20, 200),
+    ]);
+    expect(done.map((i) => i.id)).toEqual(['b', 'c', 'a']);
+  });
+
+  it('con la misma hora desempata por id, siempre igual', () => {
+    const { pending } = splitItems([at('b', false, 10), at('a', false, 10)]);
+    expect(pending.map((i) => i.id)).toEqual(['a', 'b']);
+  });
+
+  it('sin marcas de tiempo (datos de ejemplo) respeta el orden recibido', () => {
+    const { pending } = splitItems([
+      { id: 'z', listId: 'l', name: 'z', done: false, addedBy: 'v' },
+      { id: 'a', listId: 'l', name: 'a', done: false, addedBy: 'v' },
+    ]);
+    expect(pending.map((i) => i.id)).toEqual(['z', 'a']);
+  });
+
+  it('un ítem recién agregado, con la hora estimada de ahora, queda arriba de los viejos', () => {
+    const { pending } = splitItems([at('viejo', false, 1000), at('nuevo', false, Date.now())]);
+    expect(pending[0].id).toBe('nuevo');
+  });
+});
+
+describe('summarizeLists', () => {
+  const lists = [
+    { id: 'a', name: 'A', tone: 'green' as const, icon: 'list' as const },
+    { id: 'b', name: 'B', tone: 'amber' as const, icon: 'list' as const },
+    { id: 'c', name: 'C', tone: 'blue' as const, icon: 'list' as const, deleted: true },
+  ];
+  const item = (id: string, listId: string, rest: Partial<ListItem> = {}): ListItem => ({
+    id,
+    listId,
+    name: id,
+    done: false,
+    addedBy: 'vos',
+    ...rest,
+  });
+
+  it('cuenta pendientes por lista sin contar comprados ni borrados', () => {
+    const items = [
+      item('1', 'a'),
+      item('2', 'a'),
+      item('3', 'a', { done: true }),
+      item('4', 'a', { deleted: true }),
+      item('5', 'b', { done: true }),
+    ];
+    expect(summarizeLists(lists, items).map((l) => [l.id, l.pendingCount])).toEqual([
+      ['a', 2],
+      ['b', 0],
+    ]);
+  });
+
+  it('no muestra las listas eliminadas aunque tengan ítems', () => {
+    expect(summarizeLists(lists, [item('1', 'c')]).map((l) => l.id)).toEqual(['a', 'b']);
+  });
+
+  it('un ítem que pasa de pendiente a comprado baja el contador', () => {
+    const before = [item('1', 'a'), item('2', 'a')];
+    const after = toggleItem(before, '1', 'vos', true);
+    expect(summarizeLists(lists, before)[0].pendingCount).toBe(2);
+    expect(summarizeLists(lists, after)[0].pendingCount).toBe(1);
+  });
+});
+
+describe('sortLists', () => {
+  it('de la más vieja a la más nueva; la que todavía no tiene hora, al final', () => {
+    const list = (id: string, createdAt?: number) => ({
+      id,
+      name: id,
+      tone: 'green' as const,
+      icon: 'list' as const,
+      createdAt,
+    });
+    expect(sortLists([list('c'), list('b', 20), list('a', 10)]).map((l) => l.id)).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+  });
+});
+
+describe('cleanListName y cleanItemName', () => {
+  it('recortan y rechazan vacíos y demasiado largos', () => {
+    expect(cleanListName('  Súper ')).toBe('Súper');
+    expect(cleanListName('   ')).toBeUndefined();
+    expect(cleanListName('x'.repeat(80))).toBeDefined();
+    expect(cleanListName('x'.repeat(81))).toBeUndefined();
+    expect(cleanItemName(' Leche ')).toBe('Leche');
+    expect(cleanItemName('')).toBeUndefined();
+    expect(cleanItemName('x'.repeat(120))).toBeDefined();
+    expect(cleanItemName('x'.repeat(121))).toBeUndefined();
+  });
+
+  it('agregar un ítem demasiado largo no agrega nada', () => {
+    expect(addItem(base, 'l', 'x'.repeat(121), 'vos', true, 'n1')).toBe(base);
+  });
+});
+
+describe('changedFields', () => {
+  const item = { name: 'Leche', quantity: 2, note: 'Sin lactosa' };
+
+  it('sin cambios no devuelve ningún campo, aunque haya espacios de más en los costados', () => {
+    expect(changedFields(item, { name: 'Leche', quantity: 2, note: 'Sin lactosa' })).toEqual({});
+    expect(changedFields(item, { name: ' Leche ', quantity: 2, note: ' Sin lactosa ' })).toEqual(
+      {},
+    );
+  });
+
+  it('devuelve solo los campos que cambiaron', () => {
+    expect(changedFields(item, { name: 'Leche', quantity: 3, note: 'Sin lactosa' })).toEqual({
+      quantity: 3,
+    });
+    expect(
+      changedFields(item, { name: ' Leche entera', quantity: 2, note: 'Sin lactosa' }),
+    ).toEqual({ name: 'Leche entera' });
+  });
+
+  it('una cantidad ausente vale 1', () => {
+    const plain = { name: 'Pan' };
+    expect(changedFields(plain, { name: 'Pan', quantity: 1, note: '' })).toEqual({});
+    expect(changedFields(plain, { name: 'Pan', quantity: 2, note: '' })).toEqual({ quantity: 2 });
+  });
+
+  it('una nota vaciada se borra (campo presente con undefined) y una nota nueva se agrega', () => {
+    const cleared = changedFields(item, { name: 'Leche', quantity: 2, note: '  ' });
+    expect('note' in cleared).toBe(true);
+    expect(cleared.note).toBeUndefined();
+    expect(changedFields({ name: 'Pan' }, { name: 'Pan', quantity: 1, note: ' tostado ' })).toEqual(
+      { note: 'tostado' },
+    );
+  });
 });
 
 describe('updateItem', () => {
@@ -105,8 +270,18 @@ describe('updateItem', () => {
 });
 
 describe('removeItem y removeDone', () => {
-  it('elimina un ítem', () => {
-    expect(removeItem(base, 'a').map((i) => i.id)).toEqual(['b']);
+  it('eliminar marca el ítem como borrado: deja de verse y de contarse, y no toca los demás', () => {
+    const result = removeItem(base, 'a');
+    expect(result[0]).toMatchObject({ id: 'a', deleted: true });
+    expect(result[1]).toBe(base[1]);
+    expect(splitItems(result).pending).toEqual([]);
+    expect(countPending(result)).toBe(0);
+  });
+
+  it('deshacer devuelve el ítem tal cual estaba', () => {
+    const restored = restoreItem(removeItem(base, 'a'), 'a');
+    expect(splitItems(restored).pending.map((i) => i.id)).toEqual(['a']);
+    expect(restored[0]).toMatchObject({ name: 'Leche', done: false, addedBy: 'lucia' });
   });
 
   it('al salir borra los comprados de esa lista y deja pendientes y otras listas', () => {
