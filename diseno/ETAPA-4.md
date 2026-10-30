@@ -159,8 +159,8 @@ Recordatorios para más adelante:
 
 ## Estado
 
-- [ ] PR 1 · Esquema y reglas de seguridad de listas e ítems
-- [ ] Maira publica las reglas
+- [x] PR 1 · Esquema y reglas de seguridad de listas e ítems (rama `etapa-4/01-reglas-listas-items`)
+- [ ] Maira publica las reglas (`firebase deploy --only firestore:rules --project changuito-31ec1`, desde `firebase/`)
 - [ ] PR 2 · Inicio con listas reales y crear lista
 - [ ] PR 3 · Pantalla Lista: agregar, tildar y comprados
 - [ ] PR 4 · Detalle del ítem: editar y eliminar

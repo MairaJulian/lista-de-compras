@@ -935,8 +935,10 @@ describe('sin sesión y aislamiento', () => {
 
   it('lo que cuelga del hogar y no está en las reglas sigue bloqueado', async () => {
     const db = dbOf('ana');
-    await assertFails(setDoc(doc(db, 'hogares', H, 'listas', 'l1'), { nombre: 'Súper' }));
-    await assertFails(getDoc(doc(db, 'hogares', H, 'items', 'i1')));
+    // listas e items ya tienen reglas (Etapa 4, ver listas-items.rules.test.mjs).
+    await assertFails(getDoc(doc(db, 'hogares', H, 'presencia', 'ana')));
+    await assertFails(setDoc(doc(db, 'hogares', H, 'presencia', 'ana'), { listaId: 'l1' }));
+    await assertFails(getDoc(doc(db, 'hogares', H, 'eventos', 'e1')));
   });
 
   it('nadie escribe en usuarios/{otro}', async () => {

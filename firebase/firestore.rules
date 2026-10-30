@@ -248,6 +248,95 @@ service cloud.firestore {
         && unirseValido(hogarId, request.resource.data);
     }
 
+    // ---- hogares/{hogarId}/listas/{listaId} (Etapa 4) ----
+
+    function colorListaValido(color) {
+      return color in ['green', 'amber', 'blue', 'neutral'];
+    }
+
+    // Pasaron más de 30 días desde `marca` (purga de listas e ítems borrados).
+    function hacePasadoTreintaDias(marca) {
+      return marca is timestamp && marca < request.time - duration.value(30, 'd');
+    }
+
+    function listaNuevaValida(datos) {
+      return datos.keys().hasOnly(['nombre', 'color', 'creadaPor', 'creadaEn', 'eliminada'])
+        && datos.keys().hasAll(['nombre', 'color', 'creadaPor', 'creadaEn', 'eliminada'])
+        && nombreValido(datos.nombre, 80)
+        && colorListaValido(datos.color)
+        && datos.creadaPor == request.auth.uid
+        && datos.creadaEn == request.time
+        && datos.eliminada == false;
+    }
+
+    // Una lista eliminada no se modifica más. Se edita nombre y color, o se
+    // elimina (una sola escritura que marca los tres campos).
+    function listaEditadaValida() {
+      let antes = resource.data;
+      let despues = request.resource.data;
+      let cambios = despues.diff(antes).affectedKeys();
+      return antes.get('eliminada', false) == false
+        && (
+          (cambios.hasOnly(['nombre', 'color'])
+            && nombreValido(despues.nombre, 80)
+            && colorListaValido(despues.color))
+          || (cambios.hasOnly(['eliminada', 'eliminadaPor', 'eliminadaEn'])
+            && cambios.hasAll(['eliminada', 'eliminadaPor', 'eliminadaEn'])
+            && despues.eliminada == true
+            && despues.eliminadaPor == request.auth.uid
+            && despues.eliminadaEn == request.time)
+        );
+    }
+
+    // ---- hogares/{hogarId}/items/{itemId} (Etapa 4) ----
+
+    // Forma de un ítem, válida tanto al crearlo como después de editarlo.
+    // `comprado` y `borrado` se escriben siempre (la consulta de ítems no
+    // borrados necesita que `borrado` exista). Con ellos en false, sus
+    // campos asociados quedan vacíos.
+    function itemFormaValida(datos) {
+      return datos.keys().hasOnly(['listaId', 'nombre', 'cantidad', 'unidad', 'nota', 'comprado',
+          'agregadoPor', 'agregadoEn', 'tildadoPor', 'tildadoEn', 'borrado', 'borradoPor', 'borradoEn'])
+        && datos.keys().hasAll(['listaId', 'nombre', 'comprado', 'agregadoPor', 'agregadoEn', 'borrado'])
+        && datos.listaId is string && datos.listaId.size() > 0 && datos.listaId.size() <= 100
+        && nombreValido(datos.nombre, 120)
+        && (!('cantidad' in datos) || (datos.cantidad is int && datos.cantidad > 0))
+        && (!('unidad' in datos) || (datos.unidad is string && datos.unidad.size() <= 30))
+        && (!('nota' in datos) || (datos.nota is string && datos.nota.size() <= 500))
+        && datos.comprado is bool
+        && datos.borrado is bool
+        && datos.agregadoPor is string
+        && datos.agregadoEn is timestamp
+        && (datos.comprado == true || (sinValor(datos.get('tildadoPor', null)) && sinValor(datos.get('tildadoEn', null))))
+        && (datos.comprado == false || (datos.get('tildadoPor', null) is string && datos.get('tildadoEn', null) is timestamp))
+        && (datos.borrado == true || (sinValor(datos.get('borradoPor', null)) && sinValor(datos.get('borradoEn', null))))
+        && (datos.borrado == false || (datos.get('borradoPor', null) is string && datos.get('borradoEn', null) is timestamp));
+    }
+
+    function itemNuevoValido(datos) {
+      return itemFormaValida(datos)
+        && datos.agregadoPor == request.auth.uid
+        && datos.agregadoEn == request.time
+        && datos.comprado == false
+        && datos.borrado == false;
+    }
+
+    // Tildar, destildar, borrar y deshacer dejan la marca de quién y cuándo;
+    // quien toca esos campos tiene que ser quien los firma.
+    function itemEditadoValido() {
+      let antes = resource.data;
+      let despues = request.resource.data;
+      let cambios = despues.diff(antes).affectedKeys();
+      return itemFormaValida(despues)
+        && !cambios.hasAny(['listaId', 'agregadoPor', 'agregadoEn'])
+        && (!cambios.hasAny(['comprado', 'tildadoPor', 'tildadoEn'])
+          || despues.comprado == false
+          || (despues.tildadoPor == request.auth.uid && despues.tildadoEn == request.time))
+        && (!cambios.hasAny(['borrado', 'borradoPor', 'borradoEn'])
+          || despues.borrado == false
+          || (despues.borradoPor == request.auth.uid && despues.borradoEn == request.time));
+    }
+
     match /hogares/{hogarId} {
       allow read: if esMiembroActivo(hogarId);
       allow create: if hogarNuevoValido(hogarId, request.resource.data);
@@ -269,6 +358,28 @@ service cloud.firestore {
             || recibeTraspasoValido(hogarId, uid)
             || reingresoValido(hogarId, uid));
         allow delete: if false;
+      }
+
+      // Cualquier miembro activo lee, crea, renombra y elimina listas.
+      // Solo se borra de verdad una lista eliminada hace más de 30 días.
+      match /listas/{listaId} {
+        allow read: if esMiembroActivo(hogarId);
+        allow create: if esMiembroActivo(hogarId) && listaNuevaValida(request.resource.data);
+        allow update: if esMiembroActivo(hogarId) && listaEditadaValida();
+        allow delete: if esMiembroActivo(hogarId)
+          && resource.data.get('eliminada', false) == true
+          && hacePasadoTreintaDias(resource.data.get('eliminadaEn', null));
+      }
+
+      // No se comprueba que `listaId` exista: un ítem huérfano es inofensivo
+      // y evita una lectura por escritura.
+      match /items/{itemId} {
+        allow read: if esMiembroActivo(hogarId);
+        allow create: if esMiembroActivo(hogarId) && itemNuevoValido(request.resource.data);
+        allow update: if esMiembroActivo(hogarId) && itemEditadoValido();
+        allow delete: if esMiembroActivo(hogarId)
+          && resource.data.get('borrado', false) == true
+          && hacePasadoTreintaDias(resource.data.get('borradoEn', null));
       }
     }
 
