@@ -7,10 +7,11 @@ type Props = {
   value: string;
   onChangeText: (text: string) => void;
   onSubmit: () => void;
+  maxLength?: number;
 };
 
 /** Campo "Agregar ítem…" con el botón circular verde (pantalla Lista). */
-export function QuickAddField({ value, onChangeText, onSubmit }: Props) {
+export function QuickAddField({ value, onChangeText, onSubmit, maxLength }: Props) {
   return (
     <View style={styles.row}>
       <TextInput
@@ -23,6 +24,7 @@ export function QuickAddField({ value, onChangeText, onSubmit }: Props) {
         returnKeyType="done"
         submitBehavior="submit"
         autoComplete="off"
+        maxLength={maxLength}
         style={styles.input}
       />
       <Pressable

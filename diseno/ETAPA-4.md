@@ -160,9 +160,25 @@ Recordatorios para más adelante:
 ## Estado
 
 - [x] PR 1 · Esquema y reglas de seguridad de listas e ítems (rama `etapa-4/01-reglas-listas-items`)
-- [ ] Maira publica las reglas (`firebase deploy --only firestore:rules --project changuito-31ec1`, desde `firebase/`)
-- [ ] PR 2 · Inicio con listas reales y crear lista
-- [ ] PR 3 · Pantalla Lista: agregar, tildar y comprados
-- [ ] PR 4 · Detalle del ítem: editar y eliminar
+- [x] Maira publica las reglas (`firebase deploy --only firestore:rules --project changuito-31ec1`, desde `firebase/`)
+- [x] PR 2 · Inicio con listas reales y crear lista
+- [x] PR 3 · Pantalla Lista: agregar, tildar y comprados
+- [x] PR 4 · Detalle del ítem: editar y eliminar
 - [ ] PR 5 · Menú de lista: renombrar, eliminar y "lista eliminada"
 - [ ] PR 6 · Error al guardar
+
+### Los PR 2, 3 y 4 se hicieron juntos
+
+Una sola PR, rama `etapa-4/02-uso-diario`, porque comparten la misma capa de datos (una suscripción por hogar con listas, ítems y miembros) y separarlos habría dejado pantallas a medias. Quedan tildados con el código hecho y los tests pasando; **falta que Maira los pruebe en el celular** (la secuencia de prueba, pasos 1 a 5). Los PR 5 y 6 van en una segunda PR.
+
+Qué se decidió al hacerlos (para no re-descubrirlo):
+
+- **Hora de un ítem recién agregado.** Las lecturas piden `data({ serverTimestamps: 'estimate' })`: mientras la escritura espera al servidor, `agregadoEn` trae la hora del celular en vez de `null`, y el ítem aparece arriba al instante. Si aun así faltara la hora, se toma "ahora". Esto sale de leer el código de `@react-native-firebase/firestore` (`DocumentSnapshot._dataForOptions`); **no se probó en el celular**.
+- **Sin indicador de conexión en la sesión real.** La pantalla Lista no muestra "Sincronizado" / "Sin conexión", ni el aviso de cambios sin sincronizar, ni el reloj de las filas: todo eso es de la Etapa 5. Con los datos de ejemplo del menú DEV siguen funcionando igual.
+- **Flecha atrás sin aviso `08` en la sesión real:** vuelve directo a Inicio y no borra nada. Los comprados se acumulan hasta la Etapa 6.
+- **Rechazos del servidor.** Las escrituras no esperan al servidor. Si Firestore rechaza una (las reglas), el cambio se deshace solo y por ahora queda solo un `console.warn` (`trackWrite` en `listStore.ts`). Mostrarlo es el PR 6. Eso incluye el error al **crear una lista** (el panel ya se cerró): queda para el PR 6.
+- **Eliminar un ítem** lo marca `borrado` (con `borradoPor` y `borradoEn`); Deshacer lo restaura. El aviso "Ítem eliminado · Deshacer" (5 segundos) es una pieza **no diseñada**, hecha con los colores del aviso `09`. Los datos de ejemplo también "marcan" el ítem, para que se comporten igual.
+- **Cantidad:** ausente vale 1. La fila muestra "×N" si es mayor que 1 y "N unidad" si hay unidad; con 1 y sin unidad no muestra nada (antes mostraba "×1" si el campo existía).
+- **Tocar una tarjeta** abre la pantalla Lista real (ya no queda contenido de ejemplo en la sesión real).
+- **Listas eliminadas:** la suscripción las trae (para el aviso `38` del PR 5) pero Inicio y la pantalla Lista las ignoran, y sus ítems no cuentan.
+- Los tests de pantallas reales están en `src/navigation/navigation.test.tsx` (con `listSource` simulado en `jest.setup.tsx`); la capa de Firestore se prueba en `listSource.test.ts`.

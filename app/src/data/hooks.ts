@@ -25,25 +25,37 @@ import { inviteFromDocument } from './inviteLogic';
 import { joinFailure, normalizeInviteCode, type JoinResult } from './joinLogic';
 import { joinHousehold, readInvitePreview } from './joinSource';
 import { createInvite, revokeInvite, watchInvite } from './inviteSource';
+import { memberOrFallback } from './listDocuments';
 import {
   addItem,
   addList,
-  countPending,
+  cleanItemName,
+  cleanListName,
   countUnsynced,
   ItemPatch,
   markSynced,
   removeDone,
   removeItem,
+  restoreItem,
   splitItems,
+  summarizeLists,
   toggleItem,
   updateItem,
 } from './listLogic';
+import {
+  addItem as addItemDocument,
+  createList as createListDocument,
+  setItemDeleted,
+  setItemDone,
+  updateItemFields,
+} from './listSource';
+import { retryListData, trackWrite, useListData } from './listStore';
 import type { Household, Invite, ListInfo, ListItem, ListSummary, Member } from './types';
 
 // Único punto de acceso a los datos para las pantallas. Hoy devuelve los datos de ejemplo;
 // con Firebase se reemplaza la implementación sin tocar las pantallas.
 
-/** Si la sesión es la real (de Google): los datos salen de Firestore y todavía no hay listas ni ítems. */
+/** Si la sesión es la real (de Google): los datos salen de Firestore. */
 export function useIsRealSession(): boolean {
   const session = useSession();
   return session.status === 'signedIn' && !session.demo;
@@ -398,16 +410,40 @@ export function useInvite(): InviteControls {
   return { ...watched, regenerate, deactivate };
 }
 
+/** Las listas del hogar con sus pendientes; las eliminadas no se muestran. */
 export function useLists(): ListSummary[] {
   const { lists, items } = useMockStore();
-  // Las listas reales llegan en la Etapa 4: un hogar real todavía no tiene ninguna.
+  const data = useListData();
   if (useIsRealSession()) {
-    return [];
+    return data.status === 'ready' ? summarizeLists(data.lists, data.items) : [];
   }
-  return lists.map((list) => ({
-    ...list,
-    pendingCount: countPending(items.filter((item) => item.listId === list.id)),
-  }));
+  return summarizeLists(lists, items);
+}
+
+export type ListsLoad = { status: 'loading' | 'ready' | 'error'; retry: () => void };
+
+/**
+ * Si ya se leyeron el hogar y sus listas e ítems (`error` es la pantalla `32-error-carga`). Con datos
+ * de ejemplo está siempre listo.
+ */
+export function useListsLoad(): ListsLoad {
+  const real = useIsRealSession();
+  const household = useHouseholdLoad();
+  const data = useListData();
+  const retry = useCallback(() => {
+    retryHousehold();
+    retryListData();
+  }, []);
+  if (!real) {
+    return { status: 'ready', retry };
+  }
+  if (household.status === 'error' || data.status === 'error') {
+    return { status: 'error', retry };
+  }
+  if (household.status === 'loading' || data.status !== 'ready') {
+    return { status: 'loading', retry };
+  }
+  return { status: 'ready', retry };
 }
 
 export function useCurrentMember(): Member {
@@ -426,76 +462,156 @@ export function useAccount(): { member: Member; email: string } {
 
 export function useList(listId: string): ListInfo | undefined {
   const { lists } = useMockStore();
+  const data = useListData();
+  if (useIsRealSession()) {
+    return data.status === 'ready'
+      ? data.lists.find((list) => list.id === listId && !list.deleted)
+      : undefined;
+  }
   return lists.find((list) => list.id === listId);
 }
 
-/** Crea una lista nueva en el hogar y devuelve su id (nada si el nombre estaba vacío). */
+/**
+ * Crea una lista nueva en el hogar y devuelve su id (nada si el nombre estaba vacío). En la sesión
+ * real es una escritura simple: la lista aparece al instante y no se espera al servidor.
+ */
 export function useCreateList(): (name: string, tone: ListTone) => string | undefined {
-  return useCallback((name, tone) => {
-    const id = newListId();
-    let created = false;
-    setState((s) => {
-      const lists = addList(s.lists, name, tone, id);
-      created = lists !== s.lists;
-      return { ...s, lists };
-    });
-    return created ? id : undefined;
-  }, []);
+  const real = useIsRealSession();
+  const data = useListData();
+  const me = useCurrentMember();
+  const householdId = data.status === 'ready' ? data.householdId : undefined;
+  return useCallback(
+    (name, tone) => {
+      if (real) {
+        const clean = cleanListName(name);
+        if (!clean || !householdId) return undefined;
+        const { id, saved } = createListDocument(householdId, me.id, clean, tone);
+        trackWrite(saved, 'crear lista');
+        return id;
+      }
+      const id = newListId();
+      let created = false;
+      setState((s) => {
+        const lists = addList(s.lists, name, tone, id);
+        created = lists !== s.lists;
+        return { ...s, lists };
+      });
+      return created ? id : undefined;
+    },
+    [real, householdId, me.id],
+  );
 }
+
+const noItems: ListItem[] = [];
 
 export type ListContents = {
   pending: ListItem[];
   done: ListItem[];
   online: boolean;
+  /** Falso en la sesión real: el indicador Sincronizado / Sin conexión es de la Etapa 5. */
+  showConnection: boolean;
   unsyncedCount: number;
   toggle: (itemId: string) => void;
   add: (name: string) => void;
   update: (itemId: string, patch: ItemPatch) => void;
   remove: (itemId: string) => void;
-  /** Borra los comprados de la lista (al salir de ella). */
+  /** Deshace `remove`. */
+  restore: (itemId: string) => void;
+  /** Borra los comprados de la lista (al salir de ella). Solo con los datos de ejemplo hasta la Etapa 6. */
   removeDone: () => void;
   toggleOnline: () => void;
 };
 
-/** Ítems de una lista con las acciones de la pantalla Lista. */
+/**
+ * Ítems de una lista con las acciones de la pantalla Lista. En la sesión real cada acción es una
+ * escritura simple que toca solo sus campos: la pantalla se actualiza al instante y no espera al
+ * servidor (sin conexión la escritura queda pendiente).
+ */
 export function useListContents(listId: string): ListContents {
-  const { items, online } = useMockStore();
+  const { items: mockItems, online } = useMockStore();
+  const real = useIsRealSession();
+  const data = useListData();
+  const me = useCurrentMember();
+  const householdId = data.status === 'ready' ? data.householdId : undefined;
+  const realItems = data.status === 'ready' ? data.items : noItems;
+  const items = real ? realItems : mockItems;
   const listItems = items.filter((item) => item.listId === listId);
   const { pending, done } = splitItems(listItems);
 
   const toggle = useCallback(
-    (itemId: string) =>
+    (itemId: string) => {
+      if (real) {
+        const item = items.find((candidate) => candidate.id === itemId);
+        if (!householdId || !item) return;
+        trackWrite(setItemDone(householdId, me.id, itemId, !item.done), 'tildar');
+        return;
+      }
       setState((s) => ({
         ...s,
         items: toggleItem(s.items, itemId, getMockCurrentMember().id, s.online),
-      })),
-    [],
+      }));
+    },
+    [real, householdId, me.id, items],
   );
 
   const add = useCallback(
-    (name: string) =>
+    (name: string) => {
+      if (real) {
+        const clean = cleanItemName(name);
+        if (!householdId || !clean) return;
+        trackWrite(addItemDocument(householdId, me.id, listId, clean).saved, 'agregar ítem');
+        return;
+      }
       setState((s) => ({
         ...s,
         items: addItem(s.items, listId, name, getMockCurrentMember().id, s.online, newItemId()),
-      })),
-    [listId],
+      }));
+    },
+    [real, householdId, me.id, listId],
   );
 
   const update = useCallback(
-    (itemId: string, patch: ItemPatch) =>
-      setState((s) => ({ ...s, items: updateItem(s.items, itemId, patch, s.online) })),
-    [],
+    (itemId: string, patch: ItemPatch) => {
+      if (real) {
+        // Sin campos cambiados no hay nada que enviar.
+        if (!householdId || Object.keys(patch).length === 0) return;
+        trackWrite(updateItemFields(householdId, itemId, patch), 'editar ítem');
+        return;
+      }
+      setState((s) => ({ ...s, items: updateItem(s.items, itemId, patch, s.online) }));
+    },
+    [real, householdId],
   );
 
   const remove = useCallback(
-    (itemId: string) => setState((s) => ({ ...s, items: removeItem(s.items, itemId) })),
-    [],
+    (itemId: string) => {
+      if (real) {
+        if (!householdId) return;
+        trackWrite(setItemDeleted(householdId, me.id, itemId, true), 'eliminar ítem');
+        return;
+      }
+      setState((s) => ({ ...s, items: removeItem(s.items, itemId) }));
+    },
+    [real, householdId, me.id],
   );
 
-  const clearDone = useCallback(
-    () => setState((s) => ({ ...s, items: removeDone(s.items, listId) })),
-    [listId],
+  const restore = useCallback(
+    (itemId: string) => {
+      if (real) {
+        if (!householdId) return;
+        trackWrite(setItemDeleted(householdId, me.id, itemId, false), 'deshacer eliminar');
+        return;
+      }
+      setState((s) => ({ ...s, items: restoreItem(s.items, itemId) }));
+    },
+    [real, householdId, me.id],
   );
+
+  const clearDone = useCallback(() => {
+    // En la sesión real los comprados se acumulan hasta la Etapa 6 (limpieza al salir de la lista).
+    if (real) return;
+    setState((s) => ({ ...s, items: removeDone(s.items, listId) }));
+  }, [real, listId]);
 
   const toggleOnline = useCallback(
     () =>
@@ -512,18 +628,28 @@ export function useListContents(listId: string): ListContents {
     pending,
     done,
     online,
-    unsyncedCount: countUnsynced(listItems),
+    showConnection: !real,
+    unsyncedCount: real ? 0 : countUnsynced(listItems),
     toggle,
     add,
     update,
     remove,
+    restore,
     removeDone: clearDone,
     toggleOnline,
   };
 }
 
-/** Datos de quien agregó o tildó un ítem, para su avatar. */
+/**
+ * Datos de quien agregó o tildó un ítem, para su avatar. En la sesión real salen de `miembros` de
+ * todos los estados, así que quien ya salió del hogar sigue con su nombre y su color.
+ */
 export function useMemberLookup(): (memberId: string) => Member {
+  const real = useIsRealSession();
+  const data = useListData();
   return (memberId) =>
-    mockHousehold.members.find((member) => member.id === memberId) ?? mockHousehold.members[0];
+    real
+      ? memberOrFallback(data.status === 'ready' ? data.members : [], memberId)
+      : (mockHousehold.members.find((member) => member.id === memberId) ??
+        mockHousehold.members[0]);
 }

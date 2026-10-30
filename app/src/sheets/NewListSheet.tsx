@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { BottomSheet, Button, SwatchPicker, TextField } from '../components';
+import { MAX_LIST_NAME } from '../data/listLogic';
 import type { ListTone } from '../theme';
 import { colors, fontSizes, fonts } from '../theme';
 
@@ -34,6 +35,7 @@ function NewListForm({ onCreate }: { onCreate: (name: string, tone: ListTone) =>
         onChangeText={setName}
         autoCapitalize="sentences"
         autoComplete="off"
+        maxLength={MAX_LIST_NAME}
         returnKeyType="done"
       />
       <Text style={styles.colorLabel}>Color</Text>

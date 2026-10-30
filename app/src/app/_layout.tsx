@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { startSession, useSession } from '../auth/sessionStore';
 import { forgetHousehold } from '../data/householdSource';
 import { startHousehold, useHouseholdState } from '../data/householdStore';
+import { startListData } from '../data/listStore';
 import { goToNoHousehold, goToRemoved } from '../navigation/session';
 import { takePendingInvite } from '../data/pendingInvite';
 import { DevMenu } from '../dev/DevMenu';
@@ -24,6 +25,8 @@ export default function RootLayout() {
   // Con un hogar real (no el de ejemplo) se lee el hogar y la membresía mientras la app está abierta.
   const householdId = session.status === 'signedIn' && !session.demo ? session.householdId : null;
   useEffect(() => (householdId ? startHousehold(householdId) : undefined), [householdId]);
+  // Y una sola suscripción para las listas, los ítems y los miembros de ese hogar.
+  useEffect(() => (householdId ? startListData(householdId) : undefined), [householdId]);
 
   // Una invitación abierta sin sesión se retoma cuando la persona entra (y todavía no tiene hogar).
   const navigationReady = Boolean(useRootNavigationState()?.key);

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Avatar, BottomSheet, Button, QuantityStepper, TextField } from '../components';
-import type { ItemPatch } from '../data/listLogic';
+import { changedFields, MAX_ITEM_NAME, MAX_ITEM_NOTE, type ItemPatch } from '../data/listLogic';
 import type { ListItem, Member } from '../data/types';
 import { colors, fontSizes, fonts, sizes } from '../theme';
 
@@ -52,18 +52,19 @@ function DetailForm({
   const [quantity, setQuantity] = useState(item.quantity ?? 1);
   const [note, setNote] = useState(item.note ?? '');
 
-  const save = () => {
-    // Solo los campos que cambiaron, para no pisar lo que otra persona tocó en el resto.
-    const patch: ItemPatch = {};
-    if (name.trim() !== item.name) patch.name = name;
-    if (quantity !== (item.quantity ?? 1)) patch.quantity = quantity;
-    if (note.trim() !== (item.note ?? '')) patch.note = note.trim() || undefined;
-    onSave(patch);
-  };
+  // Solo los campos que cambiaron, para no pisar lo que otra persona tocó en el resto. Si no cambió
+  // nada el patch queda vacío y la pantalla solo cierra el panel.
+  const save = () => onSave(changedFields(item, { name, quantity, note }));
 
   return (
     <View>
-      <TextField label="Nombre" value={name} onChangeText={setName} returnKeyType="done" />
+      <TextField
+        label="Nombre"
+        value={name}
+        onChangeText={setName}
+        maxLength={MAX_ITEM_NAME}
+        returnKeyType="done"
+      />
       <View style={styles.quantityRow}>
         <Text style={styles.quantityLabel}>Cantidad</Text>
         <QuantityStepper
@@ -72,7 +73,13 @@ function DetailForm({
           onIncrement={() => setQuantity((q) => q + 1)}
         />
       </View>
-      <TextField label="Nota" value={note} onChangeText={setNote} multiline />
+      <TextField
+        label="Nota"
+        value={note}
+        onChangeText={setNote}
+        maxLength={MAX_ITEM_NOTE}
+        multiline
+      />
       <View style={styles.author}>
         <Avatar name={addedBy.name} tone={addedBy.tone} size={sizes.avatarLarge} />
         <View>
