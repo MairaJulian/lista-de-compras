@@ -20,6 +20,8 @@ export const heights = {
   card: 172,
   rowPending: 56,
   rowDone: 52,
+  /** Fila con un cambio que no se guardó: lleva una segunda línea con el motivo. */
+  rowError: 72,
   tabBar: 80,
   fab: 56,
   statusPill: 44,

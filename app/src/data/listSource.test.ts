@@ -1,7 +1,9 @@
 import {
   addItem,
   createList,
+  renameList,
   setItemDeleted,
+  setListDeleted,
   setItemDone,
   updateItemFields,
   watchHouseholdData,
@@ -23,7 +25,10 @@ jest.mock('@react-native-firebase/firestore', () => ({
   }),
   doc: (parent: { collectionPath?: string }, ...segments: string[]) =>
     parent.collectionPath !== undefined
-      ? { path: `${parent.collectionPath}/nuevo-id`, id: 'nuevo-id' }
+      ? {
+          path: `${parent.collectionPath}/${segments[0] ?? 'nuevo-id'}`,
+          id: segments[0] ?? 'nuevo-id',
+        }
       : { path: segments.join('/'), id: segments[segments.length - 1] },
   serverTimestamp: () => 'SERVER_TIMESTAMP',
   deleteField: () => 'DELETE_FIELD',
@@ -56,6 +61,41 @@ describe('escrituras', () => {
         creadaEn: 'SERVER_TIMESTAMP',
         eliminada: false,
       },
+    );
+  });
+
+  it('al reintentar crea la lista con el mismo id', () => {
+    const { id } = createList('h1', 'u1', 'Súper', 'amber', 'lista-1');
+    expect(id).toBe('lista-1');
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      { path: 'hogares/h1/listas/lista-1', id: 'lista-1' },
+      expect.objectContaining({ nombre: 'Súper' }),
+    );
+  });
+
+  it('al reintentar agrega el ítem con el mismo id', () => {
+    const { id } = addItem('h1', 'u1', 'l1', 'Leche', 'item-1');
+    expect(id).toBe('item-1');
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      { path: 'hogares/h1/items/item-1', id: 'item-1' },
+      expect.objectContaining({ nombre: 'Leche', borrado: false, comprado: false }),
+    );
+  });
+
+  it('renombrar toca solo el nombre', () => {
+    renameList('h1', 'l1', 'Verdulería');
+    expect(mockUpdateDoc).toHaveBeenCalledWith(
+      { path: 'hogares/h1/listas/l1', id: 'l1' },
+      { nombre: 'Verdulería' },
+    );
+  });
+
+  it('eliminar la lista es una sola escritura que la marca, con quién y cuándo, sin tocar sus ítems', () => {
+    setListDeleted('h1', 'u1', 'l1');
+    expect(mockUpdateDoc).toHaveBeenCalledTimes(1);
+    expect(mockUpdateDoc).toHaveBeenCalledWith(
+      { path: 'hogares/h1/listas/l1', id: 'l1' },
+      { eliminada: true, eliminadaPor: 'u1', eliminadaEn: 'SERVER_TIMESTAMP' },
     );
   });
 

@@ -9,19 +9,24 @@ import {
   ItemGroup,
   ItemRow,
   QuickAddField,
+  SaveErrorNotice,
   StatusPill,
   UndoToast,
 } from '../components';
+import { noticeCopy, type ListRow } from '../data/failureLogic';
 import {
   useHousehold,
   useIsRealSession,
   useList,
+  useListActions,
   useListContents,
   useMemberLookup,
+  useRemovedList,
 } from '../data/hooks';
 import { formatQuantity, MAX_ITEM_NAME } from '../data/listLogic';
-import type { ListItem } from '../data/types';
 import { ItemDetailSheet } from '../sheets/ItemDetailSheet';
+import { ListMenuSheet } from '../sheets/ListMenuSheet';
+import { RenameListSheet } from '../sheets/RenameListSheet';
 import { colors, fontSizes, fonts, radii } from '../theme';
 
 type Props = {
@@ -38,6 +43,7 @@ export function ListaScreen({ listId, onBack }: Props) {
     online,
     showConnection,
     unsyncedCount,
+    failures,
     toggle,
     add,
     update,
@@ -47,7 +53,14 @@ export function ListaScreen({ listId, onBack }: Props) {
     toggleOnline,
   } = useListContents(listId);
   const memberOf = useMemberLookup();
+  const { rename, remove: removeList } = useListActions(listId);
+  const removedList = useRemovedList(listId);
   const [draft, setDraft] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  // Quien confirma "Eliminar lista" vuelve a Inicio: el aviso `38` es para las demás personas.
+  const [deleting, setDeleting] = useState(false);
   const [detailId, setDetailId] = useState<string>();
   const [detailOpen, setDetailOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
@@ -82,7 +95,23 @@ export function ListaScreen({ listId, onBack }: Props) {
     setDetailOpen(true);
   };
 
-  const detailItem = [...pending, ...done].find((item) => item.id === detailId);
+  const detailItem = [...pending, ...done].find(
+    (row) => row.item.id === detailId && !row.local,
+  )?.item;
+
+  // Si otra persona eliminó la lista, sus cambios sin guardar se pierden con ella.
+  const { discard: discardFailures } = failures;
+  const listRemoved = removedList !== undefined && !deleting;
+  useEffect(() => {
+    if (listRemoved) discardFailures();
+  }, [listRemoved, discardFailures]);
+
+  const confirmDelete = () => {
+    setDeleting(true);
+    setDeleteOpen(false);
+    removeList();
+    onBack?.();
+  };
 
   const submit = () => {
     if (!draft.trim()) return;
@@ -90,7 +119,7 @@ export function ListaScreen({ listId, onBack }: Props) {
     setDraft('');
   };
 
-  const renderRow = (item: ListItem) => {
+  const renderRow = ({ item, error, local }: ListRow) => {
     // Avatar de quien lo agregó mientras está pendiente y de quien lo tildó al pasar a comprados.
     const author = memberOf(item.done && item.doneBy ? item.doneBy : item.addedBy);
     return (
@@ -100,14 +129,17 @@ export function ListaScreen({ listId, onBack }: Props) {
         quantity={formatQuantity(item)}
         done={item.done}
         pendingSync={item.pendingSync}
+        error={error}
         addedBy={author}
-        onToggle={() => toggle(item.id)}
-        onPress={() => openDetail(item.id)}
+        // Un ítem que el servidor no tiene todavía no se puede tildar ni editar.
+        onToggle={local ? undefined : () => toggle(item.id)}
+        onPress={local ? undefined : () => openDetail(item.id)}
       />
     );
   };
 
   const empty = pending.length === 0 && done.length === 0;
+  const unsaved = failures.failures.length > 0;
 
   return (
     <View style={styles.screen}>
@@ -122,12 +154,31 @@ export function ListaScreen({ listId, onBack }: Props) {
         </Pressable>
         <View style={styles.titles}>
           <Text accessibilityRole="header" numberOfLines={1} style={styles.title}>
-            {list?.name}
+            {list?.name ?? removedList?.name}
           </Text>
           <Text style={styles.household}>{household.name}</Text>
         </View>
         {showConnection && <StatusPill online={online} onPress={toggleOnline} />}
+        {!showConnection && unsaved && <StatusPill online unsaved />}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Menú de la lista"
+          onPress={() => setMenuOpen(true)}
+          style={styles.menu}
+        >
+          <Icon name="dots" size={26} />
+        </Pressable>
       </View>
+
+      {unsaved && (
+        <View style={styles.notice}>
+          <SaveErrorNotice
+            {...noticeCopy(failures.failures)}
+            onRetry={failures.retry}
+            onDiscard={failures.discard}
+          />
+        </View>
+      )}
 
       {showConnection && !online && (
         <View style={styles.notice}>
@@ -202,6 +253,53 @@ export function ListaScreen({ listId, onBack }: Props) {
         />
       )}
 
+      <ListMenuSheet
+        visible={menuOpen}
+        name={list?.name ?? ''}
+        itemCount={pending.length + done.length}
+        householdName={household.name}
+        onClose={() => setMenuOpen(false)}
+        onRename={() => {
+          setMenuOpen(false);
+          setRenameOpen(true);
+        }}
+        onDelete={() => {
+          setMenuOpen(false);
+          setDeleteOpen(true);
+        }}
+      />
+
+      <RenameListSheet
+        visible={renameOpen}
+        name={list?.name ?? ''}
+        onClose={() => setRenameOpen(false)}
+        onSave={rename}
+      />
+
+      <CenteredDialog
+        visible={deleteOpen}
+        icon="trash"
+        tone="danger"
+        title={`¿Eliminar ${list?.name ?? ''}?`}
+        message={deleteMessage(pending.length, done.length)}
+        onClose={() => setDeleteOpen(false)}
+      >
+        <Button label="Eliminar lista" variant="dangerFilled" onPress={confirmDelete} />
+        <Button label="Cancelar" variant="secondary" onPress={() => setDeleteOpen(false)} />
+      </CenteredDialog>
+
+      {/* Sin forma de cerrarlo: solo "Volver a las listas". */}
+      <CenteredDialog
+        visible={listRemoved}
+        icon="trash"
+        tone="neutral"
+        title="Esta lista ya no existe"
+        message={`${memberOf(removedList?.deletedBy ?? '').name} eliminó ${removedList?.name ?? ''}. Sus ítems y los cambios que no se alcanzaron a sincronizar se perdieron.`}
+        onClose={() => {}}
+      >
+        <Button label="Volver a las listas" onPress={onBack} />
+      </CenteredDialog>
+
       <CenteredDialog
         visible={leaveOpen}
         icon="trash"
@@ -213,6 +311,24 @@ export function ListaScreen({ listId, onBack }: Props) {
         <Button label="Quedarme" variant="secondary" onPress={() => setLeaveOpen(false)} />
       </CenteredDialog>
     </View>
+  );
+}
+
+/** "Se van a borrar los 10 ítems (7 pendientes y 3 comprados) y la lista desaparece..." (`36`). */
+function deleteMessage(pending: number, done: number) {
+  const total = pending + done;
+  const ending = 'la lista desaparece para todo el hogar. No se puede deshacer.';
+  if (total === 0) return `La lista está vacía y ${ending}`;
+  const parts = [
+    pending > 0 && (pending === 1 ? '1 pendiente' : `${pending} pendientes`),
+    done > 0 && (done === 1 ? '1 comprado' : `${done} comprados`),
+  ].filter(Boolean);
+  return (
+    <>
+      {total === 1 ? 'Se va a borrar el ' : 'Se van a borrar los '}
+      <Text style={styles.strong}>{total === 1 ? '1 ítem' : `${total} ítems`}</Text> (
+      {parts.join(' y ')}) y {ending}
+    </>
   );
 }
 
@@ -257,6 +373,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  menu: {
+    width: 44,
+    height: 44,
+    marginRight: -8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  strong: { fontFamily: fonts.bodyBold, color: colors.textPrimary },
   titles: { flex: 1, minWidth: 0 },
   title: {
     fontFamily: fonts.heading,

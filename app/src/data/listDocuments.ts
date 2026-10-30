@@ -30,6 +30,7 @@ export function listFromDocument(id: string, data: Data, now?: number): ListInfo
     tone,
     icon: 'list',
     deleted: data.eliminada === true,
+    deletedBy: typeof data.eliminadaPor === 'string' ? data.eliminadaPor : undefined,
     createdAt: timestampMillis(data.creadaEn, now),
   };
 }

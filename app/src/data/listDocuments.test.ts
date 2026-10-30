@@ -42,6 +42,17 @@ describe('listFromDocument', () => {
     ).toBe(true);
   });
 
+  it('guarda quién la eliminó, para el aviso a quien la tenía abierta', () => {
+    const list = listFromDocument('l1', {
+      nombre: 'Súper',
+      color: 'green',
+      eliminada: true,
+      eliminadaPor: 'u2',
+    });
+    expect(list?.deletedBy).toBe('u2');
+    expect(listFromDocument('l1', { nombre: 'Súper', color: 'green' })?.deletedBy).toBeUndefined();
+  });
+
   it('ignora documentos incompletos o con un color que no existe', () => {
     expect(listFromDocument('l1', { color: 'green' })).toBeUndefined();
     expect(listFromDocument('l1', { nombre: 'Súper', color: 'rojo' })).toBeUndefined();
