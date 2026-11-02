@@ -33,7 +33,7 @@ export function ListMenuSheet({
             <Icon name="cart" size={26} color={colors.primary} />
           </View>
           <View style={styles.titles}>
-            <Text accessibilityRole="header" numberOfLines={1} style={styles.name}>
+            <Text accessibilityRole="header" numberOfLines={2} style={styles.name}>
               {name}
             </Text>
             <Text style={styles.detail}>
@@ -67,7 +67,7 @@ export function ListMenuSheet({
 }
 
 const styles = StyleSheet.create({
-  list: { height: 64, marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  list: { minHeight: 64, marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 14 },
   circle: {
     width: 44,
     height: 44,
@@ -85,7 +85,8 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   option: {
-    height: 60,
+    minHeight: 60,
+    paddingVertical: 8,
     marginTop: 8,
     paddingHorizontal: 16,
     borderRadius: 16,

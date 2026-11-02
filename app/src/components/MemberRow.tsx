@@ -38,7 +38,8 @@ export function MemberRow({ name, tone, roleLabel, showOptions, onOptions }: Pro
 
 const styles = StyleSheet.create({
   row: {
-    height: 72,
+    minHeight: 72,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import {
   Avatar,
@@ -112,6 +113,16 @@ describe('ItemRow', () => {
   it('un ítem comprado ofrece volver a pendientes', async () => {
     await render(<ItemRow name="Arroz" done addedBy={addedBy} />);
     expect(screen.getByLabelText('Volver a pendientes')).toBeTruthy();
+  });
+
+  it('el tachado del ítem comprado va en un segmento propio (Fabric lo omite como estilo del texto raíz)', async () => {
+    await render(<ItemRow name="Arroz" done addedBy={addedBy} />);
+    const struck = screen.getByText('Arroz', { exact: true });
+    expect(StyleSheet.flatten(struck.props.style).textDecorationLine).toBe('line-through');
+    await render(<ItemRow name="Leche" addedBy={addedBy} />);
+    expect(
+      StyleSheet.flatten(screen.getByText('Leche').props.style).textDecorationLine,
+    ).toBeUndefined();
   });
 
   it('muestra el reloj solo si hay cambios sin sincronizar', async () => {

@@ -28,9 +28,9 @@ export function ItemRow({
   onToggle,
   onPress,
 }: Props) {
-  const height = done ? heights.rowDone : heights.rowPending;
+  const minHeight = done ? heights.rowDone : heights.rowPending;
   return (
-    <View style={[styles.row, error ? { minHeight: heights.rowError } : { height }]}>
+    <View style={[styles.row, { minHeight: error ? heights.rowError : minHeight }]}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: !!done }}
@@ -48,8 +48,10 @@ export function ItemRow({
       </Pressable>
       <Pressable accessibilityRole="button" onPress={onPress} style={styles.content}>
         <View style={styles.line}>
-          <Text style={[styles.name, done && styles.nameDone]} numberOfLines={1}>
-            {name}
+          {/* El tachado va en un segmento propio: como estilo del Text raíz, Fabric lo omite en el
+              primer montaje (se vio en Bienvenida; ver CLAUDE.md). */}
+          <Text style={[styles.name, done && styles.nameDone]} numberOfLines={2}>
+            {done ? <Text style={styles.struck}>{name}</Text> : name}
           </Text>
           {!!quantity && <Text style={styles.quantity}>{quantity}</Text>}
         </View>
@@ -143,7 +145,7 @@ const styles = StyleSheet.create({
   nameDone: {
     fontFamily: fonts.body,
     color: colors.textSecondary,
-    textDecorationLine: 'line-through',
   },
+  struck: { textDecorationLine: 'line-through' },
   quantity: { fontFamily: fonts.body, fontSize: fontSizes.secondary, color: colors.textSecondary },
 });

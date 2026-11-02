@@ -27,7 +27,7 @@ import { offlineNotice } from '../data/syncLogic';
 import { ItemDetailSheet } from '../sheets/ItemDetailSheet';
 import { ListMenuSheet } from '../sheets/ListMenuSheet';
 import { RenameListSheet } from '../sheets/RenameListSheet';
-import { colors, fontSizes, fonts, radii } from '../theme';
+import { colors, fontSizes, fonts, radii, useLargeText } from '../theme';
 
 type Props = {
   listId: string;
@@ -158,6 +158,11 @@ export function ListaScreen({ listId, onBack }: Props) {
 
   const empty = pending.length === 0 && done.length === 0;
   const unsaved = failures.failures.length > 0;
+  // Con letra grande el indicador baja a su propia fila, debajo del título, para no aplastarlo.
+  const largeText = useLargeText();
+  const pill = (showConnection || unsaved) && (
+    <StatusPill online={online} unsaved={unsaved} onPress={toggleOnline} />
+  );
 
   return (
     <View style={styles.screen}>
@@ -171,15 +176,13 @@ export function ListaScreen({ listId, onBack }: Props) {
           <Icon name="back" size={30} />
         </Pressable>
         <View style={styles.titles}>
-          <Text accessibilityRole="header" numberOfLines={1} style={styles.title}>
+          <Text accessibilityRole="header" numberOfLines={largeText ? 3 : 1} style={styles.title}>
             {list?.name ?? removedList?.name}
           </Text>
           <Text style={styles.household}>{household.name}</Text>
         </View>
         {/* Sin guardar (el servidor rechazó algo) gana sobre Sin conexión, y esta sobre Sincronizado. */}
-        {(showConnection || unsaved) && (
-          <StatusPill online={online} unsaved={unsaved} onPress={toggleOnline} />
-        )}
+        {!largeText && pill}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Menú de la lista"
@@ -189,6 +192,12 @@ export function ListaScreen({ listId, onBack }: Props) {
           <Icon name="dots" size={26} />
         </Pressable>
       </View>
+
+      {largeText && !!pill && (
+        <View testID="status-row" style={styles.pillRow}>
+          {pill}
+        </View>
+      )}
 
       {unsaved && (
         <View style={styles.notice}>
@@ -393,6 +402,8 @@ const styles = StyleSheet.create({
   },
   strong: { fontFamily: fonts.bodyBold, color: colors.textPrimary },
   titles: { flex: 1, minWidth: 0 },
+  // Con letra grande: debajo del título, alineado con él (48 de la flecha + 8 de margen + 4 de espacio).
+  pillRow: { marginTop: 8, marginLeft: 60, alignItems: 'flex-start' },
   title: {
     fontFamily: fonts.heading,
     fontSize: fontSizes.screenTitle,

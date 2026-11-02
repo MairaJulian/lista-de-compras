@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   invite: {
-    height: heights.touchTarget,
+    minHeight: heights.touchTarget,
     paddingLeft: 14,
     paddingRight: 18,
     borderRadius: radii.pill,

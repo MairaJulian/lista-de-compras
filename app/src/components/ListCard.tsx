@@ -36,7 +36,7 @@ export function ListCard({ name, pendingCount, tone, icon, onPress }: Props) {
         </View>
       </View>
       <View>
-        <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+        <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
           {name}
         </Text>
         <Text style={[styles.caption, { color: text }]}>
@@ -50,7 +50,7 @@ export function ListCard({ name, pendingCount, tone, icon, onPress }: Props) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    height: heights.card,
+    minHeight: heights.card,
     borderRadius: radii.card,
     padding: 16,
     justifyContent: 'space-between',
