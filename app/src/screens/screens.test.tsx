@@ -117,7 +117,7 @@ describe('ListaScreen', () => {
     await render(<ListaScreen listId="farmacia" />);
     await fireEvent.press(screen.getAllByLabelText('Marcar como comprado')[0]);
     await render(<InicioScreen />);
-    expect(screen.getByLabelText('Farmacia, 1 pendientes')).toBeTruthy();
+    expect(screen.getByLabelText('Farmacia, 1 pendiente')).toBeTruthy();
   });
 
   it('la flecha avisa que se quiere volver (sin comprados no pide confirmación)', async () => {

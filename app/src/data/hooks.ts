@@ -55,7 +55,9 @@ import {
   setListDeleted,
   updateItemFields,
 } from './listSource';
+import { showLeaveUndo } from './leaveUndoStore';
 import { retryListData, useListData } from './listStore';
+import { canCleanUpList, startPresence } from './presenceSource';
 import { useSyncStatus } from './syncStatus';
 import type { Household, Invite, ListInfo, ListItem, ListSummary, Member } from './types';
 
@@ -558,7 +560,15 @@ export type ListContents = {
   remove: (itemId: string) => void;
   /** Deshace `remove`. */
   restore: (itemId: string) => void;
-  /** Borra los comprados de la lista (al salir de ella). Solo con los datos de ejemplo hasta la Etapa 6. */
+  /** Cantidad de comprados que se borrarían al salir (los que ya están en el servidor). */
+  doneCount: number;
+  /**
+   * Al tocar la flecha: si hay que pedir confirmación para borrar los comprados. En la sesión real
+   * lee la presencia del servidor: `false` si hay otra persona con la lista abierta, si no hay
+   * conexión o si la lectura falla (en esos casos no se borra nada).
+   */
+  checkLeave: () => boolean | Promise<boolean>;
+  /** Borra los comprados de la lista (al salir de ella) y deja el aviso para deshacer. */
   removeDone: () => void;
   /** Alterna la conexión simulada: solo con los datos de ejemplo (en la sesión real no hay). */
   toggleOnline?: () => void;
@@ -580,6 +590,14 @@ export function useListContents(listId: string): ListContents {
   const items = real ? realItems : mockItems;
   const listItems = items.filter((item) => item.listId === listId);
   const failures = useFailureControls(listId);
+
+  // Mientras la lista está abierta se avisa con un latido (se detiene con la app en segundo plano).
+  const myId = me.id;
+  useEffect(
+    () => (real && householdId ? startPresence(householdId, myId, listId) : undefined),
+    [real, householdId, myId, listId],
+  );
+
   const { pending, done } = markFailures(splitItems(listItems), failures.failures);
   // Lo que se borró en esta pantalla, para poder deshacerlo (ya no está en `items`).
   const removed = useRef(new Map<string, ListItem>());
@@ -690,11 +708,36 @@ export function useListContents(listId: string): ListContents {
     [real, householdId, me.id],
   );
 
-  const clearDone = useCallback(() => {
-    // En la sesión real los comprados se acumulan hasta la Etapa 6 (limpieza al salir de la lista).
-    if (real) return;
-    setState((s) => ({ ...s, items: removeDone(s.items, listId) }));
-  }, [real, listId]);
+  // Los comprados que ya están en el servidor (los que fallaron al crearse no se tocan).
+  const doneItems = done.filter((row) => !row.local).map((row) => row.item);
+  const doneCount = doneItems.length;
+
+  const checkLeave = (): boolean | Promise<boolean> => {
+    if (doneCount === 0) return false;
+    if (!real) return true;
+    // Sin conexión no se puede saber quién más tiene la lista abierta: no se borra nada.
+    if (!householdId || sync.kind === 'offline') return false;
+    return canCleanUpList(householdId, listId, me.id);
+  };
+
+  const clearDone = () => {
+    if (!real) {
+      setState((s) => ({ ...s, items: removeDone(s.items, listId) }));
+      return;
+    }
+    if (!householdId || doneItems.length === 0) return;
+    // Una escritura simple por ítem, con los mismos campos que borrar desde el detalle.
+    for (const item of doneItems) {
+      trackWrite(setItemDeleted(householdId, me.id, item.id, true), {
+        kind: 'deleteItem',
+        householdId,
+        uid: me.id,
+        item,
+        deleted: true,
+      });
+    }
+    showLeaveUndo(householdId, me.id, doneItems);
+  };
 
   const toggleOnline = useCallback(
     () =>
@@ -720,6 +763,8 @@ export function useListContents(listId: string): ListContents {
     update,
     remove,
     restore,
+    doneCount,
+    checkLeave,
     removeDone: clearDone,
     toggleOnline: real ? undefined : toggleOnline,
   };

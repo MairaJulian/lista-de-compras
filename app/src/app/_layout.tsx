@@ -10,13 +10,16 @@ import { clearFailures } from '../data/failureStore';
 import { forgetHousehold } from '../data/householdSource';
 import { startHousehold, useHouseholdState } from '../data/householdStore';
 import { configureFirestore } from '../data/firestoreConfig';
-import { startListData } from '../data/listStore';
+import { startListData, useListData } from '../data/listStore';
+import { purgeOncePerOpening } from '../data/purgeSource';
 import { goToNoHousehold, goToRemoved } from '../navigation/session';
 import { takePendingInvite } from '../data/pendingInvite';
 import { DevMenu } from '../dev/DevMenu';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { colors } from '../theme';
 import { fontAssets } from '../theme/fontAssets';
+
+const PURGE_DELAY_MS = 3000;
 
 // La copia local de Firestore se configura antes de la primera lectura (ver `firestoreConfig.ts`).
 configureFirestore();
@@ -32,6 +35,17 @@ export default function RootLayout() {
   useEffect(() => (householdId ? startHousehold(householdId) : undefined), [householdId]);
   // Y una sola suscripción para las listas, los ítems y los miembros de ese hogar.
   useEffect(() => (householdId ? startListData(householdId) : undefined), [householdId]);
+
+  // Una vez por apertura de la app, ya cargado el hogar con el servidor, se eliminan en segundo plano
+  // los ítems y las listas borrados hace más de 30 días (ver `purgeSource.ts`).
+  const listData = useListData();
+  const purgeReady = listData.status === 'ready' && listData.connectedOnce;
+  useEffect(() => {
+    if (!householdId || !purgeReady) return;
+    // Unos segundos después, para no competir con la primera pantalla.
+    const timer = setTimeout(() => void purgeOncePerOpening(householdId), PURGE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [householdId, purgeReady]);
 
   // Una invitación abierta sin sesión se retoma cuando la persona entra (y todavía no tiene hogar).
   const navigationReady = Boolean(useRootNavigationState()?.key);
