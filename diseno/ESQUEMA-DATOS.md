@@ -172,7 +172,7 @@ Detalle a tener presente: un cambio hecho sin conexión y enviado horas después
 
 El esquema ya deja lo necesario: preferencias, silenciadas, dispositivos, presencia y la colección `eventos`. Lo que falta es quién envía el aviso, porque un celular no puede mandárselo a otro directamente. Opciones, según lo acordado:
 
-1. Plan de pago (Blaze) con Cloud Functions y tope de gasto.
+1. Plan de pago (Blaze) con Cloud Functions. Blaze **no tiene un tope de gasto duro**, solo alertas de presupuesto, y pide tarjeta.
 2. Un servicio externo gratuito que reciba el evento y envíe el aviso.
 3. Sin avisos al principio (los cambios igual se ven en tiempo real con la app abierta).
 

@@ -1,5 +1,7 @@
 # Etapa 7 · Notificaciones y ajustes (BORRADOR)
 
+> **POSPUESTA (decisión de Maira, Etapa 8):** primero se usa la app en casa unas semanas y después se decide si los avisos hacen falta y con qué opción se envían. Este borrador queda como está hasta entonces. Ver `ETAPA-8.md`.
+
 > **Borrador para que Maira revise.** Lo que depende de una decisión suya está marcado con `[DECIDIR]`. Objetivo: que cuando una persona agrega o borra ítems, las demás reciban **un solo aviso agrupado** (si no tienen esa lista abierta), que al tocarlo se abra la lista, y poder silenciar listas o apagar los avisos. Contexto general: `CLAUDE.md`, `diseno/ESQUEMA-DATOS.md` (secciones "Notificaciones", `presencia`, `eventos`, `usuarios/{uid}.preferencias`) y `diseno/PLAN-CONSTRUCCION.md`. Diseño de referencia: `09-notificacion` y `34-menu-lista`.
 
 ## Alcance
@@ -22,7 +24,7 @@
 ## Decisiones a tomar `[DECIDIR]`
 
 - `[DECIDIR]` **Cómo se envían los avisos** (las tres opciones de `ESQUEMA-DATOS.md`, "Notificaciones"):
-  1. Plan Blaze con Cloud Functions y tope de gasto. **Pide tarjeta**: según `CLAUDE.md` está prohibido sin que Maira lo decida explícitamente.
+  1. Plan Blaze con Cloud Functions (sin tope de gasto duro, solo alertas de presupuesto). **Pide tarjeta**: según `CLAUDE.md` está prohibido sin que Maira lo decida explícitamente.
   2. Un servicio externo gratuito que reciba el evento y envíe el aviso por FCM (por ejemplo, un cron o un webhook en un servicio con plan gratis). Queda una pieza fuera de Firebase para mantener, y hay que cuidar la clave de servicio de FCM (nunca en el repo).
   3. Sin avisos por ahora: los cambios igual se ven en tiempo real con la app abierta. La etapa se reduce a ajustes y silenciar, que no tendrían efecto hasta que haya avisos.
   Propuesta: decidir con Maira antes de empezar; si no hay una opción gratuita que le convenza, elegir la 3 y dejar la etapa en "ajustes + registro del dispositivo".
