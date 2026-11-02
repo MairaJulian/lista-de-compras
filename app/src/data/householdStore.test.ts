@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react-native';
 
 import { watchHousehold } from './householdSource';
+import { LOADING_TIMEOUT_MS } from './loadingTimeout';
 import {
   resetHouseholdStore,
   retryHousehold,
@@ -126,5 +127,35 @@ describe('householdStore', () => {
   it('"Reintentar" sin haber empezado a leer no hace nada', () => {
     retryHousehold();
     expect(watchHousehold).not.toHaveBeenCalled();
+  });
+
+  it('si el servidor no responde, pasa a "error" y se recupera si los datos llegan después', async () => {
+    jest.useFakeTimers();
+    try {
+      const { result } = await renderHook(() => useHouseholdState());
+      await act(async () => void startHousehold('h1'));
+      expect(result.current).toEqual({ status: 'loading' });
+
+      await act(async () => void jest.advanceTimersByTime(LOADING_TIMEOUT_MS));
+      expect(result.current).toEqual({ status: 'error' });
+
+      await act(async () => emit.data(household));
+      expect(result.current).toEqual({ status: 'ready', household });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('si los datos llegan a tiempo, el tiempo de espera no pisa el estado', async () => {
+    jest.useFakeTimers();
+    try {
+      const { result } = await renderHook(() => useHouseholdState());
+      await act(async () => void startHousehold('h1'));
+      await act(async () => emit.data(household));
+      await act(async () => void jest.advanceTimersByTime(LOADING_TIMEOUT_MS * 2));
+      expect(result.current).toEqual({ status: 'ready', household });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

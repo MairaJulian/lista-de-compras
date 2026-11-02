@@ -7,7 +7,12 @@ App Android de lista de compras compartida para una familia. Hecha con React Nat
 - [`diseno/DISENO.md`](diseno/DISENO.md): decisiones de producto, estilo, pantallas y flujos.
 - [`diseno/ESQUEMA-DATOS.md`](diseno/ESQUEMA-DATOS.md): qué se guarda en Firestore, reglas y sincronización.
 - [`diseno/PLAN-CONSTRUCCION.md`](diseno/PLAN-CONSTRUCCION.md): etapas de construcción.
-- [`diseno/ETAPA-0.md`](diseno/ETAPA-0.md): etapa en curso.
+- [`diseno/ETAPA-8.md`](diseno/ETAPA-8.md): etapa en curso (listo para usar en casa; las notificaciones, Etapa 7, están pospuestas).
+- [`diseno/USO-REAL.md`](diseno/USO-REAL.md): lo que la familia anota al usar la app.
+
+## Estado
+
+La app ya hace todo lo esencial: entrar con Google, hogares con código de invitación, listas e ítems compartidos en tiempo real, uso sin conexión, presencia, salir de una lista y purga de lo borrado. **No tiene notificaciones** (Etapa 7, pospuesta hasta ver cómo se usa en casa). Se instala en los celulares con un APK, sin Play Store.
 
 ## Estructura
 
@@ -61,7 +66,7 @@ La app usa `@react-native-firebase`. El archivo `google-services.json` **no est�
 
 ### Reglas de seguridad de Firestore
 
-`firebase/firestore.rules` son las reglas reales: cada persona lee y escribe solo su `usuarios/{uid}` (con los campos de `ESQUEMA-DATOS.md`; no se puede borrar ni cambiar `creadoEn`) y todo lo demás está bloqueado. Las pruebas corren contra el emulador (necesita Java):
+`firebase/firestore.rules` son las reglas reales (usuarios, hogares, membresías, listas, ítems, invitaciones y presencia; el detalle está en `diseno/ESQUEMA-DATOS.md`). Todo lo que no figura ahí está bloqueado. Las pruebas corren contra el emulador (necesita Java):
 
 ```
 cd firebase
@@ -122,6 +127,38 @@ Notas:
 **Purga.** Una vez por apertura de la app se eliminan, en lotes de hasta 500, los ítems borrados y las listas eliminadas hace más de 30 días (con sus ítems). Solo lee del servidor: sin conexión no hace nada y se reintenta en la próxima apertura. Las reglas de Firestore de esta etapa están publicadas en el proyecto `changuito-31ec1`.
 
 **Cómo probarlo.** Con dos cuentas en la misma lista: si una sale (con comprados) mientras la otra la tiene abierta, no se borra nada; cuando sale la última aparece el aviso, los comprados se borran y "Deshacer" los recupera. En el emulador de Firestore se ve `presencia/{uid}` renovándose. Para la purga hace falta un ítem con `borradoEn` de hace más de 31 días (se puede escribir a mano en el emulador).
+
+## APK de release (para instalar en los celulares)
+
+Desde `app/`, con lo mismo que pide el build normal (JDK 17, `ANDROID_HOME`, CMake 3.31.6 y `google-services.json`):
+
+```bash
+npm run build:apk
+```
+
+Deja el archivo en `app/dist/changuito.apk` (la carpeta `dist/` no se versiona). Regenera `android/` desde cero y tarda unos 20 minutos la primera vez. Para un APK más chico y rápido, solo para celulares modernos: `powershell -File scripts/build-release-apk.ps1 -Abis arm64-v8a`.
+
+- **Firma:** se firma con la clave de debug del proyecto (`android/app/debug.keystore`, la que genera el template de Expo, con contraseña `android`). Su huella SHA-1 `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25` es la que está registrada en Firebase, por eso anda el login con Google. Para ver la huella de un APK: `apksigner verify --print-certs dist/changuito.apk`. Si algún día se publica en Play Store hará falta una clave propia y reinstalar la app.
+- **Sin Metro:** el JavaScript va dentro del APK. Tampoco incluye el menú DEV ni el acceso a los datos de ejemplo (`__DEV__` es falso en release).
+- **No se versionan** el APK ni las claves: `dist/`, `android/`, `*.keystore` y `google-services.json` están en `.gitignore`.
+- Instalarlo en un celular o emulador conectado: `adb install -r dist/changuito.apk`. Instala encima de la versión de desarrollo porque tiene la misma firma.
+
+## Instalar Changuito en tu celular (guía para la familia)
+
+1. **Recibí el archivo `changuito.apk`** (por WhatsApp o Drive) y descargalo en el celular.
+2. **Abrilo.** Android te va a decir que por seguridad no podés instalar apps de orígenes desconocidos desde ese programa (WhatsApp, Drive, Chrome o Archivos). Tocá **Configuración** y activá **Permitir desde esta fuente**. Es solo para ese programa y lo podés desactivar después.
+3. Tocá **Instalar**. Si aparece un aviso de **Play Protect** del estilo "App no verificada" o "¿Analizar la app?", es normal: Changuito no está en Play Store. Tocá **Instalar de todos modos** (o **Más detalles** y después esa opción).
+4. Abrí **Changuito** y tocá **Entrar con Google** y elegí tu cuenta.
+5. Para sumarte a la casa, pedile el **código de invitación** a Maira (se ve en la pestaña Hogar → Invitar) y, en la pantalla "Armá tu hogar o sumate a uno", tocá **Tengo un código de invitación**, escribilo y tocá **Unirme**.
+6. Si te falla algo, anotalo en una línea (qué hiciste, qué pasó, qué esperabas) y pasáselo a Maira.
+
+## Registro de fallos (Crashlytics)
+
+La app envía a Firebase Crashlytics los cierres inesperados y los errores de JavaScript sin atrapar, junto con el uid de la cuenta, para enterarse de los fallos sin que nadie avise. **No** se envía el contenido de las listas, nombres ni correos, y la app no escribe mensajes de registro. Es gratis en el plan Spark (no pide tarjeta). Se ven en la consola de Firebase → Crashlytics (los primeros pueden tardar unos minutos). Se activa en cada build, incluida la de desarrollo; en el menú DEV hay un botón "Fallo de prueba (Crashlytics)" que cierra la app a propósito: hay que volver a abrirla para que el informe se envíe. Es un módulo nativo: después de sumarlo hay que volver a compilar (`npx expo run:android`).
+
+## Seguimiento del uso real
+
+Lo que la familia note al usar la app se anota en [`diseno/USO-REAL.md`](diseno/USO-REAL.md).
 
 ## Rutas largas en Windows (CMake 3.31.6)
 

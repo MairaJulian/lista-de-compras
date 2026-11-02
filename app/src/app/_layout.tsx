@@ -6,6 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { startSession, useSession } from '../auth/sessionStore';
+import { startCrashReporting } from '../data/crashReporting';
 import { clearFailures } from '../data/failureStore';
 import { forgetHousehold } from '../data/householdSource';
 import { startHousehold, useHouseholdState } from '../data/householdStore';
@@ -14,15 +15,24 @@ import { startListData, useListData } from '../data/listStore';
 import { purgeOncePerOpening } from '../data/purgeSource';
 import { goToNoHousehold, goToRemoved } from '../navigation/session';
 import { takePendingInvite } from '../data/pendingInvite';
-import { DevMenu } from '../dev/DevMenu';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { colors } from '../theme';
 import { fontAssets } from '../theme/fontAssets';
+
+/**
+ * El menú de desarrollo se carga con `require` dentro de `__DEV__`: en el APK de release Metro
+ * saca todo ese código del bundle (con un `import` común quedaría incluido aunque no se muestre).
+ */
+const DevMenu = __DEV__
+  ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+    (require('../dev/DevMenu') as typeof import('../dev/DevMenu')).DevMenu
+  : null;
 
 const PURGE_DELAY_MS = 3000;
 
 // La copia local de Firestore se configura antes de la primera lectura (ver `firestoreConfig.ts`).
 configureFirestore();
+startCrashReporting();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts(fontAssets);
@@ -114,7 +124,7 @@ export default function RootLayout() {
             <Stack.Screen name="error-sin-conexion" />
           </Stack>
         )}
-        {__DEV__ && <DevMenu />}
+        {DevMenu && <DevMenu />}
       </View>
       <StatusBar style="dark" />
     </SafeAreaProvider>

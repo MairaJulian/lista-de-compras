@@ -19,6 +19,13 @@ jest.mock('./src/auth/sessionSource', () => ({
   signOutEverywhere: jest.fn(async () => {}),
 }));
 
+// Crashlytics es nativo: en los tests no se registra nada.
+jest.mock('./src/data/crashReporting', () => ({
+  startCrashReporting: jest.fn(),
+  setCrashReportingUser: jest.fn(),
+  triggerTestCrash: jest.fn(),
+}));
+
 // La copia local de Firestore es nativa: en los tests no se configura.
 jest.mock('./src/data/firestoreConfig', () => ({ configureFirestore: jest.fn() }));
 
