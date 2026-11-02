@@ -20,3 +20,6 @@ ui-debug.log
 app/modules/**/android/build/
 app/modules/**/android/.cxx/
 app/modules/**/android/.gradle/
+
+# PDF de pantallas (~28 MB): las pantallas ya están en PNG
+diseno/pantallas/Changuito-pantallas.pdf

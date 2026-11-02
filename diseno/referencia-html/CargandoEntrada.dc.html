@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cargando después de iniciar sesión</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+@keyframes girar{to{transform:rotate(360deg)}}
+@keyframes entrar{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion: reduce){.gira,.logo{animation:none !important}}
+a:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <a href="Inicio.dc.html" aria-label="Ir al inicio (simula que terminó de cargar)" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding-bottom:40px">
+    <div><svg viewBox="0 0 108 108" width="132" height="132" role="img" aria-label="Ícono de Changuito" style="display:block;box-shadow:0 14px 30px rgba(46,125,87,0.28);border-radius:38px;"><defs><linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A8F65"/><stop offset="1" stop-color="#276B49"/></linearGradient></defs><rect width="108" height="108" fill="url(#bg1)"/><circle cx="52" cy="39" r="6.2" fill="#F8DDAE"/><circle cx="63" cy="37" r="5.2" fill="#CFE8D9"/><path d="M39.5 45H78L72.5 64H44.5Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M30 36H37L44.5 64H72" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="47" cy="75" r="4.6" fill="#fff"/><circle cx="68" cy="75" r="4.6" fill="#fff"/></svg></div>
+    <div style="font-family:Nunito,sans-serif;font-weight:800;font-size:34px;line-height:1.1;color:#1C2621">Changuito</div>
+  </a>
+  <div role="status" style="position:absolute;left:0;right:0;bottom:96px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:0 40px">
+    <span class="gira" aria-hidden="true" style="width:40px;height:40px;box-sizing:border-box;border-radius:50%;border:4px solid #CFE8D9;border-top-color:#2E7D57;animation:girar 0.9s linear infinite"></span>
+    <div><div style="font-size:17px;font-weight:700">Entrando…</div><div style="font-size:14px;color:#5B675F;margin-top:2px">Estamos buscando tu hogar y tus listas.</div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
