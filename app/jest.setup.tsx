@@ -52,4 +52,6 @@ jest.mock('./src/data/listSource', () => ({
   setItemDone: jest.fn(() => Promise.resolve()),
   updateItemFields: jest.fn(() => Promise.resolve()),
   setItemDeleted: jest.fn(() => Promise.resolve()),
+  renameList: jest.fn(() => Promise.resolve()),
+  setListDeleted: jest.fn(() => Promise.resolve()),
 }));

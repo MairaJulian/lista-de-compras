@@ -5,26 +5,45 @@ import { Icon } from './Icon';
 
 type Props = {
   online: boolean;
+  /** El servidor rechazó cambios (`37`): "Sin guardar", en rojo. Gana sobre `online`. */
+  unsaved?: boolean;
   onPress?: () => void;
 };
 
-export function StatusPill({ online, onPress }: Props) {
-  const label = online ? 'Sincronizado' : 'Sin conexión';
-  const textColor = online ? colors.primaryText : colors.amberText;
+const looks = {
+  synced: {
+    label: 'Sincronizado',
+    icon: 'cloudCheck',
+    text: colors.primaryText,
+    bg: colors.primarySoft,
+  },
+  offline: {
+    label: 'Sin conexión',
+    icon: 'cloudOff',
+    text: colors.amberText,
+    bg: colors.amberSoft,
+  },
+  unsaved: { label: 'Sin guardar', icon: 'cloudAlert', text: colors.danger, bg: colors.dangerSoft },
+} as const;
+
+export function StatusPill({ online, unsaved, onPress }: Props) {
+  const look = looks[unsaved ? 'unsaved' : online ? 'synced' : 'offline'];
 
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={unsaved ? 'text' : 'button'}
       accessibilityLabel={
-        online
-          ? 'Estado: sincronizado. Tocá para simular que no hay conexión'
-          : 'Estado: sin conexión. Tocá para simular que volvió la conexión'
+        unsaved
+          ? 'Estado: sin guardar. Hay cambios que el servidor no aceptó'
+          : online
+            ? 'Estado: sincronizado. Tocá para simular que no hay conexión'
+            : 'Estado: sin conexión. Tocá para simular que volvió la conexión'
       }
       onPress={onPress}
-      style={[styles.pill, { backgroundColor: online ? colors.primarySoft : colors.amberSoft }]}
+      style={[styles.pill, { backgroundColor: look.bg }]}
     >
-      <Icon name={online ? 'cloudCheck' : 'cloudOff'} size={20} color={textColor} />
-      <Text style={[styles.label, { color: textColor }]}>{label}</Text>
+      <Icon name={look.icon} size={20} color={look.text} />
+      <Text style={[styles.label, { color: look.text }]}>{look.label}</Text>
     </Pressable>
   );
 }

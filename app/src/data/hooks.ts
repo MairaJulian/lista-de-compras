@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ListTone } from '../theme';
 import { useSession } from '../auth/sessionStore';
@@ -25,6 +25,8 @@ import { inviteFromDocument } from './inviteLogic';
 import { joinFailure, normalizeInviteCode, type JoinResult } from './joinLogic';
 import { joinHousehold, readInvitePreview } from './joinSource';
 import { createInvite, revokeInvite, watchInvite } from './inviteSource';
+import { HOME_SCOPE, markFailures, type FailedWrite, type ListRow } from './failureLogic';
+import { discardFailures, retryFailures, trackWrite, useFailures } from './failureStore';
 import { memberOrFallback } from './listDocuments';
 import {
   addItem,
@@ -32,10 +34,12 @@ import {
   cleanItemName,
   cleanListName,
   countUnsynced,
+  deleteList,
   ItemPatch,
   markSynced,
   removeDone,
   removeItem,
+  renameList,
   restoreItem,
   splitItems,
   summarizeLists,
@@ -45,11 +49,13 @@ import {
 import {
   addItem as addItemDocument,
   createList as createListDocument,
+  renameList as renameListDocument,
   setItemDeleted,
   setItemDone,
+  setListDeleted,
   updateItemFields,
 } from './listSource';
-import { retryListData, trackWrite, useListData } from './listStore';
+import { retryListData, useListData } from './listStore';
 import type { Household, Invite, ListInfo, ListItem, ListSummary, Member } from './types';
 
 // Único punto de acceso a los datos para las pantallas. Hoy devuelve los datos de ejemplo;
@@ -486,7 +492,13 @@ export function useCreateList(): (name: string, tone: ListTone) => string | unde
         const clean = cleanListName(name);
         if (!clean || !householdId) return undefined;
         const { id, saved } = createListDocument(householdId, me.id, clean, tone);
-        trackWrite(saved, 'crear lista');
+        trackWrite(saved, {
+          kind: 'createList',
+          householdId,
+          uid: me.id,
+          list: { id, name: clean, tone, icon: 'list' },
+          tone,
+        });
         return id;
       }
       const id = newListId();
@@ -504,9 +516,33 @@ export function useCreateList(): (name: string, tone: ListTone) => string | unde
 
 const noItems: ListItem[] = [];
 
+/** Cambios fallidos de una pantalla, con "Reintentar" y "Descartar" (`37`). */
+export type FailureControls = {
+  failures: FailedWrite[];
+  retry: () => void;
+  discard: () => void;
+};
+
+/** Los cambios que el servidor rechazó en Inicio (`HOME_SCOPE`) o en una lista (su id). */
+export function useFailureControls(scope: string): FailureControls {
+  const failures = useFailures(scope);
+  return {
+    failures,
+    retry: useCallback(() => retryFailures(scope), [scope]),
+    discard: useCallback(() => discardFailures(scope), [scope]),
+  };
+}
+
+/** Los de crear o eliminar una lista, que se ven en Inicio. */
+export function useHomeFailures(): FailureControls {
+  return useFailureControls(HOME_SCOPE);
+}
+
 export type ListContents = {
-  pending: ListItem[];
-  done: ListItem[];
+  /** Con las filas que el servidor rechazó marcadas, ver `markFailures`. */
+  pending: ListRow[];
+  done: ListRow[];
+  failures: FailureControls;
   online: boolean;
   /** Falso en la sesión real: el indicador Sincronizado / Sin conexión es de la Etapa 5. */
   showConnection: boolean;
@@ -536,14 +572,23 @@ export function useListContents(listId: string): ListContents {
   const realItems = data.status === 'ready' ? data.items : noItems;
   const items = real ? realItems : mockItems;
   const listItems = items.filter((item) => item.listId === listId);
-  const { pending, done } = splitItems(listItems);
+  const failures = useFailureControls(listId);
+  const { pending, done } = markFailures(splitItems(listItems), failures.failures);
+  // Lo que se borró en esta pantalla, para poder deshacerlo (ya no está en `items`).
+  const removed = useRef(new Map<string, ListItem>());
 
   const toggle = useCallback(
     (itemId: string) => {
       if (real) {
         const item = items.find((candidate) => candidate.id === itemId);
         if (!householdId || !item) return;
-        trackWrite(setItemDone(householdId, me.id, itemId, !item.done), 'tildar');
+        trackWrite(setItemDone(householdId, me.id, itemId, !item.done), {
+          kind: 'toggleItem',
+          householdId,
+          uid: me.id,
+          item,
+          done: !item.done,
+        });
         return;
       }
       setState((s) => ({
@@ -559,7 +604,16 @@ export function useListContents(listId: string): ListContents {
       if (real) {
         const clean = cleanItemName(name);
         if (!householdId || !clean) return;
-        trackWrite(addItemDocument(householdId, me.id, listId, clean).saved, 'agregar ítem');
+        const { id, saved } = addItemDocument(householdId, me.id, listId, clean);
+        const item: ListItem = {
+          id,
+          listId,
+          name: clean,
+          done: false,
+          addedBy: me.id,
+          addedAt: Date.now(),
+        };
+        trackWrite(saved, { kind: 'addItem', householdId, uid: me.id, item });
         return;
       }
       setState((s) => ({
@@ -574,32 +628,54 @@ export function useListContents(listId: string): ListContents {
     (itemId: string, patch: ItemPatch) => {
       if (real) {
         // Sin campos cambiados no hay nada que enviar.
-        if (!householdId || Object.keys(patch).length === 0) return;
-        trackWrite(updateItemFields(householdId, itemId, patch), 'editar ítem');
+        const item = items.find((candidate) => candidate.id === itemId);
+        if (!householdId || !item || Object.keys(patch).length === 0) return;
+        trackWrite(updateItemFields(householdId, itemId, patch), {
+          kind: 'editItem',
+          householdId,
+          uid: me.id,
+          item,
+          patch,
+        });
         return;
       }
       setState((s) => ({ ...s, items: updateItem(s.items, itemId, patch, s.online) }));
     },
-    [real, householdId],
+    [real, householdId, me.id, items],
   );
 
   const remove = useCallback(
     (itemId: string) => {
       if (real) {
-        if (!householdId) return;
-        trackWrite(setItemDeleted(householdId, me.id, itemId, true), 'eliminar ítem');
+        const item = items.find((candidate) => candidate.id === itemId);
+        if (!householdId || !item) return;
+        removed.current.set(itemId, item);
+        trackWrite(setItemDeleted(householdId, me.id, itemId, true), {
+          kind: 'deleteItem',
+          householdId,
+          uid: me.id,
+          item,
+          deleted: true,
+        });
         return;
       }
       setState((s) => ({ ...s, items: removeItem(s.items, itemId) }));
     },
-    [real, householdId, me.id],
+    [real, householdId, me.id, items],
   );
 
   const restore = useCallback(
     (itemId: string) => {
       if (real) {
-        if (!householdId) return;
-        trackWrite(setItemDeleted(householdId, me.id, itemId, false), 'deshacer eliminar');
+        const item = removed.current.get(itemId);
+        if (!householdId || !item) return;
+        trackWrite(setItemDeleted(householdId, me.id, itemId, false), {
+          kind: 'deleteItem',
+          householdId,
+          uid: me.id,
+          item,
+          deleted: false,
+        });
         return;
       }
       setState((s) => ({ ...s, items: restoreItem(s.items, itemId) }));
@@ -627,6 +703,7 @@ export function useListContents(listId: string): ListContents {
   return {
     pending,
     done,
+    failures,
     online,
     showConnection: !real,
     unsyncedCount: real ? 0 : countUnsynced(listItems),
@@ -638,6 +715,72 @@ export function useListContents(listId: string): ListContents {
     removeDone: clearDone,
     toggleOnline,
   };
+}
+
+export type ListActions = {
+  /** Cambia el nombre de la lista (nada si queda vacío o igual). */
+  rename: (name: string) => void;
+  /** Elimina la lista para todo el hogar. */
+  remove: () => void;
+};
+
+/**
+ * Renombrar y eliminar una lista. En la sesión real son escrituras simples: la pantalla no espera al
+ * servidor y, si lo rechaza, el fallo queda en Inicio (eliminar) o en la lista (renombrar).
+ */
+export function useListActions(listId: string): ListActions {
+  const real = useIsRealSession();
+  const data = useListData();
+  const me = useCurrentMember();
+  const list = useList(listId);
+  const householdId = data.status === 'ready' ? data.householdId : undefined;
+
+  const rename = useCallback(
+    (name: string) => {
+      if (real) {
+        const clean = cleanListName(name);
+        if (!householdId || !list || !clean || clean === list.name) return;
+        trackWrite(renameListDocument(householdId, listId, clean), {
+          kind: 'renameList',
+          householdId,
+          uid: me.id,
+          list,
+          name: clean,
+        });
+        return;
+      }
+      setState((s) => ({ ...s, lists: renameList(s.lists, listId, name) }));
+    },
+    [real, householdId, list, listId, me.id],
+  );
+
+  const remove = useCallback(() => {
+    if (real) {
+      if (!householdId || !list) return;
+      trackWrite(setListDeleted(householdId, me.id, listId), {
+        kind: 'deleteList',
+        householdId,
+        uid: me.id,
+        list,
+      });
+      return;
+    }
+    setState((s) => ({ ...s, lists: deleteList(s.lists, listId) }));
+  }, [real, householdId, list, listId, me.id]);
+
+  return { rename, remove };
+}
+
+/**
+ * La lista, si está eliminada (`38-lista-eliminada`): su nombre y quién la eliminó. Solo en la
+ * sesión real; con los datos de ejemplo no hay otra persona que la elimine.
+ */
+export function useRemovedList(listId: string): { name: string; deletedBy?: string } | undefined {
+  const real = useIsRealSession();
+  const data = useListData();
+  if (!real || data.status !== 'ready') return undefined;
+  const list = data.lists.find((candidate) => candidate.id === listId);
+  return list?.deleted ? { name: list.name, deletedBy: list.deletedBy } : undefined;
 }
 
 /**

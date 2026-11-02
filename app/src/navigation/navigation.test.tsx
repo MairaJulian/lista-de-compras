@@ -37,8 +37,10 @@ import { resetHouseholdStore } from '../data/householdStore';
 import {
   addItem,
   createList,
+  renameList,
   setItemDeleted,
   setItemDone,
+  setListDeleted,
   updateItemFields,
   watchHouseholdData,
 } from '../data/listSource';
@@ -102,9 +104,15 @@ describe('navegación', () => {
     resetMockStore();
     resetHouseholdStore();
     resetListData();
-    [createList, addItem, setItemDone, updateItemFields, setItemDeleted].forEach((write) =>
-      (write as jest.Mock).mockClear(),
-    );
+    [
+      createList,
+      addItem,
+      setItemDone,
+      updateItemFields,
+      setItemDeleted,
+      renameList,
+      setListDeleted,
+    ].forEach((write) => (write as jest.Mock).mockClear());
     (createHousehold as jest.Mock).mockReset();
     // Por defecto el hogar real no tiene listas ni ítems.
     readsListData({ lists: [], items: [], members: [] });
@@ -428,6 +436,32 @@ describe('navegación', () => {
         await waitFor(() => expect(screen.queryByText('Crear lista')).toBeNull());
       });
 
+      it('si el servidor rechaza crear la lista, Inicio avisa y "Reintentar" la crea con el mismo id', async () => {
+        jest.spyOn(console, 'warn').mockImplementation(() => {});
+        readsHousehold('Casa real');
+        firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        (createList as jest.Mock).mockReturnValueOnce({
+          id: 'lista-rechazada',
+          saved: Promise.reject(new Error('permission-denied')),
+        });
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByText('Nueva lista'));
+        await fireEvent.changeText(screen.getByLabelText('Nombre'), 'Panadería');
+        await fireEvent.press(screen.getByText('Crear lista'));
+        // El panel ya se cerró: el rechazo llega después y no se pierde.
+        expect(await screen.findByText('No pudimos guardar 1 cambio')).toBeTruthy();
+        expect(screen.getByText(/No se creó «Panadería»/)).toBeTruthy();
+        await fireEvent.press(screen.getByText('Reintentar'));
+        expect(createList).toHaveBeenLastCalledWith(
+          'h1',
+          'u1',
+          'Panadería',
+          'green',
+          'lista-rechazada',
+        );
+        await waitFor(() => expect(screen.queryByText('No pudimos guardar 1 cambio')).toBeNull());
+      });
+
       describe('con listas e ítems reales', () => {
         const lucia = { id: 'u2', name: 'Lucía', role: 'member' as const, tone: 'amber' as const };
         // Quien salió del hogar sigue estando en `miembros`, con su nombre.
@@ -538,6 +572,205 @@ describe('navegación', () => {
           expect(screen.queryByText('¿Salir de la lista?')).toBeNull();
           expect(screen.getByText('Nueva lista')).toBeTruthy();
           expect(setItemDeleted).not.toHaveBeenCalled();
+        });
+
+        describe('menú de la lista', () => {
+          const openMenu = async () => {
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            await fireEvent.press(screen.getByLabelText('Menú de la lista'));
+          };
+
+          it('el ⋯ abre el menú con el nombre, la cantidad de ítems y el hogar', async () => {
+            await openMenu();
+            expect(screen.getByText('4 ítems · Casa real')).toBeTruthy();
+            expect(screen.getByText('Renombrar')).toBeTruthy();
+            expect(screen.getByText('Eliminar lista')).toBeTruthy();
+            await fireEvent.press(screen.getByText('Cancelar'));
+            await waitFor(() => expect(screen.queryByText('Renombrar')).toBeNull());
+          });
+
+          it('renombrar guarda solo el nombre, sin esperar al servidor, y no deja guardar vacío', async () => {
+            await openMenu();
+            await fireEvent.press(screen.getByText('Renombrar'));
+            expect(screen.getByText('Nombre de la lista')).toBeTruthy();
+            await fireEvent.changeText(screen.getByLabelText('Nuevo nombre'), '   ');
+            await fireEvent.press(screen.getByText('Guardar'));
+            expect(renameList).not.toHaveBeenCalled();
+            await fireEvent.changeText(screen.getByLabelText('Nuevo nombre'), ' Mercado ');
+            await fireEvent.press(screen.getByText('Guardar'));
+            expect(renameList).toHaveBeenCalledWith('h1', 'l1', 'Mercado');
+            await waitFor(() => expect(screen.queryByText('Nombre de la lista')).toBeNull());
+          });
+
+          it('guardar con el mismo nombre no escribe nada', async () => {
+            await openMenu();
+            await fireEvent.press(screen.getByText('Renombrar'));
+            await fireEvent.press(screen.getByText('Guardar'));
+            expect(renameList).not.toHaveBeenCalled();
+          });
+
+          it('eliminar dice cuántos ítems se pierden, y al confirmar vuelve a Inicio', async () => {
+            await openMenu();
+            await fireEvent.press(screen.getByText('Eliminar lista'));
+            expect(screen.getByText('¿Eliminar Supermercado?')).toBeTruthy();
+            expect(
+              screen.getByText(/Se van a borrar los 4 ítems \(2 pendientes y 2 comprados\)/),
+            ).toBeTruthy();
+            expect(setListDeleted).not.toHaveBeenCalled();
+            await fireEvent.press(screen.getAllByText('Eliminar lista')[1]);
+            expect(setListDeleted).toHaveBeenCalledWith('h1', 'u1', 'l1');
+            expect(setItemDeleted).not.toHaveBeenCalled();
+            expect(screen.getByText('Nueva lista')).toBeTruthy();
+            // Quien la eliminó no ve el aviso de lista eliminada.
+            expect(screen.queryByText('Esta lista ya no existe')).toBeNull();
+          });
+
+          it('"Cancelar" en la confirmación no elimina nada', async () => {
+            await openMenu();
+            await fireEvent.press(screen.getByText('Eliminar lista'));
+            await fireEvent.press(screen.getAllByText('Cancelar').at(-1)!);
+            expect(setListDeleted).not.toHaveBeenCalled();
+          });
+        });
+
+        it('si otra persona elimina la lista abierta: aviso sin salida y "Volver a las listas"', async () => {
+          let emit: (next: HouseholdData) => void = () => {};
+          (watchHouseholdData as jest.Mock).mockReset().mockImplementation((_id, onData) => {
+            emit = onData;
+            onData(data);
+            return () => {};
+          });
+          await renderRouter(routes);
+          await fireEvent.press(screen.getByText('Supermercado'));
+          expect(screen.queryByText('Esta lista ya no existe')).toBeNull();
+          await act(async () =>
+            emit({
+              ...data,
+              lists: data.lists.map((list) =>
+                list.id === 'l1' ? { ...list, deleted: true, deletedBy: 'u2' } : list,
+              ),
+            }),
+          );
+          expect(screen.getByText('Esta lista ya no existe')).toBeTruthy();
+          expect(
+            screen.getByText(
+              'Lucía eliminó Supermercado. Sus ítems y los cambios que no se alcanzaron a sincronizar se perdieron.',
+            ),
+          ).toBeTruthy();
+          // Tocar el velo no lo cierra.
+          await fireEvent.press(screen.getByLabelText('Cerrar aviso'));
+          expect(screen.getByText('Esta lista ya no existe')).toBeTruthy();
+          await fireEvent.press(screen.getByText('Volver a las listas'));
+          expect(screen.getByText('Nueva lista')).toBeTruthy();
+          expect(screen.queryByLabelText('Supermercado, 2 pendientes')).toBeNull();
+          expect(screen.getByLabelText('Verdulería, al día')).toBeTruthy();
+        });
+
+        describe('cambios que el servidor rechaza', () => {
+          const denied = () => Promise.reject(new Error('permission-denied'));
+
+          beforeEach(() => {
+            jest.spyOn(console, 'warn').mockImplementation(() => {});
+          });
+
+          it('un ítem nuevo rechazado queda marcado, con "Sin guardar" y el aviso; "Reintentar" lo envía con el mismo id', async () => {
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            expect(screen.queryByText('Sin guardar')).toBeNull();
+            (addItem as jest.Mock).mockReturnValueOnce({ id: 'mermelada', saved: denied() });
+            await fireEvent.changeText(screen.getByLabelText('Agregar ítem'), 'Mermelada');
+            await fireEvent.press(screen.getByLabelText('Agregar a la lista'));
+            expect(await screen.findByText('No pudimos guardar 1 cambio')).toBeTruthy();
+            expect(screen.getByText('Sin guardar')).toBeTruthy();
+            expect(screen.getByText('Mermelada')).toBeTruthy();
+            expect(screen.getByText('No se guardó: ítem nuevo')).toBeTruthy();
+            await fireEvent.press(screen.getByText('Reintentar'));
+            expect(addItem).toHaveBeenLastCalledWith('h1', 'u1', 'l1', 'Mermelada', 'mermelada');
+            await waitFor(() => expect(screen.queryByText('Sin guardar')).toBeNull());
+            expect(screen.queryByText('No pudimos guardar 1 cambio')).toBeNull();
+          });
+
+          it('una edición rechazada muestra el valor que se quiso guardar y el anterior', async () => {
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            (updateItemFields as jest.Mock).mockReturnValueOnce(denied());
+            await fireEvent.press(screen.getByText('Leche'));
+            await fireEvent.press(screen.getByLabelText('Una más'));
+            await fireEvent.press(screen.getByText('Guardar'));
+            expect(await screen.findByText('No se guardó: cantidad (antes 2)')).toBeTruthy();
+            // El cambio no se oculta: la fila sigue mostrando ×3.
+            expect(screen.getByText('×3')).toBeTruthy();
+            expect(screen.getByText('No pudimos guardar 1 cambio')).toBeTruthy();
+          });
+
+          it('un tildado rechazado marca la fila; "Descartar" saca el aviso sin enviar nada', async () => {
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            (setItemDone as jest.Mock).mockReturnValueOnce(denied());
+            await fireEvent.press(screen.getAllByLabelText('Marcar como comprado')[0]);
+            expect(await screen.findByText('No se guardó: marcar como comprado')).toBeTruthy();
+            (setItemDone as jest.Mock).mockClear();
+            await fireEvent.press(screen.getByText('Descartar'));
+            expect(screen.queryByText('No pudimos guardar 1 cambio')).toBeNull();
+            expect(screen.queryByText('Sin guardar')).toBeNull();
+            expect(setItemDone).not.toHaveBeenCalled();
+          });
+
+          it('cuenta varios cambios y los reintenta todos', async () => {
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            (setItemDone as jest.Mock).mockReturnValueOnce(denied());
+            (addItem as jest.Mock).mockReturnValueOnce({ id: 'mermelada', saved: denied() });
+            await fireEvent.press(screen.getAllByLabelText('Marcar como comprado')[0]);
+            await fireEvent.changeText(screen.getByLabelText('Agregar ítem'), 'Mermelada');
+            await fireEvent.press(screen.getByLabelText('Agregar a la lista'));
+            expect(await screen.findByText('No pudimos guardar 2 cambios')).toBeTruthy();
+            (setItemDone as jest.Mock).mockClear();
+            await fireEvent.press(screen.getByText('Reintentar'));
+            expect(setItemDone).toHaveBeenCalledWith('h1', 'u1', 'i2', true);
+            expect(addItem).toHaveBeenLastCalledWith('h1', 'u1', 'l1', 'Mermelada', 'mermelada');
+          });
+
+          it('un ítem que el servidor no tiene todavía no se puede tildar ni abrir', async () => {
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            (addItem as jest.Mock).mockReturnValueOnce({ id: 'mermelada', saved: denied() });
+            await fireEvent.changeText(screen.getByLabelText('Agregar ítem'), 'Mermelada');
+            await fireEvent.press(screen.getByLabelText('Agregar a la lista'));
+            await screen.findByText('No se guardó: ítem nuevo');
+            (setItemDone as jest.Mock).mockClear();
+            await fireEvent.press(screen.getAllByLabelText('Marcar como comprado')[0]);
+            await fireEvent.press(screen.getByText('Mermelada'));
+            expect(setItemDone).not.toHaveBeenCalled();
+            expect(screen.queryByText('Detalle del ítem')).toBeNull();
+          });
+
+          it('un renombrado rechazado avisa en la lista y se puede reintentar', async () => {
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            (renameList as jest.Mock).mockReturnValueOnce(denied());
+            await fireEvent.press(screen.getByLabelText('Menú de la lista'));
+            await fireEvent.press(screen.getByText('Renombrar'));
+            await fireEvent.changeText(screen.getByLabelText('Nuevo nombre'), 'Mercado');
+            await fireEvent.press(screen.getByText('Guardar'));
+            expect(await screen.findByText(/No se guardó el nombre «Mercado»/)).toBeTruthy();
+            expect(screen.getByText('Sin guardar')).toBeTruthy();
+            await fireEvent.press(screen.getByText('Reintentar'));
+            expect(renameList).toHaveBeenLastCalledWith('h1', 'l1', 'Mercado');
+          });
+
+          it('una eliminación rechazada avisa en Inicio y se puede reintentar', async () => {
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            (setListDeleted as jest.Mock).mockReturnValueOnce(denied());
+            await fireEvent.press(screen.getByLabelText('Menú de la lista'));
+            await fireEvent.press(screen.getByText('Eliminar lista'));
+            await fireEvent.press(screen.getAllByText('Eliminar lista')[1]);
+            expect(await screen.findByText(/No se eliminó «Supermercado»/)).toBeTruthy();
+            await fireEvent.press(screen.getByText('Reintentar'));
+            expect(setListDeleted).toHaveBeenLastCalledWith('h1', 'u1', 'l1');
+          });
         });
       });
 

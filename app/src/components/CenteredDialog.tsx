@@ -4,12 +4,13 @@ import { colors, fonts, fontSizes, motion, radii } from '../theme';
 import { Icon, IconName } from './Icon';
 import { useAnimatedPresence } from './useAnimatedPresence';
 
-type Tone = 'amber' | 'danger';
+type Tone = 'amber' | 'danger' | 'neutral';
 
 type Props = {
   visible: boolean;
   title: string;
-  message: string;
+  /** Texto, o texto con partes en negrita (`<Text style={...}>`) como "10 ítems" en `36`. */
+  message: React.ReactNode;
   /** Ícono en círculo; si el aviso lleva otra cosa arriba (p. ej. un avatar) se pasa `leading`. */
   icon?: IconName;
   leading?: React.ReactNode;
@@ -24,6 +25,7 @@ type Props = {
 const toneColors = {
   amber: { background: colors.amberSoft, icon: colors.amberText },
   danger: { background: colors.dangerSoft, icon: colors.danger },
+  neutral: { background: colors.neutralSoft, icon: colors.neutralText },
 } as const;
 
 /** Aviso centrado: velo, ícono en círculo, título, texto y botones. Aparece con leve escala + fade. */

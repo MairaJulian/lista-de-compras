@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
+import { clearFailures } from './failureStore';
 import { watchHouseholdData, type HouseholdData } from './listSource';
 
 // Listas, ítems y miembros del hogar real fuera de las pantallas, para que Inicio, Lista y el
@@ -41,6 +42,7 @@ export function startListData(householdId: string): () => void {
     stopWatching?.();
     stopWatching = undefined;
     watchedId = undefined;
+    clearFailures();
     setState(idle);
   };
 }
@@ -62,21 +64,11 @@ export function useListData(): ListDataState {
   );
 }
 
-/**
- * Una escritura que Firestore rechazó (las reglas, no la falta de conexión: sin conexión la promesa
- * queda pendiente). Firestore deshace el cambio en el celular. Por ahora solo se deja el aviso en el
- * registro; mostrarlo y reintentar es el PR 6 de la Etapa 4 ("Error al guardar").
- */
-export function trackWrite(saved: Promise<unknown>, what: string) {
-  saved.catch((error: unknown) => {
-    console.warn(`No se pudo guardar (${what}):`, error);
-  });
-}
-
 /** Vuelve a "sin leer" (para los tests). */
 export function resetListData() {
   stopWatching?.();
   stopWatching = undefined;
   watchedId = undefined;
+  clearFailures();
   setState(idle);
 }

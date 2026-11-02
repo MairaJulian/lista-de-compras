@@ -17,6 +17,7 @@ const glyphs = {
   wrench: 'wrench-outline',
   cloudCheck: 'cloud-check-outline',
   cloudOff: 'cloud-off-outline',
+  cloudAlert: 'cloud-alert-outline',
   clock: 'clock-outline',
   trash: 'trash-can-outline',
   list: 'format-list-bulleted',

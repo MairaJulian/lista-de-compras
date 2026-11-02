@@ -6,10 +6,12 @@ import {
   cleanListName,
   countPending,
   countUnsynced,
+  deleteList,
   formatQuantity,
   markSynced,
   removeDone,
   removeItem,
+  renameList,
   restoreItem,
   sortLists,
   splitItems,
@@ -304,5 +306,28 @@ describe('addList', () => {
 
   it('ignora un nombre vacío', () => {
     expect(addList(lists, '  ', 'green', 'n1')).toBe(lists);
+  });
+});
+
+describe('renameList y deleteList', () => {
+  const lists = [
+    { id: 'a', name: 'Súper', tone: 'green' as const, icon: 'cart' as const },
+    { id: 'b', name: 'Verdulería', tone: 'amber' as const, icon: 'cart' as const },
+  ];
+
+  it('renombra solo esa lista, con el nombre recortado', () => {
+    const result = renameList(lists, 'a', '  Mercado ');
+    expect(result.map((l) => l.name)).toEqual(['Mercado', 'Verdulería']);
+    expect(result[0]).toMatchObject({ id: 'a', tone: 'green' });
+  });
+
+  it('un nombre vacío no cambia nada', () => {
+    expect(renameList(lists, 'a', '   ')).toBe(lists);
+  });
+
+  it('eliminar marca la lista y deja las demás', () => {
+    const result = deleteList(lists, 'b');
+    expect(result.map((l) => l.deleted)).toEqual([undefined, true]);
+    expect(lists[1].name).toBe('Verdulería');
   });
 });

@@ -161,15 +161,15 @@ Recordatorios para más adelante:
 
 - [x] PR 1 · Esquema y reglas de seguridad de listas e ítems (rama `etapa-4/01-reglas-listas-items`)
 - [x] Maira publica las reglas (`firebase deploy --only firestore:rules --project changuito-31ec1`, desde `firebase/`)
-- [x] PR 2 · Inicio con listas reales y crear lista
-- [x] PR 3 · Pantalla Lista: agregar, tildar y comprados
-- [x] PR 4 · Detalle del ítem: editar y eliminar
-- [ ] PR 5 · Menú de lista: renombrar, eliminar y "lista eliminada"
-- [ ] PR 6 · Error al guardar
+- [x] PR 2 · Inicio con listas reales y crear lista (mergeado, PR #29)
+- [x] PR 3 · Pantalla Lista: agregar, tildar y comprados (mergeado, PR #29)
+- [x] PR 4 · Detalle del ítem: editar y eliminar (mergeado, PR #29)
+- [x] PR 5 · Menú de lista: renombrar, eliminar y "lista eliminada" (hecho junto con el PR 6, rama `etapa-4/03-menu-errores`)
+- [x] PR 6 · Error al guardar (hecho junto con el PR 5, rama `etapa-4/03-menu-errores`)
 
 ### Los PR 2, 3 y 4 se hicieron juntos
 
-Una sola PR, rama `etapa-4/02-uso-diario`, porque comparten la misma capa de datos (una suscripción por hogar con listas, ítems y miembros) y separarlos habría dejado pantallas a medias. Quedan tildados con el código hecho y los tests pasando; **falta que Maira los pruebe en el celular** (la secuencia de prueba, pasos 1 a 5). Los PR 5 y 6 van en una segunda PR.
+Una sola PR, rama `etapa-4/02-uso-diario` (mergeada, #29), porque comparten la misma capa de datos (una suscripción por hogar con listas, ítems y miembros) y separarlos habría dejado pantallas a medias. **Falta que Maira los pruebe en el celular** (la secuencia de prueba, pasos 1 a 5).
 
 Qué se decidió al hacerlos (para no re-descubrirlo):
 
@@ -182,3 +182,37 @@ Qué se decidió al hacerlos (para no re-descubrirlo):
 - **Tocar una tarjeta** abre la pantalla Lista real (ya no queda contenido de ejemplo en la sesión real).
 - **Listas eliminadas:** la suscripción las trae (para el aviso `38` del PR 5) pero Inicio y la pantalla Lista las ignoran, y sus ítems no cuentan.
 - Los tests de pantallas reales están en `src/navigation/navigation.test.tsx` (con `listSource` simulado en `jest.setup.tsx`); la capa de Firestore se prueba en `listSource.test.ts`.
+
+### Los PR 5 y 6 se hicieron juntos
+
+Una sola PR, rama `etapa-4/03-menu-errores`, porque el error de renombrar, eliminar o crear una lista es parte de "Error al guardar" y comparten el mismo registro de fallos. Código hecho y tests pasando; **falta que Maira los pruebe en el celular** (secuencia de prueba, pasos 6 a 9).
+
+#### Prueba real: cómo rechaza Firestore una escritura (PR 6, punto 1)
+
+Script: `firebase/experimentos/rechazo-escritura.mjs` (no corre en CI; instrucciones en el encabezado). Usa el SDK web de Firestore contra el emulador **con las reglas reales** (`firestore.rules`) y un usuario autenticado que hace escrituras que las reglas prohíben. Lo que se vio:
+
+1. **Con conexión, el rechazo llega en ~100 ms** como promesa rechazada con `code: 'permission-denied'`, tanto al crear (`setDoc`) como al editar (`updateDoc`).
+2. **Mientras tanto la lectura en tiempo real muestra el cambio** como pendiente (`hasPendingWrites`) y, al llegar el rechazo, **lo deshace sola y sin ningún aviso**: el ítem rechazado desaparece (o vuelve al valor anterior) y no hay evento de error en `onSnapshot`. Por eso la app tiene que guardar por su cuenta qué se intentó.
+3. **Cada escritura se rechaza por separado**: con dos seguidas, la primera rechazada y la segunda válida, la segunda se confirma.
+4. **Sin conexión la promesa no se resuelve ni se rechaza** (pasó 1,5 s apagada la red y ninguna terminó). Al volver la conexión se envían: la válida se confirma y **la inválida se rechaza recién ahí**. O sea que un rechazo puede llegar mucho después de hacer el cambio, con la pantalla ya cerrada.
+5. **Editar un documento que el servidor no tiene** (por ejemplo, tildar un ítem cuya creación se rechazó) también se rechaza con `permission-denied`, no con `not-found`.
+6. El mensaje del error trae la línea de la regla que falló (`evaluation error at L378…`): sirve para depurar, no para mostrarlo.
+
+Qué no está comprobado: el script usa el SDK web. La app usa el SDK nativo de Android a través de `@react-native-firebase/firestore`. Es el mismo motor y por lo que se lee en el código de la librería (`UniversalFirebaseFirestoreException`) el error llega como `firestore/permission-denied`, pero **no se probó en el celular**. Por eso la app **no mira el código del error**: cualquier rechazo de la promesa cuenta como "no se guardó" (Firestore reintenta solo los errores pasajeros, así que la promesa solo se rechaza cuando el servidor dijo que no).
+
+#### Qué se decidió al hacerlos
+
+- **Registro de fallos** (`failureStore.ts`, lógica pura en `failureLogic.ts`): cada escritura se vigila con `trackWrite(promesa, descripción)`. Al rechazarse guarda qué era, sobre qué y cómo estaba antes. **Vive en memoria: si se cierra la app, se pierde** (como pide el PR 6). También se vacía al dejar de leer el hogar, y un rechazo que llega después de eso se ignora.
+- **Dónde se ven los fallos:** los de ítems y renombrar, en la lista; los de crear y eliminar una lista, en Inicio (la persona ya salió de la lista). Todos con el mismo aviso rojo "No pudimos guardar N cambios" y Reintentar / Descartar. Las filas de ítems se marcan con "!" y el motivo; los fallos de listas se cuentan en el texto del aviso ("No se creó «Panadería»").
+- **Reintentar** saca los fallos de la lista y los vuelve a enviar en orden. Un ítem nuevo se reenvía con **el mismo id** (no puede quedar duplicado). Si el servidor lo rechaza de nuevo, vuelve a aparecer. Con la red caída el reintento queda pendiente como cualquier escritura y el aviso desaparece mientras tanto (el cambio se ve aplicado en el celular).
+- **Una fila de un ítem que el servidor no tiene** (el nuevo rechazado, o un "deshacer" rechazado) aparece arriba de su sección y no se puede tildar ni abrir. Una edición rechazada se muestra con el valor que se quiso guardar. Un tildado rechazado queda en la sección donde el servidor tiene el ítem, con el motivo ("No se guardó: marcar como comprado").
+- **Pill "Sin guardar"**: aparece solo en la sesión real y solo con fallos. Los datos de ejemplo siguen con Sincronizado / Sin conexión.
+- **Menú de lista** (`34`), **Renombrar** (`35`) y **Eliminar** (`36`) como en el diseño. Eliminar es una sola escritura (`eliminada`, `eliminadaPor`, `eliminadaEn`); renombrar toca solo `nombre` y no escribe si el nombre queda igual. El número de ítems del menú y del aviso cuenta pendientes y comprados no borrados (y, si hay, los que no se guardaron).
+- **Lista eliminada por otra persona** (`38`): aviso sin forma de cerrarlo (el velo y el botón atrás no lo cierran), con el nombre de quien la eliminó sacado de `miembros`. Quien confirma "Eliminar lista" vuelve a Inicio y no lo ve. Al aparecer, se descartan los cambios fallidos de esa lista. El ícono del aviso es neutro (gris), como en el diseño; para eso `CenteredDialog` ganó el tono `neutral` y un `message` que admite negrita.
+- Con los datos de ejemplo del menú DEV el ⋯, renombrar y eliminar funcionan en memoria; el aviso `38` no tiene disparador ahí (el diseño tampoco lo conecta).
+
+#### Piezas no diseñadas (mencionar en la PR)
+
+- Errores de **crear, renombrar y eliminar una lista**: mismo aviso rojo de `37`, sin pantalla propia.
+- El aviso rojo usa el botón **Descartar** con el estilo de borde gris + texto rojo del botón "Eliminar" del detalle; en `37` el borde es rosado. No se comparó píxel a píxel.
+- Descartar un ítem nuevo rechazado lo hace desaparecer; no hay confirmación.

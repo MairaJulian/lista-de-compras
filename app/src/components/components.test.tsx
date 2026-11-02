@@ -10,6 +10,7 @@ import {
   ListCard,
   QuantityStepper,
   QuickAddField,
+  SaveErrorNotice,
   StatusPill,
   SwatchPicker,
   TextField,
@@ -53,6 +54,12 @@ describe('StatusPill', () => {
     expect(screen.getByText('Sincronizado')).toBeTruthy();
     await rerender(<StatusPill online={false} />);
     expect(screen.getByText('Sin conexión')).toBeTruthy();
+  });
+
+  it('"Sin guardar" gana sobre el estado de la conexión', async () => {
+    await render(<StatusPill online unsaved />);
+    expect(screen.getByText('Sin guardar')).toBeTruthy();
+    expect(screen.queryByText('Sincronizado')).toBeNull();
   });
 
   it('llama a onPress', async () => {
@@ -112,6 +119,37 @@ describe('ItemRow', () => {
     expect(screen.getByLabelText('Sin sincronizar')).toBeTruthy();
     await rerender(<ItemRow name="Pilas AA" addedBy={addedBy} />);
     expect(screen.queryByLabelText('Sin sincronizar')).toBeNull();
+  });
+});
+
+describe('ItemRow con un cambio sin guardar', () => {
+  const addedBy = { name: 'Vos', tone: 'green' } as const;
+
+  it('muestra el motivo y un "!" en vez del avatar', async () => {
+    await render(<ItemRow name="Mermelada" error="No se guardó: ítem nuevo" addedBy={addedBy} />);
+    expect(screen.getByText('No se guardó: ítem nuevo')).toBeTruthy();
+    expect(screen.getByLabelText('No se guardó')).toBeTruthy();
+    expect(screen.queryByLabelText('Vos')).toBeNull();
+  });
+});
+
+describe('SaveErrorNotice', () => {
+  it('muestra el aviso con Reintentar y Descartar', async () => {
+    const onRetry = jest.fn();
+    const onDiscard = jest.fn();
+    await render(
+      <SaveErrorNotice
+        title="No pudimos guardar 2 cambios"
+        message="Siguen en tu celular, marcados abajo. Probá de nuevo."
+        onRetry={onRetry}
+        onDiscard={onDiscard}
+      />,
+    );
+    expect(screen.getByText('No pudimos guardar 2 cambios')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Reintentar'));
+    await fireEvent.press(screen.getByText('Descartar'));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(onDiscard).toHaveBeenCalledTimes(1);
   });
 });
 

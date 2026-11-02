@@ -93,15 +93,20 @@ export function watchHouseholdData(
 // solo para enterarse de un rechazo. Cada cambio toca únicamente sus campos ("gana el último, por
 // campo"), nunca reescribe el documento.
 
-/** Crea una lista. Devuelve su id (lo genera el celular) y la promesa de la escritura. */
+/**
+ * Crea una lista. Devuelve su id (lo genera el celular) y la promesa de la escritura. Al reintentar
+ * una creación rechazada se pasa el mismo `id`.
+ */
 export function createList(
   householdId: string,
   uid: string,
   name: string,
   tone: ListTone,
+  id?: string,
 ): { id: string; saved: Promise<void> } {
   const db = getFirestore();
-  const ref = doc(collection(db, 'hogares', householdId, 'listas'));
+  const lists = collection(db, 'hogares', householdId, 'listas');
+  const ref = id === undefined ? doc(lists) : doc(lists, id);
   const saved = setDoc(ref, {
     nombre: name,
     color: tone,
@@ -112,18 +117,39 @@ export function createList(
   return { id: ref.id, saved };
 }
 
+/** Renombra la lista: toca solo `nombre`. */
+export function renameList(householdId: string, listId: string, name: string) {
+  return updateDoc(doc(getFirestore(), 'hogares', householdId, 'listas', listId), {
+    nombre: name,
+  });
+}
+
+/**
+ * Elimina la lista con una sola escritura: la marca `eliminada`. Sus ítems no se tocan (la app los
+ * ignora y la purga de la Etapa 6 los limpia).
+ */
+export function setListDeleted(householdId: string, uid: string, listId: string) {
+  return updateDoc(doc(getFirestore(), 'hogares', householdId, 'listas', listId), {
+    eliminada: true,
+    eliminadaPor: uid,
+    eliminadaEn: serverTimestamp(),
+  });
+}
+
 /**
  * Agrega un ítem. `comprado` y `borrado` se escriben siempre en `false`: sin `borrado` la consulta de
- * ítems no borrados no lo encontraría.
+ * ítems no borrados no lo encontraría. Al reintentar un ítem rechazado se pasa el mismo `id`.
  */
 export function addItem(
   householdId: string,
   uid: string,
   listId: string,
   name: string,
+  id?: string,
 ): { id: string; saved: Promise<void> } {
   const db = getFirestore();
-  const ref = doc(collection(db, 'hogares', householdId, 'items'));
+  const items = collection(db, 'hogares', householdId, 'items');
+  const ref = id === undefined ? doc(items) : doc(items, id);
   const saved = setDoc(ref, {
     listaId: listId,
     nombre: name,
