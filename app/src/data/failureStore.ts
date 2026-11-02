@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
-import { scopeOf, type FailedDescriptor, type FailedWrite } from './failureLogic';
+import { pendingDocOf, scopeOf, type FailedDescriptor, type FailedWrite } from './failureLogic';
+import { isActiveMember } from './householdSource';
 import {
   addItem,
   createList,
@@ -10,6 +11,7 @@ import {
   setListDeleted,
   updateItemFields,
 } from './listSource';
+import { clearPending, trackPending } from './pendingStore';
 
 // Escrituras que el servidor rechazó (las reglas), guardadas por la app: Firestore deshace el cambio en
 // el celular y no avisa en ninguna lectura, así que sin esto se perdería sin que nadie se entere. Viven
@@ -26,14 +28,28 @@ function setFailures(next: FailedWrite[]) {
   listeners.forEach((listener) => listener());
 }
 
+const isPermissionDenied = (error: unknown) =>
+  String((error as { code?: unknown } | null)?.code ?? '').endsWith('permission-denied');
+
 /**
  * Vigila una escritura. La promesa solo se rechaza cuando el servidor dice que no (con conexión, en
  * ~100 ms; sin conexión queda pendiente y el rechazo llega al volver, aunque la pantalla ya no esté):
- * ahí se guarda el fallo. Una escritura sin conexión no es un fallo, se envía sola.
+ * ahí se guarda el fallo. Una escritura sin conexión no es un fallo, se envía sola. Mientras espera
+ * al servidor cuenta como "cambio sin sincronizar" (`pendingStore`).
+ *
+ * Excepción: si el rechazo es de permisos y la persona ya no es miembro activa del hogar (la
+ * quitaron mientras estaba sin conexión), no es un error de guardado: el cambio se descarta y la app
+ * muestra "Ya no sos parte de…" (lo dispara la lectura de la membresía, ver `householdStore`).
  */
 export function trackWrite(saved: Promise<unknown>, descriptor: FailedDescriptor) {
   const startedIn = generation;
-  saved.then(undefined, (error: unknown) => {
+  trackPending(saved, pendingDocOf(descriptor));
+  saved.then(undefined, async (error: unknown) => {
+    if (startedIn !== generation) return;
+    if (isPermissionDenied(error) && (await isActiveMember(descriptor.householdId)) === false) {
+      console.warn(`Cambio descartado, ya no sos parte del hogar (${descriptor.kind}).`);
+      return;
+    }
     if (startedIn !== generation) return;
     console.warn(`No se pudo guardar (${descriptor.kind}):`, error);
     setFailures([...failures, { ...descriptor, id: nextId++ }]);
@@ -95,5 +111,6 @@ export function useFailures(scope: string): FailedWrite[] {
 /** Sin cambios fallidos (al dejar de leer el hogar, y en los tests). */
 export function clearFailures() {
   generation++;
+  clearPending();
   if (failures.length > 0) setFailures([]);
 }

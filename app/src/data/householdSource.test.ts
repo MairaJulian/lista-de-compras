@@ -3,6 +3,7 @@ import { waitFor } from '@testing-library/react-native';
 import {
   createHousehold,
   forgetHousehold,
+  isActiveMember,
   leaveCurrentHousehold,
   removeMemberFromHousehold,
   renameHousehold,
@@ -13,6 +14,7 @@ jest.unmock('./householdSource');
 
 const mockGet = jest.fn();
 const mockGetFromCache = jest.fn();
+const mockGetFromServer = jest.fn();
 const mockSet = jest.fn();
 const mockUpdate = jest.fn();
 const mockRunTransaction = jest.fn();
@@ -26,6 +28,7 @@ jest.mock('@react-native-firebase/auth', () => ({
 jest.mock('@react-native-firebase/firestore', () => ({
   getFirestore: jest.fn(() => ({})),
   getDocFromCache: (...args: unknown[]) => mockGetFromCache(...args),
+  getDocFromServer: (...args: unknown[]) => mockGetFromServer(...args),
   collection: (_db: unknown, ...segments: string[]) => ({
     collectionPath: segments.join('/'),
     path: segments.join('/'),
@@ -469,5 +472,38 @@ describe('watchHousehold', () => {
     mockCurrentUser = { uid: 'u1' };
     watchHousehold('h1', jest.fn(), jest.fn(), jest.fn())();
     expect(mockStop).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('isActiveMember', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCurrentUser = { uid: 'u1' };
+  });
+
+  it('lee su membresía del servidor, no de la copia local', async () => {
+    mockGetFromServer.mockResolvedValue({ exists: () => true, data: () => ({ estado: 'activo' }) });
+    await expect(isActiveMember('h1')).resolves.toBe(true);
+    expect(mockGetFromServer).toHaveBeenCalledWith({ path: 'hogares/h1/miembros/u1', id: 'u1' });
+  });
+
+  it.each(['quitado', 'salio'])('con estado %s ya no es miembro activo', async (estado) => {
+    mockGetFromServer.mockResolvedValue({ exists: () => true, data: () => ({ estado }) });
+    await expect(isActiveMember('h1')).resolves.toBe(false);
+  });
+
+  it('sin documento tampoco es miembro activo', async () => {
+    mockGetFromServer.mockResolvedValue({ exists: () => false, data: () => undefined });
+    await expect(isActiveMember('h1')).resolves.toBe(false);
+  });
+
+  it('si no se puede leer (sin conexión) no se sabe', async () => {
+    mockGetFromServer.mockRejectedValue(new Error('unavailable'));
+    await expect(isActiveMember('h1')).resolves.toBeUndefined();
+  });
+
+  it('sin sesión no se sabe', async () => {
+    mockCurrentUser = null;
+    await expect(isActiveMember('h1')).resolves.toBeUndefined();
   });
 });

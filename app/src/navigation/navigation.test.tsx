@@ -25,6 +25,7 @@ import { resetSession } from '../auth/sessionStore';
 import {
   createHousehold,
   forgetHousehold,
+  isActiveMember,
   leaveCurrentHousehold,
   removeMemberFromHousehold,
   renameHousehold,
@@ -92,6 +93,9 @@ function firebaseSession(initial: AuthState) {
 }
 
 /** Qué lee Firestore de listas, ítems y miembros del hogar real. */
+/** Lecturas confirmadas por el servidor y sin cambios pendientes. */
+const onlineSync = { fromCache: false, pendingItemIds: [], pendingListIds: [] };
+
 function readsListData(data: HouseholdData) {
   (watchHouseholdData as jest.Mock).mockReset().mockImplementation((_id, onData) => {
     onData(data);
@@ -115,7 +119,7 @@ describe('navegación', () => {
     ].forEach((write) => (write as jest.Mock).mockClear());
     (createHousehold as jest.Mock).mockReset();
     // Por defecto el hogar real no tiene listas ni ítems.
-    readsListData({ lists: [], items: [], members: [] });
+    readsListData({ lists: [], items: [], members: [], sync: onlineSync });
     (watchHousehold as jest.Mock).mockReset().mockImplementation(() => () => {});
     // Por defecto: sesión de ejemplo (con hogar), como en desarrollo.
     resetSession({ status: 'demo' });
@@ -487,6 +491,7 @@ describe('navegación', () => {
             { ...row('i5', 'Fantasma', 'u1', 7), listId: 'l3' },
           ],
           members: [me, lucia, diego],
+          sync: onlineSync,
         };
 
         beforeEach(() => {
@@ -515,8 +520,57 @@ describe('navegación', () => {
           expect(screen.getAllByLabelText('Lucía')).toHaveLength(2);
           expect(screen.getAllByLabelText('Diego')).toHaveLength(1);
           expect(screen.queryByText('Fantasma')).toBeNull();
-          // Todavía no hay indicador de conexión: no puede decir un "Sincronizado" que sea falso.
-          expect(screen.queryByText('Sincronizado')).toBeNull();
+          // Las lecturas vienen confirmadas por el servidor y no hay cambios pendientes.
+          expect(screen.getByText('Sincronizado')).toBeTruthy();
+        });
+
+        describe('sin conexión', () => {
+          const offline = (pendingItemIds: string[]) =>
+            readsListData({
+              ...data,
+              items: data.items.map((item) => ({
+                ...item,
+                pendingSync: pendingItemIds.includes(item.id),
+              })),
+              sync: { fromCache: true, pendingItemIds, pendingListIds: [] },
+            });
+
+          it('muestra Sin conexión, el aviso con la cuenta y el reloj solo en los pendientes', async () => {
+            offline(['i1', 'i2']);
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            expect(screen.getByText('Sin conexión')).toBeTruthy();
+            expect(screen.queryByText('Sincronizado')).toBeNull();
+            expect(screen.getByText(/^2 cambios sin sincronizar. Se enviarán solos/)).toBeTruthy();
+            expect(screen.getAllByLabelText('Sin sincronizar')).toHaveLength(2);
+          });
+
+          it('con un solo cambio usa el singular', async () => {
+            offline(['i2']);
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            expect(screen.getByText(/^1 cambio sin sincronizar. Se enviará solo/)).toBeTruthy();
+          });
+
+          it('la pill no se puede tocar: la conexión no se simula en la sesión real', async () => {
+            offline(['i2']);
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            await fireEvent.press(screen.getByText('Sin conexión'));
+            expect(screen.getByText('Sin conexión')).toBeTruthy();
+            expect(screen.queryByText('Sincronizado')).toBeNull();
+          });
+
+          it('al arrancar, antes de saber si hay conexión, no muestra ningún indicador', async () => {
+            readsListData({
+              ...data,
+              sync: { fromCache: true, pendingItemIds: [], pendingListIds: [] },
+            });
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            expect(screen.queryByText('Sincronizado')).toBeNull();
+            expect(screen.queryByText('Sin conexión')).toBeNull();
+          });
         });
 
         it('agrega un ítem con el nombre limpio y deja el campo listo; uno vacío no agrega', async () => {
@@ -785,7 +839,7 @@ describe('navegación', () => {
         firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
         await renderRouter(routes);
         expect(screen.getByText('No pudimos cargar tus datos')).toBeTruthy();
-        readsListData({ lists: [], items: [], members: [] });
+        readsListData({ lists: [], items: [], members: [], sync: onlineSync });
         await fireEvent.press(screen.getByText('Reintentar'));
         expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
       });
@@ -992,6 +1046,42 @@ describe('navegación', () => {
             expect(screen.queryByText('Ya no sos parte de Casa real')).toBeNull(),
           );
           expect(router.canGoBack()).toBe(false);
+        });
+
+        it('te quitaron sin conexión: el cambio rechazado no es un error de guardado, es el aviso', async () => {
+          readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
+          readsListData({
+            lists: [{ id: 'l1', name: 'Supermercado', tone: 'green', icon: 'list', createdAt: 1 }],
+            items: [],
+            members: [luciaMe],
+            sync: { fromCache: true, pendingItemIds: [], pendingListIds: [] },
+          });
+          (forgetHousehold as jest.Mock).mockImplementation(async () => {
+            await emitAuth(signedInState(account, { hogarActualId: null }));
+          });
+          // Al volver la conexión el servidor rechaza lo que se hizo sin señal y ya no sos miembro.
+          let reject: (error: Error) => void = () => {};
+          (addItem as jest.Mock).mockReturnValueOnce({
+            id: 'item-nuevo',
+            saved: new Promise((_, no) => (reject = no)),
+          });
+          (isActiveMember as jest.Mock).mockResolvedValueOnce(false);
+          jest.spyOn(console, 'warn').mockImplementation(() => {});
+          firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+          await renderRouter(routes);
+          await fireEvent.press(screen.getByText('Supermercado'));
+          await fireEvent.changeText(screen.getByLabelText('Agregar ítem'), 'Yerba');
+          await fireEvent.press(screen.getByLabelText('Agregar a la lista'));
+
+          await act(async () =>
+            reject(Object.assign(new Error('denied'), { code: 'firestore/permission-denied' })),
+          );
+          expect(screen.queryByText(/No pudimos guardar/)).toBeNull();
+          await act(async () => removed('quitado', 'Casa real'));
+
+          expect(await screen.findByText('Ya no sos parte de Casa real')).toBeTruthy();
+          expect(screen.queryByText(/No pudimos guardar/)).toBeNull();
+          expect(screen.queryByText('Sin guardar')).toBeNull();
         });
 
         it('si te quitaron con la app cerrada, al abrirla se muestra el aviso en vez de Inicio', async () => {

@@ -24,6 +24,7 @@ import {
   useRemovedList,
 } from '../data/hooks';
 import { formatQuantity, MAX_ITEM_NAME } from '../data/listLogic';
+import { offlineNotice } from '../data/syncLogic';
 import { ItemDetailSheet } from '../sheets/ItemDetailSheet';
 import { ListMenuSheet } from '../sheets/ListMenuSheet';
 import { RenameListSheet } from '../sheets/RenameListSheet';
@@ -43,6 +44,7 @@ export function ListaScreen({ listId, onBack }: Props) {
     online,
     showConnection,
     unsyncedCount,
+    showClocks,
     failures,
     toggle,
     add,
@@ -128,7 +130,7 @@ export function ListaScreen({ listId, onBack }: Props) {
         name={item.name}
         quantity={formatQuantity(item)}
         done={item.done}
-        pendingSync={item.pendingSync}
+        pendingSync={item.pendingSync && showClocks}
         error={error}
         addedBy={author}
         // Un ítem que el servidor no tiene todavía no se puede tildar ni editar.
@@ -158,8 +160,10 @@ export function ListaScreen({ listId, onBack }: Props) {
           </Text>
           <Text style={styles.household}>{household.name}</Text>
         </View>
-        {showConnection && <StatusPill online={online} onPress={toggleOnline} />}
-        {!showConnection && unsaved && <StatusPill online unsaved />}
+        {/* Sin guardar (el servidor rechazó algo) gana sobre Sin conexión, y esta sobre Sincronizado. */}
+        {(showConnection || unsaved) && (
+          <StatusPill online={online} unsaved={unsaved} onPress={toggleOnline} />
+        )}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Menú de la lista"
@@ -180,9 +184,9 @@ export function ListaScreen({ listId, onBack }: Props) {
         </View>
       )}
 
-      {showConnection && !online && (
+      {showConnection && !online && !unsaved && (
         <View style={styles.notice}>
-          <Text style={styles.noticeText}>{offlineMessage(unsyncedCount)}</Text>
+          <Text style={styles.noticeText}>{offlineNotice(unsyncedCount)}</Text>
         </View>
       )}
 
@@ -336,15 +340,6 @@ function leaveMessage(doneCount: number, listName: string) {
   return doneCount === 1
     ? `Se va a borrar el ítem comprado de ${listName}. Los pendientes se quedan.`
     : `Se van a borrar los ${doneCount} ítems comprados de ${listName}. Los pendientes se quedan.`;
-}
-
-function offlineMessage(unsyncedCount: number) {
-  if (unsyncedCount === 0) {
-    return 'Los cambios se guardan en tu celular y se sincronizan cuando vuelva la conexión.';
-  }
-  return unsyncedCount === 1
-    ? '1 cambio sin sincronizar. Se enviará solo cuando vuelva la conexión.'
-    : `${unsyncedCount} cambios sin sincronizar. Se enviarán solos cuando vuelva la conexión.`;
 }
 
 function SectionTitle({ label, count, muted }: { label: string; count: number; muted?: boolean }) {

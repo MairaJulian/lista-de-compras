@@ -19,6 +19,9 @@ jest.mock('./src/auth/sessionSource', () => ({
   signOutEverywhere: jest.fn(async () => {}),
 }));
 
+// La copia local de Firestore es nativa: en los tests no se configura.
+jest.mock('./src/data/firestoreConfig', () => ({ configureFirestore: jest.fn() }));
+
 // Lo mismo con el hogar: la lectura y la creación en Firestore las controla cada prueba (la
 // implementación real se prueba en `householdSource.test.ts`).
 jest.mock('./src/data/householdSource', () => ({
@@ -28,6 +31,7 @@ jest.mock('./src/data/householdSource', () => ({
   removeMemberFromHousehold: jest.fn(),
   leaveCurrentHousehold: jest.fn(),
   forgetHousehold: jest.fn(),
+  isActiveMember: jest.fn(() => Promise.resolve(true)),
 }));
 
 // Lo mismo con las invitaciones.
