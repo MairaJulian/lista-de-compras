@@ -7,7 +7,7 @@ App Android de lista de compras compartida para una familia (3 adultos). Nombre 
 1. `diseno/DISENO.md`: decisiones de producto, estilo, pantallas y flujos. Las imágenes de `diseno/pantallas/` son el diseño de referencia.
 2. `diseno/ESQUEMA-DATOS.md`: qué se guarda en Firestore, reglas de seguridad y sincronización.
 3. `diseno/PLAN-CONSTRUCCION.md`: etapas de construcción.
-4. El archivo de la etapa en curso. **Etapa actual: 4** → `diseno/ETAPA-4.md`. (Las Etapas 0 a 3 están cerradas; de la 3 queda pendiente solo el PR 7, la página puente, que es opcional y se hace al final.)
+4. El archivo de la etapa en curso. **Etapa actual: 5** → `diseno/ETAPA-5.md`. (Las Etapas 0 a 3 están cerradas; de la 3 queda pendiente solo el PR 7, la página puente, que es opcional y se hace al final.)
 
 `diseno/referencia-html/*.dc.html` sirve solo para copiar valores exactos (colores, tamaños, textos). No es código de la app.
 
@@ -55,3 +55,11 @@ Hay un celular real conectado por USB (depuración activada) y un emulador Pixel
 ## Requisito de build en Windows
 
 El build nativo necesita **CMake 3.31.6** del SDK de Android (el 3.22.1 por defecto falla con rutas de más de 260 caracteres). El config plugin `app/plugins/with-cmake-local-properties.js` escribe `android/local.properties` en cada prebuild; no lo borres ni lo reemplaces por `subst` o por mover el repo. Detalle en el README ("Rutas largas en Windows").
+
+## Proceso por etapa
+
+- Cuando Maira diga "seguí con la etapa actual" (o algo equivalente), leé el archivo de la etapa en curso, hacé todos los pasos pendientes y no esperes indicaciones intermedias. Una etapa = una PR, salvo que supere lo revisable (en ese caso frená y proponé cómo dividirla) o que cambie las reglas de Firestore.
+- Si una etapa cambia las reglas de Firestore, hacé de eso una PR aparte, con sus pruebas, y no publiques las reglas hasta que Maira lo pida. Cuando diga "publicá las reglas", ejecutá `npx firebase deploy --only firestore:rules --project changuito-31ec1` desde la carpeta `firebase/` con su sesión ya iniciada y confirmá que quedó publicado.
+- Antes de abrir la PR, verificá todo lo que se pueda con el emulador y `adb` (instalar, abrir, tocar, cortar la conexión, capturas y logs). En la PR contá qué resultó de verdad y qué no pudiste verificar. Lo que quede para Maira tiene que ser corto: solo lo que necesita ojos humanos, dos cuentas o el celular real.
+- Al terminar una etapa, dejá en la misma PR un borrador del archivo de la etapa siguiente, con `[DECIDIR]` en lo que dependa de una decisión de Maira. Si la etapa siguiente necesita pantallas que todavía no están diseñadas, decilo en la PR.
+- Nunca mergees ni pushees a `main`: eso lo hace Maira.
