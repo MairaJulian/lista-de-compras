@@ -6,6 +6,7 @@ import {
 } from '@react-native-google-signin/google-signin';
 
 import { GOOGLE_WEB_CLIENT_ID } from './config';
+import { setSigningIn } from './signingInStore';
 import { saveUserOnSignIn } from './userDocument';
 
 export type SignInResult =
@@ -28,8 +29,13 @@ export async function signInWithGoogle(): Promise<SignInResult> {
     const response = await GoogleSignin.signIn();
     if (response.type === 'cancelled') return { status: 'cancelled' };
 
+    // Ya eligió su cuenta: desde acá hasta que se abre la sesión se ve la pantalla de carga (`46`).
+    setSigningIn(true);
     const { idToken } = response.data;
-    if (!idToken) return { status: 'error' };
+    if (!idToken) {
+      setSigningIn(false);
+      return { status: 'error' };
+    }
 
     const credential = GoogleAuthProvider.credential(idToken);
     const { user } = await signInWithCredential(getAuth(), credential);
@@ -40,8 +46,10 @@ export async function signInWithGoogle(): Promise<SignInResult> {
       email: user.email ?? response.data.user.email,
       photo: user.photoURL ?? response.data.user.photo ?? null,
     });
+    // Si salió bien, `setSigningIn` lo apaga la pantalla raíz cuando la sesión ya está abierta.
     return { status: 'success' };
   } catch (error) {
+    setSigningIn(false);
     if (isErrorWithCode(error)) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) return { status: 'cancelled' };
       if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
