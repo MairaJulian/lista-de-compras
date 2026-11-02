@@ -9,12 +9,21 @@ import { watchHouseholdData, type HouseholdData } from './listSource';
 export type ListDataState =
   | { status: 'idle' }
   | { status: 'loading'; householdId: string }
-  | ({ status: 'ready'; householdId: string } & HouseholdData)
+  | ({
+      status: 'ready';
+      householdId: string;
+      /** Desde que se empezó a leer llegó al menos una lectura confirmada por el servidor. */
+      connectedOnce: boolean;
+      /** Cuándo empezó la lectura (milisegundos), para el tiempo de espera inicial del indicador. */
+      startedAt: number;
+    } & HouseholdData)
   | { status: 'error'; householdId: string };
 
 const idle: ListDataState = { status: 'idle' };
 let state: ListDataState = idle;
 let watchedId: string | undefined;
+let connectedOnce = false;
+let startedAt = Date.now();
 let stopWatching: (() => void) | undefined;
 const listeners = new Set<() => void>();
 
@@ -26,10 +35,16 @@ function setState(next: ListDataState) {
 function watch(householdId: string) {
   stopWatching?.();
   watchedId = householdId;
+  connectedOnce = false;
+  startedAt = Date.now();
   const current = () => watchedId === householdId;
   stopWatching = watchHouseholdData(
     householdId,
-    (data) => current() && setState({ status: 'ready', householdId, ...data }),
+    (data) => {
+      if (!current()) return;
+      connectedOnce = connectedOnce || !data.sync.fromCache;
+      setState({ status: 'ready', householdId, connectedOnce, startedAt, ...data });
+    },
     () => current() && setState({ status: 'error', householdId }),
   );
 }

@@ -56,6 +56,7 @@ import {
   updateItemFields,
 } from './listSource';
 import { retryListData, useListData } from './listStore';
+import { useSyncStatus } from './syncStatus';
 import type { Household, Invite, ListInfo, ListItem, ListSummary, Member } from './types';
 
 // Único punto de acceso a los datos para las pantallas. Hoy devuelve los datos de ejemplo;
@@ -543,10 +544,14 @@ export type ListContents = {
   pending: ListRow[];
   done: ListRow[];
   failures: FailureControls;
+  /** Con conexión (o, en la sesión real, sin saber todavía que falta). */
   online: boolean;
-  /** Falso en la sesión real: el indicador Sincronizado / Sin conexión es de la Etapa 5. */
+  /** Falso mientras recién arranca y no se sabe si hay conexión: el indicador no se muestra. */
   showConnection: boolean;
+  /** Documentos de la lista con cambios sin sincronizar (ítems y la propia lista). */
   unsyncedCount: number;
+  /** Si los ítems con cambios pendientes muestran el reloj (solo sin conexión). */
+  showClocks: boolean;
   toggle: (itemId: string) => void;
   add: (name: string) => void;
   update: (itemId: string, patch: ItemPatch) => void;
@@ -555,7 +560,8 @@ export type ListContents = {
   restore: (itemId: string) => void;
   /** Borra los comprados de la lista (al salir de ella). Solo con los datos de ejemplo hasta la Etapa 6. */
   removeDone: () => void;
-  toggleOnline: () => void;
+  /** Alterna la conexión simulada: solo con los datos de ejemplo (en la sesión real no hay). */
+  toggleOnline?: () => void;
 };
 
 /**
@@ -564,9 +570,10 @@ export type ListContents = {
  * servidor (sin conexión la escritura queda pendiente).
  */
 export function useListContents(listId: string): ListContents {
-  const { items: mockItems, online } = useMockStore();
+  const { items: mockItems, online: mockOnline } = useMockStore();
   const real = useIsRealSession();
   const data = useListData();
+  const sync = useSyncStatus(listId);
   const me = useCurrentMember();
   const householdId = data.status === 'ready' ? data.householdId : undefined;
   const realItems = data.status === 'ready' ? data.items : noItems;
@@ -704,16 +711,17 @@ export function useListContents(listId: string): ListContents {
     pending,
     done,
     failures,
-    online,
-    showConnection: !real,
-    unsyncedCount: real ? 0 : countUnsynced(listItems),
+    online: real ? sync.kind !== 'offline' : mockOnline,
+    showConnection: real ? sync.kind !== 'connecting' : true,
+    unsyncedCount: real ? sync.pendingCount : countUnsynced(listItems),
+    showClocks: real ? sync.kind === 'offline' : true,
     toggle,
     add,
     update,
     remove,
     restore,
     removeDone: clearDone,
-    toggleOnline,
+    toggleOnline: real ? undefined : toggleOnline,
   };
 }
 

@@ -8,6 +8,7 @@ import {
   trackWrite,
   useFailures,
 } from './failureStore';
+import { isActiveMember } from './householdSource';
 import {
   addItem,
   createList,
@@ -32,6 +33,7 @@ const denied = () =>
 beforeEach(() => {
   jest.spyOn(console, 'warn').mockImplementation(() => {});
   clearFailures();
+  (isActiveMember as jest.Mock).mockReset().mockResolvedValue(true);
   [
     addItem,
     createList,
@@ -78,6 +80,39 @@ describe('trackWrite', () => {
     expect(lista.result.current.map((f) => f.kind)).toEqual(['addItem']);
     expect(otra.result.current).toEqual([]);
     expect(inicio.result.current.map((f) => f.kind)).toEqual(['createList']);
+  });
+
+  it('si ya no sos miembro activo, el rechazo por permisos no es un error de guardado', async () => {
+    (isActiveMember as jest.Mock).mockResolvedValue(false);
+    const { result } = await renderHook(() => useFailures('l1'));
+    trackWrite(Promise.reject(denied()), adding);
+    await flush();
+    expect(isActiveMember).toHaveBeenCalledWith('h1');
+    expect(result.current).toEqual([]);
+  });
+
+  it('si sigue siendo miembro activo, el rechazo por permisos sí es un fallo', async () => {
+    (isActiveMember as jest.Mock).mockResolvedValue(true);
+    const { result } = await renderHook(() => useFailures('l1'));
+    trackWrite(Promise.reject(denied()), adding);
+    await flush();
+    expect(result.current).toHaveLength(1);
+  });
+
+  it('si no se pudo saber si sigue siendo miembro, se muestra el fallo', async () => {
+    (isActiveMember as jest.Mock).mockResolvedValue(undefined);
+    const { result } = await renderHook(() => useFailures('l1'));
+    trackWrite(Promise.reject(denied()), adding);
+    await flush();
+    expect(result.current).toHaveLength(1);
+  });
+
+  it('otros rechazos no consultan la membresía', async () => {
+    const { result } = await renderHook(() => useFailures('l1'));
+    trackWrite(Promise.reject(new Error('boom')), adding);
+    await flush();
+    expect(isActiveMember).not.toHaveBeenCalled();
+    expect(result.current).toHaveLength(1);
   });
 
   it('un rechazo que llega después de dejar de leer el hogar no cuenta', async () => {

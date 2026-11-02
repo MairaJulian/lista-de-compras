@@ -7,6 +7,7 @@ type Props = {
   online: boolean;
   /** El servidor rechazó cambios (`37`): "Sin guardar", en rojo. Gana sobre `online`. */
   unsaved?: boolean;
+  /** Solo con los datos de ejemplo: alterna la conexión simulada. */
   onPress?: () => void;
 };
 
@@ -31,13 +32,13 @@ export function StatusPill({ online, unsaved, onPress }: Props) {
 
   return (
     <Pressable
-      accessibilityRole={unsaved ? 'text' : 'button'}
+      accessibilityRole={unsaved || !onPress ? 'text' : 'button'}
       accessibilityLabel={
         unsaved
           ? 'Estado: sin guardar. Hay cambios que el servidor no aceptó'
           : online
-            ? 'Estado: sincronizado. Tocá para simular que no hay conexión'
-            : 'Estado: sin conexión. Tocá para simular que volvió la conexión'
+            ? `Estado: sincronizado${onPress ? '. Tocá para simular que no hay conexión' : ''}`
+            : `Estado: sin conexión${onPress ? '. Tocá para simular que volvió la conexión' : ''}`
       }
       onPress={onPress}
       style={[styles.pill, { backgroundColor: look.bg }]}

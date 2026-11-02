@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDocFromCache,
+  getDocFromServer,
   getFirestore,
   onSnapshot,
   query,
@@ -170,6 +171,23 @@ export async function forgetHousehold(householdId: string) {
       transaction.update(userRef, { hogarActualId: null });
     }
   });
+}
+
+/**
+ * Si la persona sigue siendo miembro activa del hogar, preguntándole al servidor (no a la copia
+ * local). `undefined` si no se pudo saber (sin conexión, sin sesión). Su propio documento de
+ * `miembros` siempre se puede leer, incluso después de que la quitaron.
+ */
+export async function isActiveMember(householdId: string): Promise<boolean | undefined> {
+  try {
+    const uid = currentUid();
+    const snapshot = await getDocFromServer(
+      doc(getFirestore(), 'hogares', householdId, 'miembros', uid),
+    );
+    return snapshot.exists() && snapshot.data()?.estado === 'activo';
+  } catch {
+    return undefined;
+  }
 }
 
 /** Por qué la membresía propia dejó de estar activa. */

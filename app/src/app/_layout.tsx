@@ -6,8 +6,10 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { startSession, useSession } from '../auth/sessionStore';
+import { clearFailures } from '../data/failureStore';
 import { forgetHousehold } from '../data/householdSource';
 import { startHousehold, useHouseholdState } from '../data/householdStore';
+import { configureFirestore } from '../data/firestoreConfig';
 import { startListData } from '../data/listStore';
 import { goToNoHousehold, goToRemoved } from '../navigation/session';
 import { takePendingInvite } from '../data/pendingInvite';
@@ -15,6 +17,9 @@ import { DevMenu } from '../dev/DevMenu';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { colors } from '../theme';
 import { fontAssets } from '../theme/fontAssets';
+
+// La copia local de Firestore se configura antes de la primera lectura (ver `firestoreConfig.ts`).
+configureFirestore();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts(fontAssets);
@@ -46,6 +51,9 @@ export default function RootLayout() {
   const household = useHouseholdState();
   useEffect(() => {
     if (!navigationReady || !householdId || household.status !== 'removed') return;
+    // Los cambios que la persona hizo sin conexión y el servidor rechazó por esto no son un error de
+    // guardado: se descartan y se muestra el aviso de que ya no es parte del hogar.
+    clearFailures();
     forgetHousehold(householdId).catch(() => {
       // Sin conexión no se puede vaciar ahora; se vuelve a detectar al abrir la app.
     });

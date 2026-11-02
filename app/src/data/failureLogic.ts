@@ -1,5 +1,6 @@
 import type { ListTone } from '../theme';
 import type { ItemPatch } from './listLogic';
+import { itemKey, listKey } from './syncLogic';
 import type { ListInfo, ListItem } from './types';
 
 /**
@@ -158,4 +159,16 @@ export function noticeCopy(failures: FailedChange[]): { title: string; message: 
     title: `No pudimos guardar ${plural(failures.length)}`,
     message: `${message} Probá de nuevo.`,
   };
+}
+
+/** El documento que toca una escritura y la lista a la que se cuenta (para "N cambios sin sincronizar"). */
+export function pendingDocOf(change: FailedChange): { key: string; listId: string } {
+  switch (change.kind) {
+    case 'createList':
+    case 'renameList':
+    case 'deleteList':
+      return { key: listKey(change.list.id), listId: change.list.id };
+    default:
+      return { key: itemKey(change.item.id), listId: change.item.listId };
+  }
 }

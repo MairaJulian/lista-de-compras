@@ -99,6 +99,20 @@ Notas:
 - El emulador usa `firebase/firestore.emulator.rules`, que solo permite `ping/*`. El Firestore real usa `firebase/firestore.rules`, todo bloqueado.
 - El emulador de Firestore necesita Java. Con JDK 17 funciona con `firebase-tools` 14 (fijado en `firebase/package.json`); la versión 15 pide JDK 21 o más.
 
+## Funcionamiento sin conexión
+
+**Copia local de Firestore.** `app/src/data/firestoreConfig.ts` la deja configurada a propósito al arrancar (antes de la primera lectura): persistencia en disco activada y caché de **100 MB** (`cacheSizeBytes`). Es lo mismo que el SDK trae por defecto en Android, pero queda escrito. Gracias a eso la app abre y se usa sin señal con lo que ya se vio, y los cambios hechos sin conexión quedan en una cola en el disco que se envía sola al volver.
+
+**Cómo se detecta la conexión.** Sin dependencias nuevas: `watchHouseholdData` escucha listas, ítems y miembros con `includeMetadataChanges`. Si alguna lectura viene de la copia local (`fromCache`) es que Firestore no pudo confirmarla con el servidor, o sea "Sin conexión". Se eligió esto antes que `@react-native-community/netinfo` por no sumar un módulo nativo; si en las pruebas con el celular el indicador tarda demasiado en cambiar, se reevalúa.
+
+**Qué cuenta como pendiente.** Se cuenta **por documento** de la lista abierta: cada ítem con `hasPendingWrites`, la propia lista si tiene un cambio pendiente y, para lo que ya no aparece en la lectura (un ítem borrado sin conexión), las escrituras de esta sesión que el servidor todavía no confirmó (`pendingStore`). Un ítem con varios campos cambiados cuenta uno. Es una aproximación: un ítem borrado sin conexión **y** con la app cerrada y vuelta a abrir deja de contarse (el cambio igual se envía).
+
+**Prioridad del indicador** (`syncLogic.ts`): *Sin guardar* (el servidor rechazó algo) → *Sin conexión* → *Sincronizado*. Para no mentir: nunca dice "Sincronizado" con lecturas de la copia local o con cambios sin confirmar. Dos esperas cortas evitan parpadeos: al arrancar no se muestra nada hasta 4 s (hasta que responde el servidor) y, con conexión, un cambio recién hecho tiene 2 s para confirmarse antes de pasar a "Sin conexión". El reloj de los ítems solo se muestra mientras el indicador dice "Sin conexión".
+
+**Te quitaron mientras estabas sin conexión.** Al volver, el servidor rechaza esos cambios por permisos. `trackWrite` pregunta al servidor si seguís siendo miembro activo; si no, descarta el cambio (no es un error de guardado) y el aviso "Ya no sos parte de…" sale de la lectura de tu membresía.
+
+**Cómo probarlo.** Con la app abierta en una lista, activá el modo avión (o `adb shell svc wifi disable` y `adb shell svc data disable`): la pill pasa a "Sin conexión". Agregá, tildá y editá ítems: aparecen al instante con el reloj y el aviso cuenta los cambios. Al desactivar el modo avión se limpian solos. Con la app cerrada y en modo avión, volver a abrirla muestra lo ya visto y los cambios pendientes siguen ahí. Los tests de lógica (`syncLogic.test.ts`, `pendingStore.test.ts`, `listSource.test.ts`, `failureStore.test.ts`) usan Firestore simulado: el comportamiento real sin conexión solo se ve en el celular o el emulador.
+
 ## Rutas largas en Windows (CMake 3.31.6)
 
 **Requisito:** CMake **3.31.6** instalado en el SDK de Android (Android Studio > SDK Manager > SDK Tools > CMake > "Show Package Details" > 3.31.6).

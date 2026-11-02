@@ -14,7 +14,10 @@ jest.unmock('./listSource');
 const mockSetDoc = jest.fn();
 const mockUpdateDoc = jest.fn();
 const mockStop = jest.fn();
-const handlers: Record<string, { next: (s: unknown) => void; error: () => void }> = {};
+const handlers: Record<
+  string,
+  { next: (s: unknown) => void; error: () => void; options: unknown }
+> = {};
 const mockWhere = jest.fn((...args: unknown[]) => ({ where: args }));
 
 jest.mock('@react-native-firebase/firestore', () => ({
@@ -36,8 +39,13 @@ jest.mock('@react-native-firebase/firestore', () => ({
   updateDoc: (...args: unknown[]) => mockUpdateDoc(...args),
   query: (ref: { path: string }, ...constraints: unknown[]) => ({ ...ref, constraints }),
   where: (...args: unknown[]) => mockWhere(...args),
-  onSnapshot: (ref: { path: string }, next: (s: unknown) => void, error: () => void) => {
-    handlers[ref.path] = { next, error };
+  onSnapshot: (
+    ref: { path: string },
+    options: unknown,
+    next: (s: unknown) => void,
+    error: () => void,
+  ) => {
+    handlers[ref.path] = { next, error, options };
     return mockStop;
   },
 }));
@@ -175,8 +183,23 @@ describe('escrituras', () => {
 });
 
 describe('watchHouseholdData', () => {
-  const snapshot = (docs: { id: string; data: Record<string, unknown> }[]) => ({
-    docs: docs.map(({ id, data }) => ({ id, data: () => data })),
+  const snapshot = (
+    docs: { id: string; data: Record<string, unknown> }[],
+    { fromCache = false, pending = [] }: { fromCache?: boolean; pending?: string[] } = {},
+  ) => ({
+    docs: docs.map(({ id, data }) => ({
+      id,
+      data: () => data,
+      metadata: { hasPendingWrites: pending.includes(id) },
+    })),
+    metadata: { fromCache },
+  });
+  const item = (name: string) => ({
+    listaId: 'l1',
+    nombre: name,
+    agregadoPor: 'u1',
+    comprado: false,
+    borrado: false,
   });
   const ts = (millis: number) => ({ toMillis: () => millis });
 
@@ -235,6 +258,62 @@ describe('watchHouseholdData', () => {
     watchHouseholdData('h1', jest.fn(), onError);
     handlers['hogares/h1/items'].error();
     expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  describe('estado de sincronización', () => {
+    const lastData = (onData: jest.Mock) => onData.mock.calls[onData.mock.calls.length - 1][0];
+
+    it('escucha los tres también cuando solo cambian los metadatos', () => {
+      watchHouseholdData('h1', jest.fn(), jest.fn());
+      for (const path of ['hogares/h1/listas', 'hogares/h1/items', 'hogares/h1/miembros']) {
+        expect(handlers[path].options).toEqual({ includeMetadataChanges: true });
+      }
+    });
+
+    it('con las tres lecturas confirmadas por el servidor, no es de la copia local', () => {
+      const onData = jest.fn();
+      watchHouseholdData('h1', onData, jest.fn());
+      handlers['hogares/h1/listas'].next(snapshot([]));
+      handlers['hogares/h1/items'].next(snapshot([]));
+      handlers['hogares/h1/miembros'].next(snapshot([]));
+      expect(lastData(onData).sync.fromCache).toBe(false);
+    });
+
+    it('si alguna lectura sale de la copia local, hay que dudar de la conexión', () => {
+      const onData = jest.fn();
+      watchHouseholdData('h1', onData, jest.fn());
+      handlers['hogares/h1/listas'].next(snapshot([]));
+      handlers['hogares/h1/miembros'].next(snapshot([]));
+      handlers['hogares/h1/items'].next(snapshot([], { fromCache: true }));
+      expect(lastData(onData).sync.fromCache).toBe(true);
+      // Al volver la conexión llega la lectura confirmada y deja de serlo.
+      handlers['hogares/h1/items'].next(snapshot([], { fromCache: false }));
+      expect(lastData(onData).sync.fromCache).toBe(false);
+    });
+
+    it('marca los ítems y las listas con cambios que el servidor todavía no confirmó', () => {
+      const onData = jest.fn();
+      watchHouseholdData('h1', onData, jest.fn());
+      handlers['hogares/h1/miembros'].next(snapshot([]));
+      handlers['hogares/h1/listas'].next(
+        snapshot([{ id: 'l1', data: { nombre: 'Súper', color: 'green', creadaEn: ts(1) } }], {
+          pending: ['l1'],
+        }),
+      );
+      handlers['hogares/h1/items'].next(
+        snapshot(
+          [
+            { id: 'i1', data: item('Leche') },
+            { id: 'i2', data: item('Pan') },
+          ],
+          { fromCache: true, pending: ['i2'] },
+        ),
+      );
+      const { items, sync } = lastData(onData);
+      expect(sync.pendingItemIds).toEqual(['i2']);
+      expect(sync.pendingListIds).toEqual(['l1']);
+      expect(items.map((i: { pendingSync: boolean }) => i.pendingSync)).toEqual([false, true]);
+    });
   });
 
   it('al dejar de escuchar corta las tres lecturas', () => {

@@ -17,19 +17,41 @@ import { sortLists, type ItemPatch } from './listLogic';
 import type { ListInfo, ListItem, Member } from './types';
 
 /**
+ * Lo que dice Firestore sobre qué tan al día está la copia del celular (ver `syncLogic.ts`).
+ * `fromCache`: alguna lectura sale de la copia local porque no pudo confirmarse con el servidor
+ * (sin conexión). `pendingItemIds` / `pendingListIds`: documentos con cambios locales que el
+ * servidor todavía no confirmó.
+ */
+export type SyncMetadata = {
+  fromCache: boolean;
+  pendingItemIds: string[];
+  pendingListIds: string[];
+};
+
+/**
  * Lo que se lee del hogar con una sola suscripción por colección: listas (también las eliminadas,
  * para poder avisar), ítems no borrados y miembros de todos los estados.
  */
-export type HouseholdData = { lists: ListInfo[]; items: ListItem[]; members: Member[] };
+export type HouseholdData = {
+  lists: ListInfo[];
+  items: ListItem[];
+  members: Member[];
+  sync: SyncMetadata;
+};
 
 // Con 'estimate' un ítem recién escrito (todavía sin la hora del servidor) trae la hora del celular
 // en vez de `null`, y aparece arriba al instante.
 const snapshotOptions = { serverTimestamps: 'estimate' } as const;
 
+// Con `includeMetadataChanges` Firestore avisa también cuando solo cambia `fromCache` o
+// `hasPendingWrites` (por ejemplo al volver la conexión), que es de donde sale el indicador.
+const listenOptions = { includeMetadataChanges: true } as const;
+
 /**
  * Escucha listas, ítems y miembros del hogar. Avisa con todo junto cuando llegó la primera lectura de
  * las tres y después cada vez que cambia alguna (también con los cambios propios, que Firestore
- * aplica al instante en el celular). Si no se puede leer alguna, avisa con `onError`.
+ * aplica al instante en el celular, y con los cambios de estado de sincronización). Si no se puede
+ * leer alguna, avisa con `onError`.
  */
 export function watchHouseholdData(
   householdId: string,
@@ -40,41 +62,64 @@ export function watchHouseholdData(
   let lists: ListInfo[] | undefined;
   let items: ListItem[] | undefined;
   let members: Member[] | undefined;
+  const fromCache = { lists: true, items: true, members: true };
+  let pendingListIds: string[] = [];
+  let pendingItemIds: string[] = [];
 
   const emit = () => {
     if (lists && items && members) {
-      onData({ lists, items, members });
+      onData({
+        lists,
+        items,
+        members,
+        sync: {
+          fromCache: fromCache.lists || fromCache.items || fromCache.members,
+          pendingItemIds,
+          pendingListIds,
+        },
+      });
     }
   };
 
   const stopLists = onSnapshot(
     collection(db, 'hogares', householdId, 'listas'),
+    listenOptions,
     (snapshot) => {
       lists = sortLists(
         snapshot.docs.flatMap(
           (document) => listFromDocument(document.id, document.data(snapshotOptions)) ?? [],
         ),
       );
+      pendingListIds = snapshot.docs
+        .filter((document) => document.metadata.hasPendingWrites)
+        .map((document) => document.id);
+      fromCache.lists = snapshot.metadata.fromCache;
       emit();
     },
     onError,
   );
   const stopItems = onSnapshot(
     query(collection(db, 'hogares', householdId, 'items'), where('borrado', '==', false)),
+    listenOptions,
     (snapshot) => {
-      items = snapshot.docs.flatMap(
-        (document) => itemFromDocument(document.id, document.data(snapshotOptions)) ?? [],
-      );
+      items = snapshot.docs.flatMap((document) => {
+        const item = itemFromDocument(document.id, document.data(snapshotOptions));
+        return item ? [{ ...item, pendingSync: document.metadata.hasPendingWrites }] : [];
+      });
+      pendingItemIds = items.filter((item) => item.pendingSync).map((item) => item.id);
+      fromCache.items = snapshot.metadata.fromCache;
       emit();
     },
     onError,
   );
   const stopMembers = onSnapshot(
     collection(db, 'hogares', householdId, 'miembros'),
+    listenOptions,
     (snapshot) => {
       members = snapshot.docs.map((document) =>
         anyMemberFromDocument(document.id, document.data()),
       );
+      fromCache.members = snapshot.metadata.fromCache;
       emit();
     },
     onError,
