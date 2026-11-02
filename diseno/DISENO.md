@@ -156,6 +156,17 @@ Uso previsto con Expo (`app.json`, sin inventar nada nuevo): `android.adaptiveIc
 - **Cargando después de iniciar sesión (46)**: misma composición que 45 para que el cambio sea continuo (el logo no se mueve), con un indicador circular (anillo `#CFE8D9` con tramo `#2E7D57` girando) y el texto "Entrando…". Se muestra mientras se lee el hogar y las listas; si tarda o falla, se pasa a 32 (error de carga). Con "reducir animaciones" activado el indicador no gira.
 - No hay modo oscuro todavía: ni el ícono ni las pantallas de carga tienen versión oscura.
 
+## Letra grande del sistema
+
+Las pantallas de diseño están dibujadas con la letra normal. Varias personas de la familia usan el tamaño de fuente de Android muy agrandado, así que la app **no limita el tamaño de letra** y se adapta (revisada con escalas 1,3 / 1,5 / 2,0). Reglas:
+
+- Las alturas fijas de filas, botones y campos pasan a **alturas mínimas**: con letra normal miden lo mismo que en el diseño y con letra grande crecen.
+- Un título que no entra pasa a más de una línea; un indicador que no entra baja **debajo del título**. En Lista, desde 1,15× el "Sincronizado" / "Sin conexión" va en su propia fila, debajo del título y del nombre del hogar (cambio respecto de `05`, `07` y `37`, que solo aplica con letra grande).
+- Los nombres de ítems pueden ocupar dos líneas; las tarjetas de Inicio achican el nombre hasta el 70 %.
+- Bienvenida, Sin hogar, Unirse, Crear hogar, Invitar y los paneles/avisos **se desplazan** si no entran; los botones principales de los formularios quedan fijos abajo.
+- Áreas táctiles de al menos 44 dp en todo (también con letra grande).
+- **Excepciones con tope de 1,3×:** los nombres de las pestañas de la barra inferior (alto fijo) y el campo del código de invitación (una sola línea). En los campos con un botón adentro ("Pegar") el botón baja debajo del texto con letra grande.
+
 ## Comportamientos que muestra el prototipo
 
 - **Lista**: tildar un ítem lo pasa a Comprados (tachado, gris); destildar lo devuelve a Pendientes. Agregar escribe arriba de Pendientes. Cada fila tiene el avatar de quien lo agregó/tildó. El contador de Pendientes / Comprados se actualiza.
