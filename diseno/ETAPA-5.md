@@ -89,16 +89,16 @@ Al terminar, avisá que sigue la **Etapa 6 · Presencia y limpieza de comprados*
 
 ## Estado
 
-- [ ] Copia local explícita
-- [ ] Estado de conexión y pendientes
-- [ ] Pill, aviso y relojes
-- [ ] Arranque sin conexión
-- [ ] "Te quitaron" sin conexión
-- [ ] Acciones que exigen conexión revisadas
-- [ ] README
-- [ ] Verificación automática en el emulador
+- [x] Copia local explícita (`firestoreConfig.ts`: persistencia activada, 100 MB; ver README)
+- [x] Estado de conexión y pendientes (`syncLogic.ts`, `syncStatus.ts`, `pendingStore.ts`; metadatos de Firestore, sin `netinfo`)
+- [x] Pill, aviso y relojes
+- [x] Arranque sin conexión (verificado en el emulador, ver la PR)
+- [x] "Te quitaron" sin conexión (con tests; **el caso real con dos cuentas queda para Maira**)
+- [ ] Acciones que exigen conexión revisadas: solo se verificó **generar enlace** sin señal (falla rápido con su mensaje). Faltan crear hogar, unirse, quitar, salir y desactivar enlace: usan transacciones, sin cambios en esta etapa
+- [x] README
+- [x] Verificación automática en el emulador (puntos 1 a 5; resultados en la PR)
 - [ ] Prueba de Maira con dos cuentas
-- [ ] Borrador de `ETAPA-6.md`
+- [x] Borrador de `ETAPA-6.md`
 
 ---
 
