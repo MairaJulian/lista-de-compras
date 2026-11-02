@@ -87,8 +87,7 @@ describe('Sin hogar y sus flujos', () => {
   });
 
   it('Unirme con un código: pegar un mensaje completo deja solo el código', async () => {
-    const message =
-      'Sumate a Nuestra casa en Changuito.\nCódigo: K7P2-9XQ-4MN\nEnlace: changuito://unirse/K7P2-9XQ-4MN';
+    const message = `Sumate a Nuestra casa en Changuito.\nCódigo: K7P2-9XQ-4MN\nAbrí Changuito, tocá 'Tengo un código de invitación' y pegá este código.`;
     await render(<JoinWithCodeScreen readClipboard={async () => message} />);
     await fireEvent.press(screen.getByText('Pegar'));
     expect(screen.getByDisplayValue('K7P2-9XQ-4MN')).toBeTruthy();

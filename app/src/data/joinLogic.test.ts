@@ -24,8 +24,7 @@ describe('normalizeInviteCode', () => {
   });
 
   it('se queda con el código si pegaron el mensaje o el enlace que se comparte', () => {
-    const message =
-      'Sumate a Nuestra casa en Changuito.\nCódigo: K7P2-9XQ-4MN\nEnlace: changuito://unirse/K7P2-9XQ-4MN';
+    const message = `Sumate a Nuestra casa en Changuito.\nCódigo: K7P2-9XQ-4MN\nAbrí Changuito, tocá 'Tengo un código de invitación' y pegá este código.`;
     expect(normalizeInviteCode(message)).toBe('K7P2-9XQ-4MN');
     expect(normalizeInviteCode('changuito://unirse/k7p2-9xq-4mn')).toBe('K7P2-9XQ-4MN');
   });
