@@ -55,7 +55,17 @@ Termina cuando, con dos personas en la misma lista, si una sale no se borra nada
 
 ## Estado
 
-- [x] PR 1 · Reglas y pruebas (216 pruebas pasan; reglas **sin publicar**)
-- [ ] Maira publica las reglas
-- [ ] PR 2 · Presencia, salir de la lista y purga
+- [x] PR 1 · Reglas y pruebas (PR #33, mergeada)
+- [x] Reglas publicadas en `changuito-31ec1`
+- [x] PR 2 · Presencia, salir de la lista y purga (en revisión)
 - [ ] Prueba de Maira con dos cuentas
+
+## Cómo quedó (PR 2)
+
+- **Latido** (`presenceSource.ts`, usado desde `useListContents`): al abrir una lista real escribe `presencia/{uid}` con `setDoc` + `merge` de `listaId` y `ultimoLatido` (hora del servidor), y lo repite cada 30 segundos. Con la app en segundo plano (`AppState`) se detiene, y al volver se retoma. Al cerrar la lista (o salir del hogar) se vacía `listaId`. Un latido que falla se ignora.
+- **Salir de la lista** (`checkLeave` en `useListContents`): sin comprados, la flecha vuelve directo. Con comprados: sin conexión → vuelve directo, sin consultar; con conexión → lectura puntual `getDocsFromServer` de `presencia` (con tope de 4 s). Si falla, o si otra persona tiene la lista abierta (`listaId` igual y latido de menos de 2 minutos), vuelve directo, sin ningún texto. Si nadie más la tiene, aparece el aviso `08` ("Se van a borrar N ítems comprados"); "Salir y borrar" marca cada comprado como `borrado` (una escritura por ítem, los mismos campos que borrar desde el detalle).
+- **Deshacer** (`leaveUndoStore.ts`, `LeaveUndoToast`): el aviso mínimo de la Etapa 4 ("Ítems borrados · Deshacer") queda en Inicio durante 8 segundos; deshacer restaura todos.
+- **Purga** (`purgeSource.ts`): una vez por apertura de la app y por hogar, 3 segundos después de que el hogar cargó con el servidor. Consultas de un solo campo (sin índice compuesto): ítems con `borradoEn` anterior al corte; listas con `eliminadaEn` anterior al corte y, por cada una, sus ítems (`listaId ==`) y la lista, en lotes de hasta 500, siempre con lectura al servidor (sin conexión no hace nada). El corte es de **31 días** (uno más que las reglas) para que un reloj adelantado no haga rechazar el lote. Si falla se ignora hasta la próxima apertura. No usa `trackWrite`, así que no cuenta como cambio sin sincronizar.
+- **Inicio:** "1 pendiente" en singular.
+- **Pruebas:** jest para lógica y fuentes (presencia, purga, deshacer) y para el flujo de la pantalla; `firebase/test/purga.rules.test.mjs` comprueba contra el emulador de Firestore, con las reglas reales, que las consultas y los lotes de la purga están permitidos.
+- **Límites conocidos:** "persona activa" se aproxima con el latido reciente (un miembro que salió del hogar con la app abierta deja de latir). Un celular sin señal deja de latir y a los 2 minutos otra persona puede borrar los comprados de esa lista; el deshacer lo cubre (decisión (a) de más arriba).

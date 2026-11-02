@@ -1,7 +1,9 @@
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
+import { View } from 'react-native';
 
 import { useSession } from '../../auth/sessionStore';
+import { LeaveUndoToast } from '../../navigation/LeaveUndoToast';
 import { TabBar } from '../../navigation/TabBar';
 import { colors } from '../../theme';
 
@@ -17,13 +19,17 @@ export default function TabsLayout() {
   }
 
   return (
-    <Tabs
-      backBehavior="initialRoute"
-      tabBar={(props) => <TabBar {...props} />}
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.background } }}
-    >
-      <Tabs.Screen name="listas" options={{ title: 'Listas' }} />
-      <Tabs.Screen name="hogar" options={{ title: 'Hogar' }} />
-    </Tabs>
+    <View style={{ flex: 1 }}>
+      <Tabs
+        backBehavior="initialRoute"
+        tabBar={(props) => <TabBar {...props} />}
+        screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.background } }}
+      >
+        <Tabs.Screen name="listas" options={{ title: 'Listas' }} />
+        <Tabs.Screen name="hogar" options={{ title: 'Hogar' }} />
+      </Tabs>
+      {/* "Ítems borrados · Deshacer" después de salir de una lista (Etapa 6). */}
+      <LeaveUndoToast />
+    </View>
   );
 }

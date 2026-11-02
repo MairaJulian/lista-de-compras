@@ -46,6 +46,7 @@ import {
   watchHouseholdData,
 } from '../data/listSource';
 import { resetListData } from '../data/listStore';
+import { canCleanUpList, startPresence } from '../data/presenceSource';
 import type { HouseholdData } from '../data/listSource';
 import type { Member } from '../data/types';
 import { resetMockStore } from '../mock/store';
@@ -118,6 +119,8 @@ describe('navegación', () => {
       setListDeleted,
     ].forEach((write) => (write as jest.Mock).mockClear());
     (createHousehold as jest.Mock).mockReset();
+    (canCleanUpList as jest.Mock).mockReset().mockResolvedValue(true);
+    (startPresence as jest.Mock).mockClear();
     // Por defecto el hogar real no tiene listas ni ítems.
     readsListData({ lists: [], items: [], members: [], sync: onlineSync });
     (watchHousehold as jest.Mock).mockReset().mockImplementation(() => () => {});
@@ -619,11 +622,82 @@ describe('navegación', () => {
           expect(screen.queryByText('Ítem eliminado')).toBeNull();
         });
 
-        it('la flecha vuelve directo a Inicio aunque haya comprados, sin aviso ni borrar nada', async () => {
+        describe('salir de la lista con comprados (Etapa 6)', () => {
+          const leave = async () => {
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            await fireEvent.press(screen.getByLabelText('Volver a las listas'));
+          };
+
+          it('avisa de la presencia mientras la lista está abierta', async () => {
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            expect(startPresence).toHaveBeenCalledWith('h1', 'u1', 'l1');
+          });
+
+          it('si nadie más la tiene abierta pide confirmar; Salir y borrar borra los comprados y ofrece Deshacer en Inicio', async () => {
+            await leave();
+            expect(canCleanUpList).toHaveBeenCalledWith('h1', 'l1', 'u1');
+            expect(await screen.findByText('¿Salir de la lista?')).toBeTruthy();
+            expect(
+              screen.getByText(
+                'Se van a borrar los 2 ítems comprados de Supermercado. Los pendientes se quedan.',
+              ),
+            ).toBeTruthy();
+            expect(setItemDeleted).not.toHaveBeenCalled();
+            await fireEvent.press(screen.getByText('Salir y borrar'));
+            expect(setItemDeleted).toHaveBeenCalledTimes(2);
+            expect(setItemDeleted).toHaveBeenCalledWith('h1', 'u1', 'i3', true);
+            expect(setItemDeleted).toHaveBeenCalledWith('h1', 'u1', 'i4', true);
+            expect(screen.getByText('Nueva lista')).toBeTruthy();
+            expect(screen.getByText('Ítems borrados')).toBeTruthy();
+
+            (setItemDeleted as jest.Mock).mockClear();
+            await fireEvent.press(screen.getByLabelText('Deshacer'));
+            expect(setItemDeleted).toHaveBeenCalledTimes(2);
+            expect(setItemDeleted).toHaveBeenCalledWith('h1', 'u1', 'i3', false);
+            expect(setItemDeleted).toHaveBeenCalledWith('h1', 'u1', 'i4', false);
+            expect(screen.queryByText('Ítems borrados')).toBeNull();
+          });
+
+          it('Quedarme cierra el aviso y no borra nada', async () => {
+            await leave();
+            await fireEvent.press(await screen.findByText('Quedarme'));
+            expect(setItemDeleted).not.toHaveBeenCalled();
+            expect(screen.queryByText('Nueva lista')).toBeNull();
+          });
+
+          it('si otra persona la tiene abierta vuelve directo a Inicio, sin texto ni borrar nada', async () => {
+            (canCleanUpList as jest.Mock).mockResolvedValue(false);
+            await leave();
+            expect(await screen.findByText('Nueva lista')).toBeTruthy();
+            expect(screen.queryByText('¿Salir de la lista?')).toBeNull();
+            expect(screen.queryByText('Ítems borrados')).toBeNull();
+            expect(setItemDeleted).not.toHaveBeenCalled();
+          });
+
+          it('sin conexión vuelve directo y ni siquiera consulta la presencia', async () => {
+            // Lecturas de la copia local con un cambio sin confirmar: "Sin conexión".
+            readsListData({
+              ...data,
+              sync: { fromCache: true, pendingItemIds: ['i2'], pendingListIds: [] },
+            });
+            await renderRouter(routes);
+            await fireEvent.press(screen.getByText('Supermercado'));
+            expect(screen.getByText('Sin conexión')).toBeTruthy();
+            await fireEvent.press(screen.getByLabelText('Volver a las listas'));
+            expect(canCleanUpList).not.toHaveBeenCalled();
+            expect(screen.getByText('Nueva lista')).toBeTruthy();
+            expect(setItemDeleted).not.toHaveBeenCalled();
+          });
+        });
+
+        it('sin comprados la flecha vuelve directo sin consultar nada', async () => {
+          readsListData({ ...data, items: data.items.filter((item) => !item.done) });
           await renderRouter(routes);
           await fireEvent.press(screen.getByText('Supermercado'));
           await fireEvent.press(screen.getByLabelText('Volver a las listas'));
-          expect(screen.queryByText('¿Salir de la lista?')).toBeNull();
+          expect(canCleanUpList).not.toHaveBeenCalled();
           expect(screen.getByText('Nueva lista')).toBeTruthy();
           expect(setItemDeleted).not.toHaveBeenCalled();
         });

@@ -113,6 +113,16 @@ Notas:
 
 **Cómo probarlo.** Con la app abierta en una lista, activá el modo avión (o `adb shell svc wifi disable` y `adb shell svc data disable`): la pill pasa a "Sin conexión". Agregá, tildá y editá ítems: aparecen al instante con el reloj y el aviso cuenta los cambios. Al desactivar el modo avión se limpian solos. Con la app cerrada y en modo avión, volver a abrirla muestra lo ya visto y los cambios pendientes siguen ahí. Los tests de lógica (`syncLogic.test.ts`, `pendingStore.test.ts`, `listSource.test.ts`, `failureStore.test.ts`) usan Firestore simulado: el comportamiento real sin conexión solo se ve en el celular o el emulador.
 
+## Presencia, salir de la lista y purga (Etapa 6)
+
+**Presencia.** Con una lista abierta, la app escribe `hogares/{hogarId}/presencia/{uid}` (`listaId` y `ultimoLatido`, hora del servidor) cada 30 segundos; con la app en segundo plano deja de hacerlo. Una lista se considera abierta por otra persona si su latido tiene menos de 2 minutos (`presenceLogic.ts`).
+
+**Salir de una lista con comprados.** La flecha lee la presencia con una lectura puntual al servidor. Si nadie más tiene la lista abierta pide confirmar y marca los comprados como borrados, con "Deshacer" unos 8 segundos en Inicio. Si otra persona la tiene abierta, si no hay conexión o si la lectura falla, vuelve directo y no borra nada.
+
+**Purga.** Una vez por apertura de la app se eliminan, en lotes de hasta 500, los ítems borrados y las listas eliminadas hace más de 30 días (con sus ítems). Solo lee del servidor: sin conexión no hace nada y se reintenta en la próxima apertura. Las reglas de Firestore de esta etapa están publicadas en el proyecto `changuito-31ec1`.
+
+**Cómo probarlo.** Con dos cuentas en la misma lista: si una sale (con comprados) mientras la otra la tiene abierta, no se borra nada; cuando sale la última aparece el aviso, los comprados se borran y "Deshacer" los recupera. En el emulador de Firestore se ve `presencia/{uid}` renovándose. Para la purga hace falta un ítem con `borradoEn` de hace más de 31 días (se puede escribir a mano en el emulador).
+
 ## Rutas largas en Windows (CMake 3.31.6)
 
 **Requisito:** CMake **3.31.6** instalado en el SDK de Android (Android Studio > SDK Manager > SDK Tools > CMake > "Show Package Details" > 3.31.6).

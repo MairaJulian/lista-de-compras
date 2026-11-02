@@ -19,7 +19,7 @@ export function ListCard({ name, pendingCount, tone, icon, onPress }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${name}, ${upToDate ? 'al día' : `${pendingCount} pendientes`}`}
+      accessibilityLabel={`${name}, ${upToDate ? 'al día' : pendingCount === 1 ? '1 pendiente' : `${pendingCount} pendientes`}`}
       onPress={onPress}
       style={[styles.card, { backgroundColor: background }]}
     >
@@ -39,7 +39,9 @@ export function ListCard({ name, pendingCount, tone, icon, onPress }: Props) {
         <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
           {name}
         </Text>
-        <Text style={[styles.caption, { color: text }]}>{upToDate ? 'Al día' : 'pendientes'}</Text>
+        <Text style={[styles.caption, { color: text }]}>
+          {upToDate ? 'Al día' : pendingCount === 1 ? 'pendiente' : 'pendientes'}
+        </Text>
       </View>
     </Pressable>
   );

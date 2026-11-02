@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,7 +16,6 @@ import {
 import { noticeCopy, type ListRow } from '../data/failureLogic';
 import {
   useHousehold,
-  useIsRealSession,
   useList,
   useListActions,
   useListContents,
@@ -45,6 +44,8 @@ export function ListaScreen({ listId, onBack }: Props) {
     showConnection,
     unsyncedCount,
     showClocks,
+    doneCount,
+    checkLeave,
     failures,
     toggle,
     add,
@@ -69,22 +70,37 @@ export function ListaScreen({ listId, onBack }: Props) {
   // Último ítem eliminado, mientras todavía se puede deshacer.
   const [undoId, setUndoId] = useState<string>();
   const dismissUndo = useCallback(() => setUndoId(undefined), []);
-  const realSession = useIsRealSession();
   const { top, bottom } = useSafeAreaInsets();
-  // Con los datos de ejemplo, salir con ítems comprados pide confirmación y los borra (`08`). En la
-  // sesión real esa limpieza es de la Etapa 6: la flecha vuelve directo a Inicio y no borra nada.
-  const hasDone = done.length > 0 && !realSession;
+  // Salir con ítems comprados pide confirmación para borrarlos (`08`), solo si nadie más tiene la
+  // lista abierta. `checkLeave` lo decide (en la sesión real, con una lectura al servidor); si no
+  // hay que preguntar, la flecha vuelve directo a Inicio, sin ningún texto.
+  const hasDone = doneCount > 0;
+  const checking = useRef(false);
 
-  const goBack = () => (hasDone ? setLeaveOpen(true) : onBack?.());
+  const goBack = useCallback(() => {
+    if (checking.current) return;
+    const verdict = checkLeave();
+    if (typeof verdict === 'boolean') {
+      if (verdict) setLeaveOpen(true);
+      else onBack?.();
+      return;
+    }
+    checking.current = true;
+    verdict.then((ask) => {
+      checking.current = false;
+      if (ask) setLeaveOpen(true);
+      else onBack?.();
+    });
+  }, [checkLeave, onBack]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (!hasDone) return false;
-      setLeaveOpen(true);
+      goBack();
       return true;
     });
     return () => subscription.remove();
-  }, [hasDone]);
+  }, [hasDone, goBack]);
 
   const leaveAndDelete = () => {
     removeDone();
@@ -308,7 +324,7 @@ export function ListaScreen({ listId, onBack }: Props) {
         visible={leaveOpen}
         icon="trash"
         title="¿Salir de la lista?"
-        message={leaveMessage(done.length, list?.name ?? '')}
+        message={leaveMessage(doneCount, list?.name ?? '')}
         onClose={() => setLeaveOpen(false)}
       >
         <Button label="Salir y borrar" onPress={leaveAndDelete} />

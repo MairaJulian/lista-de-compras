@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { clearFailures } from './failureStore';
+import { dismissLeaveUndo } from './leaveUndoStore';
 import { watchHouseholdData, type HouseholdData } from './listSource';
 
 // Listas, ítems y miembros del hogar real fuera de las pantallas, para que Inicio, Lista y el
@@ -58,6 +59,7 @@ export function startListData(householdId: string): () => void {
     stopWatching = undefined;
     watchedId = undefined;
     clearFailures();
+    dismissLeaveUndo();
     setState(idle);
   };
 }
@@ -85,5 +87,6 @@ export function resetListData() {
   stopWatching = undefined;
   watchedId = undefined;
   clearFailures();
+  dismissLeaveUndo();
   setState(idle);
 }

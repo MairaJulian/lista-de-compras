@@ -59,3 +59,18 @@ jest.mock('./src/data/listSource', () => ({
   renameList: jest.fn(() => Promise.resolve()),
   setListDeleted: jest.fn(() => Promise.resolve()),
 }));
+
+// La presencia y la purga también hablan con Firestore: cada prueba las controla (la implementación
+// real se prueba en `presenceSource.test.ts` y `purgeSource.test.ts`).
+jest.mock('./src/data/presenceSource', () => ({
+  startPresence: jest.fn(() => () => {}),
+  writePresence: jest.fn(() => Promise.resolve()),
+  readPresencesFromServer: jest.fn(() => Promise.resolve([])),
+  canCleanUpList: jest.fn(() => Promise.resolve(true)),
+}));
+
+jest.mock('./src/data/purgeSource', () => ({
+  purgeExpired: jest.fn(() => Promise.resolve(0)),
+  purgeOncePerOpening: jest.fn(() => Promise.resolve()),
+  resetPurgeRuns: jest.fn(),
+}));
