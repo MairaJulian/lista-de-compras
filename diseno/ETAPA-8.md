@@ -81,13 +81,13 @@ La Etapa 8 termina cuando:
 
 ## Estado
 
-- [ ] APK de release reproducible
-- [ ] Guía de instalación para la familia
-- [ ] Crashlytics
-- [ ] Barrido de casos borde
-- [ ] `USO-REAL.md`
-- [ ] Higiene del repo
-- [ ] Borrador de `ETAPA-9.md`
+- [x] APK de release reproducible
+- [x] Guía de instalación para la familia
+- [x] Crashlytics (falta que Maira vea el fallo de prueba en la consola)
+- [x] Barrido de casos borde
+- [x] `USO-REAL.md`
+- [x] Higiene del repo
+- [x] Borrador de `ETAPA-9.md`
 - [ ] Maira: pantalla de consentimiento de Google
 - [ ] Maira: APK instalado en la familia
 - [ ] Dos semanas de uso real
