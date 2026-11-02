@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { clearFailures } from './failureStore';
 import { dismissLeaveUndo } from './leaveUndoStore';
 import { watchHouseholdData, type HouseholdData } from './listSource';
+import { LOADING_TIMEOUT_MS } from './loadingTimeout';
 
 // Listas, ítems y miembros del hogar real fuera de las pantallas, para que Inicio, Lista y el
 // detalle vean lo mismo con una sola suscripción. Con la sesión de ejemplo no se usa.
@@ -26,10 +27,12 @@ let watchedId: string | undefined;
 let connectedOnce = false;
 let startedAt = Date.now();
 let stopWatching: (() => void) | undefined;
+let loadingTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<() => void>();
 
 function setState(next: ListDataState) {
   state = next;
+  if (next.status !== 'loading') clearTimeout(loadingTimer);
   listeners.forEach((listener) => listener());
 }
 
@@ -39,6 +42,13 @@ function watch(householdId: string) {
   connectedOnce = false;
   startedAt = Date.now();
   const current = () => watchedId === householdId;
+  // Sin respuesta ni error del servidor (por ejemplo sin conexión y sin copia local) no se queda
+  // cargando para siempre: pasa a la pantalla de error con "Reintentar". Si los datos llegan después,
+  // la lectura vuelve a `ready` sola.
+  clearTimeout(loadingTimer);
+  loadingTimer = setTimeout(() => {
+    if (current() && state.status === 'loading') setState({ status: 'error', householdId });
+  }, LOADING_TIMEOUT_MS);
   stopWatching = watchHouseholdData(
     householdId,
     (data) => {

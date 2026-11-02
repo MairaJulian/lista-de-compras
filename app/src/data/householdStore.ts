@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
+import { LOADING_TIMEOUT_MS } from './loadingTimeout';
 import { watchHousehold, type LoadedHousehold, type RemovalReason } from './householdSource';
 
 // Estado del hogar real (el de `hogarActualId`) fuera de las pantallas, para que Inicio, Hogar y
@@ -16,10 +17,12 @@ export type HouseholdState =
 let state: HouseholdState = { status: 'idle' };
 let watchedId: string | undefined;
 let stopWatching: (() => void) | undefined;
+let loadingTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<() => void>();
 
 function setState(next: HouseholdState) {
   state = next;
+  if (next.status !== 'loading') clearTimeout(loadingTimer);
   listeners.forEach((listener) => listener());
 }
 
@@ -29,6 +32,12 @@ function watch(householdId: string) {
   // Una vez que se supo que te sacaron, los errores de lectura que vienen detrás (el hogar ya no se
   // puede leer) y las lecturas viejas no pisan ese estado.
   const current = () => watchedId === householdId && state.status !== 'removed';
+  // Sin respuesta ni error del servidor no se queda cargando para siempre: pasa a la pantalla de
+  // error con "Reintentar" (si los datos llegan después, vuelve a `ready` sola).
+  clearTimeout(loadingTimer);
+  loadingTimer = setTimeout(() => {
+    if (current() && state.status === 'loading') setState({ status: 'error' });
+  }, LOADING_TIMEOUT_MS);
   stopWatching = watchHousehold(
     householdId,
     (household) => current() && setState({ status: 'ready', household }),
