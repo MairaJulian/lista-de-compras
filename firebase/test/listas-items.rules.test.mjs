@@ -730,6 +730,69 @@ describe('items: borrado definitivo', () => {
   });
 });
 
+describe('items: borrado definitivo de una lista eliminada hace más de 30 días', () => {
+  beforeEach(() =>
+    seed({
+      lists: {
+        vencida: { eliminada: true, eliminadaPor: 'ana', eliminadaEn: ago(DAYS_31) },
+        reciente: { eliminada: true, eliminadaPor: 'ana', eliminadaEn: ago(DAYS_29) },
+        activa: {},
+      },
+      items: {
+        deVencida: { listaId: 'vencida' },
+        deVencidaComprado: { listaId: 'vencida', comprado: true, tildadoPor: 'ana', tildadoEn: ago(60) },
+        deVencidaBorradoReciente: { listaId: 'vencida', borrado: true, borradoPor: 'ana', borradoEn: ago(DAYS_29) },
+        deReciente: { listaId: 'reciente' },
+        deActiva: { listaId: 'activa' },
+        huerfano: { listaId: 'inexistente' },
+      },
+    }),
+  );
+
+  it('un ítem de una lista vencida se elimina aunque no esté borrado, esté comprado o se haya borrado hace poco', async () => {
+    const db = dbOf('beto');
+    await assertSucceeds(deleteDoc(itemRef(db, 'deVencida')));
+    await assertSucceeds(deleteDoc(itemRef(db, 'deVencidaComprado')));
+    await assertSucceeds(deleteDoc(itemRef(db, 'deVencidaBorradoReciente')));
+  });
+
+  it('los ítems de una lista eliminada hace menos de 30 días no se eliminan', async () => {
+    await assertFails(deleteDoc(itemRef(dbOf('beto'), 'deReciente')));
+  });
+
+  it('los ítems de una lista activa no se eliminan', async () => {
+    await assertFails(deleteDoc(itemRef(dbOf('beto'), 'deActiva')));
+  });
+
+  it('un ítem huérfano (la lista no existe) no se elimina por esta vía', async () => {
+    await assertFails(deleteDoc(itemRef(dbOf('beto'), 'huerfano')));
+  });
+
+  it('quien no es miembro activo no elimina, ni con la lista vencida', async () => {
+    for (const uid of ['otra', 'salio', 'quitada', null]) {
+      await assertFails(deleteDoc(itemRef(dbOf(uid), 'deVencida')));
+    }
+  });
+
+  it('la lista vencida de un hogar no vale para un ítem de otro hogar con el mismo listaId', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(
+        itemRef(ctx.firestore(), 'ajeno', OTHER_H),
+        newItem({ listaId: 'vencida', agregadoPor: 'otra', agregadoEn: ago(5) }),
+      );
+    });
+    await assertFails(deleteDoc(itemRef(dbOf('otra'), 'ajeno', OTHER_H)));
+    await assertFails(deleteDoc(itemRef(dbOf('beto'), 'ajeno', OTHER_H)));
+  });
+
+  it('no se puede vencer una lista a la fuerza: eliminadaEn tiene que ser la hora del servidor', async () => {
+    await assertFails(
+      updateDoc(listRef(dbOf('beto'), 'activa'), { eliminada: true, eliminadaPor: 'beto', eliminadaEn: ago(DAYS_31) }),
+    );
+    await assertFails(deleteDoc(itemRef(dbOf('beto'), 'deActiva')));
+  });
+});
+
 // ---------------------------------------------------------------
 // Aislamiento
 // ---------------------------------------------------------------
@@ -765,7 +828,6 @@ describe('listas e ítems: aislamiento entre hogares y con otras colecciones', (
     await assertFails(getDoc(doc(dbOf('beto'), 'usuarios', 'cami')));
     await assertSucceeds(getDoc(doc(dbOf('beto'), 'usuarios', 'beto')));
     await assertFails(getDoc(doc(dbOf('otra'), 'hogares', H)));
-    await assertFails(setDoc(doc(dbOf('beto'), 'hogares', H, 'presencia', 'beto'), { listaId: 'lista1' }));
     await assertFails(setDoc(doc(dbOf('beto'), 'hogares', H, 'eventos', 'e1'), { tipo: 'x' }));
   });
 

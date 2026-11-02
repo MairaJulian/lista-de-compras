@@ -83,6 +83,10 @@ service cloud.firestore {
         && get(miembroDoc(hogarId, request.auth.uid)).data.estado == 'activo';
     }
 
+    function listaDoc(hogarId, listaId) {
+      return /databases/$(database)/documents/hogares/$(hogarId)/listas/$(listaId);
+    }
+
     function esCreadorActivo(hogarId) {
       return esMiembroActivo(hogarId)
         && get(miembroDoc(hogarId, request.auth.uid)).data.rol == 'creador';
@@ -337,6 +341,26 @@ service cloud.firestore {
           || (despues.borradoPor == request.auth.uid && despues.borradoEn == request.time));
     }
 
+    // El ítem pertenece a una lista eliminada hace más de 30 días (la purga
+    // los borra junto con la lista). Si la lista ya no existe, no alcanza.
+    function listaVencida(hogarId, datosItem) {
+      return datosItem.listaId is string
+        && exists(listaDoc(hogarId, datosItem.listaId))
+        && get(listaDoc(hogarId, datosItem.listaId)).data.get('eliminada', false) == true
+        && hacePasadoTreintaDias(get(listaDoc(hogarId, datosItem.listaId)).data.get('eliminadaEn', null));
+    }
+
+    // ---- hogares/{hogarId}/presencia/{uid} (Etapa 6) ----
+
+    // Un documento por persona: qué lista tiene abierta (vacío si ninguna) y
+    // el último latido, siempre con la hora del servidor.
+    function presenciaValida(datos) {
+      return datos.keys().hasOnly(['listaId', 'ultimoLatido'])
+        && datos.keys().hasAll(['listaId', 'ultimoLatido'])
+        && datos.listaId is string && datos.listaId.size() <= 100
+        && datos.ultimoLatido == request.time;
+    }
+
     match /hogares/{hogarId} {
       allow read: if esMiembroActivo(hogarId);
       allow create: if hogarNuevoValido(hogarId, request.resource.data);
@@ -378,8 +402,21 @@ service cloud.firestore {
         allow create: if esMiembroActivo(hogarId) && itemNuevoValido(request.resource.data);
         allow update: if esMiembroActivo(hogarId) && itemEditadoValido();
         allow delete: if esMiembroActivo(hogarId)
-          && resource.data.get('borrado', false) == true
-          && hacePasadoTreintaDias(resource.data.get('borradoEn', null));
+          && (
+            (resource.data.get('borrado', false) == true
+              && hacePasadoTreintaDias(resource.data.get('borradoEn', null)))
+            || listaVencida(hogarId, resource.data)
+          );
+      }
+
+      // Cualquier miembro activo ve la presencia de los demás; cada persona
+      // escribe solo la suya. Nunca se borra (se vacía listaId).
+      match /presencia/{uid} {
+        allow read: if esMiembroActivo(hogarId);
+        allow create, update: if esMiembroActivo(hogarId)
+          && request.auth.uid == uid
+          && presenciaValida(request.resource.data);
+        allow delete: if false;
       }
     }
 

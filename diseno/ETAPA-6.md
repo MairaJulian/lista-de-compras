@@ -55,7 +55,7 @@ Termina cuando, con dos personas en la misma lista, si una sale no se borra nada
 
 ## Estado
 
-- [ ] PR 1 · Reglas y pruebas
+- [x] PR 1 · Reglas y pruebas (216 pruebas pasan; reglas **sin publicar**)
 - [ ] Maira publica las reglas
 - [ ] PR 2 · Presencia, salir de la lista y purga
 - [ ] Prueba de Maira con dos cuentas
