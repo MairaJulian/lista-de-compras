@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { triggerTestCrash } from '../data/crashReporting';
 import { enterDemoSession, signOut, useSession } from '../auth/sessionStore';
 import { colors, fontSizes, fonts } from '../theme';
 import { ComponentsScreen } from './ComponentsScreen';
@@ -93,6 +94,7 @@ export function DevMenu() {
       ) : (
         <DevButton label="Probar Firestore" onPress={() => setPage('firestore')} />
       )}
+      <DevButton label="Fallo de prueba (Crashlytics)" onPress={triggerTestCrash} />
       <DevButton label="Cerrar" onPress={close} />
     </View>
   );

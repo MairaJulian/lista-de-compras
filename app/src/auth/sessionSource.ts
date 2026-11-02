@@ -2,6 +2,7 @@ import { getAuth, onAuthStateChanged, signOut } from '@react-native-firebase/aut
 import { doc, getFirestore, onSnapshot } from '@react-native-firebase/firestore';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
+import { setCrashReportingUser } from '../data/crashReporting';
 import { signedInState, type AuthState } from './sessionState';
 
 /**
@@ -14,6 +15,7 @@ export function watchSession(onChange: (state: AuthState) => void): () => void {
   const stopAuth = onAuthStateChanged(getAuth(), (user) => {
     stopUserDoc?.();
     stopUserDoc = undefined;
+    setCrashReportingUser(user?.uid ?? null);
     if (!user) {
       onChange({ status: 'signedOut' });
       return;

@@ -21,6 +21,7 @@
     "plugins": [
       "expo-font",
       "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
       "expo-asset",
       "./plugins/with-cmake-local-properties",
       "expo-router",
