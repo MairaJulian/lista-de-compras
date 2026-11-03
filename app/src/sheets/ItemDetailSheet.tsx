@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Avatar, BottomSheet, Button, QuantityStepper, TextField } from '../components';
+import { Avatar, BottomSheet, Button, ButtonRow, QuantityStepper, TextField } from '../components';
 import { changedFields, MAX_ITEM_NAME, MAX_ITEM_NOTE, type ItemPatch } from '../data/listLogic';
 import type { ListItem, Member } from '../data/types';
 import { colors, fontSizes, fonts, sizes } from '../theme';
@@ -88,8 +88,10 @@ function DetailForm({
         </View>
       </View>
       <View style={styles.actions}>
-        <Button label="Eliminar" variant="danger" flex={1} onPress={onDelete} />
-        <Button label="Guardar" flex={2} disabled={!name.trim()} onPress={save} />
+        <ButtonRow>
+          <Button label="Eliminar" variant="danger" grow={1} onPress={onDelete} />
+          <Button label="Guardar" grow={2} disabled={!name.trim()} onPress={save} />
+        </ButtonRow>
       </View>
     </View>
   );
@@ -115,5 +117,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   authorName: { fontFamily: fonts.bodyBold, fontSize: fontSizes.body, color: colors.textPrimary },
-  actions: { marginTop: 8, flexDirection: 'row', gap: 12 },
+  actions: { marginTop: 8 },
 });

@@ -1,6 +1,7 @@
+import { type ComponentRef, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  KeyboardAvoidingView,
+  Keyboard,
   Modal,
   Pressable,
   ScrollView,
@@ -27,6 +28,7 @@ type Props = {
 export function BottomSheet({ visible, title, onClose, showHeader = true, children }: Props) {
   const { mounted, progress } = useAnimatedPresence(visible, motion.panelDuration);
   const { bottom } = useSafeAreaInsets();
+  const { containerRef, onLayout, keyboardGap, keyboardOpen } = useKeyboardGap();
 
   if (!mounted) {
     return null;
@@ -39,11 +41,20 @@ export function BottomSheet({ visible, title, onClose, showHeader = true, childr
       <Animated.View style={[styles.overlay, { opacity: progress }]}>
         <Pressable accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
-      <KeyboardAvoidingView behavior="padding" pointerEvents="box-none" style={styles.container}>
+      <View
+        ref={containerRef}
+        onLayout={onLayout}
+        pointerEvents="box-none"
+        style={[styles.container, { paddingBottom: keyboardGap }]}
+      >
         <Animated.View
           accessibilityViewIsModal
           accessibilityLabel={title}
-          style={[styles.sheet, { paddingBottom: 28 + bottom, transform: [{ translateY }] }]}
+          // Con el teclado abierto la barra de navegación del sistema queda tapada: no se suma su margen.
+          style={[
+            styles.sheet,
+            { paddingBottom: 28 + (keyboardOpen ? 0 : bottom), transform: [{ translateY }] },
+          ]}
         >
           <View style={styles.handle} />
           {showHeader && (
@@ -71,9 +82,47 @@ export function BottomSheet({ visible, title, onClose, showHeader = true, childr
             {children}
           </ScrollView>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
+}
+
+/**
+ * Cuánto tapa el teclado del panel (el panel va pegado abajo en una ventana propia). Se mide contra
+ * la pantalla en vez de usar `KeyboardAvoidingView`, que con la pantalla de borde a borde de Android
+ * 15+ sumaba de más (franja blanca entre el teclado y el panel) o de menos (botón cortado). Si el
+ * sistema ya achicó la ventana por el teclado, la diferencia es 0 y no se suma nada.
+ */
+function useKeyboardGap() {
+  const containerRef = useRef<ComponentRef<typeof View>>(null);
+  const [keyboardTop, setKeyboardTop] = useState<number | null>(null);
+  const [measuredGap, setMeasuredGap] = useState(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) =>
+      setKeyboardTop(e.endCoordinates.screenY),
+    );
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardTop(null));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  const measure = useCallback(() => {
+    if (keyboardTop === null) return;
+    containerRef.current?.measureInWindow((_x, y, _w, height) => {
+      setMeasuredGap(Math.max(0, Math.round(y + height - keyboardTop)));
+    });
+  }, [keyboardTop]);
+
+  useEffect(() => {
+    measure();
+  }, [measure]);
+
+  const keyboardGap = keyboardTop === null ? 0 : measuredGap;
+
+  return { containerRef, onLayout: measure, keyboardGap, keyboardOpen: keyboardTop !== null };
 }
 
 const styles = StyleSheet.create({

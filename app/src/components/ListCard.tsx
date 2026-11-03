@@ -39,7 +39,13 @@ export function ListCard({ name, pendingCount, tone, icon, onPress }: Props) {
         <Text style={styles.name} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
           {name}
         </Text>
-        <Text style={[styles.caption, { color: text }]}>
+        {/* Una palabra sola: no crece más de 1,3× ni se parte ("pendiente / s") con letra grande. */}
+        <Text
+          maxFontSizeMultiplier={1.3}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={[styles.caption, { color: text }]}
+        >
           {upToDate ? 'Al día' : pendingCount === 1 ? 'pendiente' : 'pendientes'}
         </Text>
       </View>

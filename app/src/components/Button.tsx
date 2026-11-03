@@ -11,7 +11,8 @@ type Props = {
   variant?: Variant;
   large?: boolean;
   disabled?: boolean;
-  flex?: number;
+  /** Dentro de un `ButtonRow`: cuánto del espacio sobrante se queda (ver `ButtonRow`). */
+  grow?: number;
   /** Ícono a la izquierda del texto (p. ej. "Compartir enlace"). */
   icon?: IconName;
 };
@@ -27,7 +28,7 @@ export function Button({
   variant = 'primary',
   large,
   disabled,
-  flex,
+  grow,
   icon,
 }: Props) {
   const minHeight = large ? heights.buttonLarge : heights.button;
@@ -52,7 +53,7 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        { minHeight, flex },
+        { minHeight, flexGrow: grow, maxWidth: '100%' },
         variant === 'primary' && (greyedOut ? styles.primaryDisabled : styles.primary),
         variant === 'dangerFilled' && styles.dangerFilled,
         (variant === 'secondary' || variant === 'danger') && styles.outlined,

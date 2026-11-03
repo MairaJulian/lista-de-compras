@@ -1,5 +1,5 @@
 import { useFonts } from 'expo-font';
-import { router, Stack, useRootNavigationState } from 'expo-router';
+import { Stack, useRootNavigationState, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -39,6 +39,7 @@ startCrashReporting();
 export default function RootLayout() {
   const [fontsLoaded] = useFonts(fontAssets);
   const session = useSession();
+  const router = useRouter();
 
   useEffect(() => startSession(), []);
 
@@ -70,7 +71,7 @@ export default function RootLayout() {
     // Después de que las rutas protegidas lleven a Sin hogar, que si no pisan la invitación.
     const timer = setTimeout(() => router.push(`/unirse/${code}`), 0);
     return () => clearTimeout(timer);
-  }, [navigationReady, realSignedIn, hasHousehold]);
+  }, [navigationReady, realSignedIn, hasHousehold, router]);
 
   // Si la membresía deja de estar activa (te quitaron, o saliste desde otro celular) se vacía el
   // `hogarActualId` propio y se va a Sin hogar; solo a quien quitaron se le muestra el aviso.

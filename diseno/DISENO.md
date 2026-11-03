@@ -4,14 +4,18 @@
 
 ## Qué es
 
-App de lista de compras compartida para el hogar: 3 adultos de la misma casa, cada uno con su cuenta, editan las mismas listas y todos ven los cambios.
+App de lista de compras compartida por **grupos**: la familia (el caso de partida, 3 adultos de la misma casa), una juntada con amigos, un cumpleaños, etc. Cada persona tiene su cuenta, puede estar en **varios grupos**, y dentro de cada grupo todos editan las mismas listas y ven los cambios.
+
+> **Nombre "grupo"**: antes se llamaba "hogar". Todas las pantallas de los lienzos y el HTML ya dicen "grupo". Los **nombres de archivo** conservan el nombre viejo (`Hogar`, `SinHogar`, `CrearHogar`, `HogarCreado`, `EditarHogar`…) para no romper las referencias; en la app, el texto visible es siempre "grupo". Las imágenes PNG se rehacen con el texto nuevo (ver la nota de `pantallas/`).
 
 ## Contenido de esta carpeta
 
 - `DISENO.md`: este documento (decisiones, estilo, pantallas, flujos).
 - `pantallas/`: una imagen PNG por pantalla (780 × 1688, el doble del tamaño de diseño) más el PDF original `Changuito-pantallas.pdf`. El número del archivo sigue el orden de la tabla de pantallas de abajo:
-  `01-bienvenida`, `02-invitacion-recibida`, `03-inicio`, `04-nueva-lista`, `05-lista`, `06-lista-vacia`, `07-lista-sin-conexion`, `08-salir-de-la-lista`, `09-notificacion`, `10-detalle-item`, `11-hogar`, `12-invitar`, `13-opciones-miembro`, `14-confirmar-quitar`, `15-confirmar-salir`, `16-perfil`, `17-sin-hogar`, `18-sin-hogar-codigo`, `19-sin-hogar-te-sacaron`, `20-crear-hogar`, `21-hogar-creado`, `22-invitar-sin-enlace`, `23-desactivar-enlace`, `24-error-enlace-invalido`, `25-error-inicio-sesion`, `26-error-sin-conexion-unirse`, `27-salir-hogar-creador`, `28-salir-hogar-ultima-persona`, `29-inicio-sin-listas`, `30-error-codigo`, `31-error-crear-hogar`, `32-error-carga`, `33-editar-hogar`, `34-menu-lista`, `35-renombrar-lista`, `36-eliminar-lista`, `37-error-guardar`, `38-lista-eliminada`, `39-ajustes-notificaciones`, `40-permiso-notificaciones`, `41-ajustes-sin-permiso`, `42-inicio-silenciada`, `43-menu-lista-silenciada`, `44-icono-app`, `45-splash`, `46-cargando-entrada`.
-  Ojo: las barras de desplazamiento visibles en `05-lista` son un detalle de la exportación, no parte del diseño. En `12-invitar` la pill "Vence en 47 h" se ve partida en dos líneas porque la captura es anterior a un ajuste; en el diseño final va en una sola línea (ver `referencia-html/Invitar.dc.html`).
+  `01-bienvenida`, `02-invitacion-recibida`, `03-inicio`, `04-nueva-lista`, `05-lista`, `06-lista-vacia`, `07-lista-sin-conexion`, `08-salir-de-la-lista`, `09-notificacion`, `10-detalle-item`, `11-hogar`, `12-invitar`, `13-opciones-miembro`, `14-confirmar-quitar`, `15-confirmar-salir`, `16-perfil`, `17-sin-hogar`, `18-sin-hogar-codigo`, `19-sin-hogar-te-sacaron`, `20-crear-hogar`, `21-hogar-creado`, `22-invitar-sin-enlace`, `23-desactivar-enlace`, `24-error-enlace-invalido`, `25-error-inicio-sesion`, `26-error-sin-conexion-unirse`, `27-salir-hogar-creador`, `28-salir-hogar-ultima-persona`, `29-inicio-sin-listas`, `30-error-codigo`, `31-error-crear-hogar`, `32-error-carga`, `33-editar-hogar`, `34-menu-lista`, `35-renombrar-lista`, `36-eliminar-lista`, `37-error-guardar`, `38-lista-eliminada`, `39-ajustes-notificaciones`, `40-permiso-notificaciones`, `41-ajustes-sin-permiso`, `42-inicio-silenciada`, `43-menu-lista-silenciada`, `44-icono-app`, `45-splash`, `46-cargando-entrada`, `47-cambiar-grupo`, `48-mis-grupos`, `49-crear-otro-grupo`, `50-unirse-otro-grupo`, `51-archivar-grupo`, `52-grupo-archivado`, `53-salir-grupo-con-otros`, `54-sin-grupo`.
+  Las 54 imágenes salen de la misma exportación del lienzo y usan la palabra "grupo".
+  **Imágenes desactualizadas (2026-11-03):** `pantallas/12-invitar`, `22-invitar-sin-enlace` y `23-desactivar-enlace` todavía muestran "enlace" (y `12` también la tarjeta del enlace y "Compartir enlace"); la app ya usa "código" y solo el código. Valen las filas de esta tabla hasta que Claude Design vuelva a exportar esas tres imágenes. La `24` queda como está.
+  Ojo: las barras de desplazamiento visibles en `05-lista` son un detalle de la exportación, no parte del diseño.
 - `icono/`: el ícono de la app listo para usar (ver "Ícono y pantallas de carga" más abajo): capas SVG y PNG del ícono adaptable de Android, ícono de Play Store y la imagen del splash.
 - `referencia-html/`: el código fuente de cada pantalla (`*.dc.html`). Sirve **solo para copiar valores exactos** (colores, tamaños, textos, márgenes). No es código de la app y no se ejecuta suelto (depende de un `support.js` que no está acá).
 
@@ -19,23 +23,28 @@ App de lista de compras compartida para el hogar: 3 adultos de la misma casa, ca
 
 - Solo **Android** por ahora; intención de publicarla en Play Store más adelante.
 - Login **solo con Google**. Cada persona con su propia cuenta.
-- Un **hogar** agrupa a los miembros; el hogar tiene **varias listas** (Supermercado, Verdulería, etc.).
+- Un **grupo** agrupa a los miembros; el grupo tiene **varias listas** (Supermercado, Verdulería, etc.). Una persona puede estar en **varios grupos** (por ejemplo: la familia, una juntada con amigos, un cumpleaños).
+- **Cambiar de grupo**: se toca el nombre del grupo (con una flecha ⌄) arriba de "Listas" en Inicio y se elige en el panel "Tus grupos" (47). "Mis grupos" (48) muestra todos, activos y archivados, y se llega desde ese panel o desde la pestaña Grupo. La app abre el **último grupo que se usó**. Cada grupo tiene su color e ícono según el tipo (Familia, Amigos, Evento); el tipo solo cambia el aspecto.
+- **Crear otro grupo** (49) y **unirse a otro con un código** (50) se hacen desde el mismo panel y no sacan a la persona de sus otros grupos. Los enlaces, códigos y errores de unirse funcionan igual que antes. Las notificaciones llegan de **todos** los grupos; al tocarlas se abre el grupo que corresponde.
+- **Archivar un grupo** (51): lo puede hacer solo quien lo creó, pensado para cuando ya pasó el evento. Un grupo archivado queda en **solo lectura** para todas las personas, deja de avisar, sale del selector y aparece en "Archivados" de Mis grupos (52). Quien lo creó puede **desarchivarlo**. Un grupo archivado se puede abrir y mirar, no editar.
 - Actualización **en tiempo real** para todos los miembros.
 - **Notificación** a los demás si no tienen la lista abierta, **solo cuando agregan o borran ítems**.
 - **Funciona sin conexión** (importante): los cambios se guardan en el celular y se sincronizan al volver la conexión. Si hay conflicto, **gana el último cambio**.
 - Se quiere saber **quién agregó / tildó** cada ítem (avatar con inicial en cada fila).
 - Los ítems **tildados (comprados) se borran al salir de la lista** (con un aviso de confirmación).
-- **Cualquiera puede salir del hogar**; **solo quien creó el hogar puede sacar a otros miembros**.
-- **Sin hogar**: quien entra con Google y no pertenece a ningún hogar (primera vez, después de salir o de que la saquen) ve la pantalla "Sin hogar" con dos caminos: crear un hogar o entrar con un código de invitación. Si la sacaron, antes ve un aviso "Ya no sos parte de Nuestra casa".
+- **Cualquiera puede salir del grupo**; **solo quien creó el grupo puede sacar a otros miembros**.
+- **Sin grupo**: quien entra con Google y no pertenece a ningún grupo (primera vez, después de salir o de que la saquen) ve la pantalla "Sin grupo" con dos caminos: crear un grupo o entrar con un código de invitación. Si la sacaron, antes ve un aviso "Ya no sos parte de Nuestra casa".
 - **Invitaciones**: se invita con un **enlace** o con un **código corto** (formato `K7P2-9XQ-4MN`). Ambos vencen (en el diseño "Vence en 47 h"; el total de **48 h** es una suposición). Se puede **generar un enlace nuevo** o **desactivar** el actual (con confirmación). Un enlace vencido, desactivado o inválido muestra un error que dice "Pedile otro enlace a quien te invitó".
 - **Unirse requiere conexión**: sin internet se muestra un error con "Reintentar".
-- **Quien crea el hogar y sale**: el rol de creador pasa a otro miembro (en el diseño: "Lucía será la nueva persona a cargo"). Falta decidir **a quién** pasa en la app real.
-- **Última persona del hogar que sale**: el hogar se **archiva** y no queda nadie con acceso.
-- **Menú de lista**: cualquier miembro puede renombrar o eliminar una lista (no se restringe al creador del hogar; falta confirmar). Al eliminar, se borran todos los ítems para todo el hogar y no hay deshacer; la confirmación dice cuántos ítems se pierden. El ⋯ aparece en el encabezado de la lista (3, 3b, 3c).
+- **Salir de un grupo teniendo otros** (53): se pasa al grupo que se usó antes; solo cuando no queda ninguno se ve "Sin grupo" (54). Quien se quedó sin grupo activo pero sigue en grupos archivados puede entrar a verlos desde 54.
+- **Quien crea el grupo y sale**: el rol de creador pasa a otro miembro (en el diseño: "Lucía será la nueva persona a cargo"). Falta decidir **a quién** pasa en la app real.
+- **Última persona del grupo que sale**: el grupo se **archiva** y no queda nadie con acceso (es distinto de archivar a mano, que deja a todos con acceso de solo lectura).
+- **Menú de lista**: cualquier miembro puede renombrar o eliminar una lista (no se restringe al creador del grupo; falta confirmar). Al eliminar, se borran todos los ítems para todo el grupo y no hay deshacer; la confirmación dice cuántos ítems se pierden. El ⋯ aparece en el encabezado de la lista (3, 3b, 3c).
 - **Error al guardar** (distinto de "Sin conexión"): sin conexión no es un error, se guarda en el celular y se sincroniza solo (3c). Si hay conexión pero el servidor rechaza el cambio, el cambio **no se pierde ni se oculta**: queda en la lista marcado en rojo, con un aviso para **Reintentar** o **Descartar** (descartar lo revierte). El indicador de estado pasa a **Sin guardar**.
 - **Lista eliminada por otra persona**: quien la tiene abierta ve un aviso que no se puede cerrar con "Volver a las listas". Los cambios que no se habían sincronizado se pierden (se avisa en el texto). Las notificaciones (agregar/borrar ítems) no cubren este caso.
 - **Notificaciones**: un solo interruptor general ("Avisarme cuando agreguen o borren ítems") y **silenciar por lista**, que es por persona: silenciar solo afecta a quien lo hace. Con el interruptor apagado no llega ningún aviso, aunque no haya listas silenciadas. Silenciar no oculta nada: la lista se ve igual en Inicio (con una campana tachada) y sus ítems se siguen actualizando.
 - **Permiso de notificaciones (Android 13+)**: se pide una vez, con una pantalla previa que explica para qué (40) y luego el diálogo de Android. Si se rechaza (o se toca "Ahora no"), la app sigue funcionando sin avisos; el estado se ve solo en Notificaciones del perfil (41), con un acceso a los ajustes del celular. No se vuelve a pedir en otro momento.
+- Sin decidir todavía: cuántos grupos puede tener una persona como máximo, y si un grupo archivado se borra solo pasado un tiempo.
 - Sin decidir todavía: tecnología/stack de la app y del backend.
 
 ## Estilo visual
@@ -49,7 +58,7 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 ### Tipografías (Google Fonts)
 - **Nunito** 700/800: títulos, nombres de lista, números, iniciales de avatar.
 - **DM Sans** 400/500/700: texto general, botones, etiquetas.
-- Tamaños usados: título de pantalla 34 (Inicio/Hogar) o 24 (pantallas internas); título de aviso 24; cuerpo 16–17; secundario 13–15.
+- Tamaños usados: título de pantalla 34 (Inicio/Grupo) o 24 (pantallas internas); título de aviso 24; cuerpo 16–17; secundario 13–15.
 
 ### Colores
 | Uso | Valor |
@@ -84,7 +93,7 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 - Botones principales: alto 52–56, radio completo (pill), texto 16–17 en negrita.
 - Paneles inferiores: radio superior 28, manija de 36×4, animación de subida ~0.35 s.
 - Avisos (diálogos) centrados: radio 28, aparecen con leve escala + fade.
-- Barra inferior: alto 80, 2 pestañas (Listas / Hogar), indicador pill 64×32.
+- Barra inferior: alto 80, 2 pestañas (Listas / Grupo), indicador pill 64×32.
 - FAB extendido "Nueva lista": alto 56, radio 18.
 
 ## Pantallas y navegación
@@ -92,8 +101,8 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 | # | Archivo | Pantalla | Se llega desde → lleva a |
 |---|---|---|---|
 | 1 | `Main` | Bienvenida con "Entrar con Google" | → 2 Inicio |
-| 1b | `Unirse` | Lo que ve la persona invitada al abrir el enlace ("Te invitaron a unirte al hogar") | Se abre desde el enlace de invitación (no hay pantalla previa) → 2 Inicio / "Ahora no" → 1 |
-| 2 | `Inicio` | Tarjetas de listas del hogar (nombre + cantidad de pendientes), FAB "Nueva lista", barra inferior | 1 → tarjeta Supermercado → 3; tarjeta Ferretería → 3b; FAB → 2b; pestaña Hogar → 5 |
+| 1b | `Unirse` | Lo que ve la persona invitada al abrir el enlace ("Te invitaron a unirte al grupo") | Se abre desde el enlace de invitación (no hay pantalla previa) → 2 Inicio / "Ahora no" → 1 |
+| 2 | `Inicio` | Tarjetas de listas del grupo (nombre + cantidad de pendientes), nombre del grupo con flecha ⌄ arriba (→ 47), FAB "Nueva lista", barra inferior | 1 → tarjeta Supermercado → 3; tarjeta Ferretería → 3b; FAB → 2b; pestaña Grupo → 5 |
 | 2b | `NuevaLista` | Panel inferior: nombre + color (4 opciones) + "Crear lista" | 2 → vuelve a 2 |
 | 3 | `Lista` | Campo de agregar rápido arriba, **Pendientes**, **Comprados** (tachados) al final, indicador **Sincronizado / Sin conexión** | 2 → tocar ítem → 4; flecha atrás → 3d; botón ⋯ (arriba a la derecha) → 34 |
 | 3b | `ListaVacia` | Estado vacío ("Esta lista está vacía") | 2 (tarjeta Ferretería) |
@@ -101,42 +110,50 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 | 3d | `SalirLista` | Aviso: "¿Salir de la lista? Se van a borrar los N ítems comprados" | 3 → "Salir y borrar" → 2 / "Quedarme" → 3 |
 | 3e | `Notificacion` | Notificaciones de Android: "Lucía agregó 2 ítems", "Diego borró un ítem" | Tocar → 3 |
 | 4 | `Detalle` | Panel que sube desde abajo: nombre, cantidad (− / +), nota, "Agregado por", Guardar / Eliminar | 3 → vuelve a 3 |
-| 5 | `Hogar` | Tarjeta con el nombre del hogar (con lápiz, se toca para editarlo), miembros con rol, botón **Invitar**, "Salir del hogar", avatar de perfil arriba a la derecha | pestaña Hogar de 2; tarjeta del hogar → 33 |
-| 5b | `Invitar` | Enlace + código corto (`K7P2-9XQ-4MN`), cada uno con "Copiar", pill "Vence en 47 h", y los botones "Compartir enlace", "Generar enlace nuevo" y "Desactivar enlace" (peligro) | 5 → "Invitar"; "Desactivar enlace" → 23; también se llega desde 21 |
-| 5c | `MiembroOpciones` | Panel inferior de un miembro con "Quitar del hogar" (solo lo ve quien creó el hogar) | 5 → botón ⋯ |
-| 5d | `ConfirmarQuitar` | Aviso "¿Quitar a Lucía del hogar?" | 5c → "Quitar" / "Cancelar" → 5 |
-| 5e | `ConfirmarSalir` | Aviso "¿Salir de Nuestra casa?" (caso común: miembro que no creó el hogar) | 5 → "Salir del hogar" → 17. Si quien sale es el creador se muestra 27; si es la última persona, 28 |
-| 6 | `Perfil` | Avatar, nombre, cuenta de Google, hogar actual, fila **Notificaciones**, "Cerrar sesión" | 5 (avatar) → Notificaciones → 39; "Cerrar sesión" → 1 |
-| 17 | `SinHogar` | Sin hogar: "Armá tu hogar o sumate a uno." con "Crear un hogar" y "Tengo un código de invitación" | Después de entrar con Google sin tener hogar; o al salir del hogar (5e, 27, 28); desde 19 → 20 / 18 |
+| 5 | `Hogar` | Tarjeta con el nombre del grupo (con lápiz, se toca para editarlo), miembros con rol, fila **Mis grupos** (→ 48), botón **Invitar**, **Archivar grupo** (solo quien creó el grupo, → 51), "Salir del grupo", avatar de perfil arriba a la derecha | pestaña Grupo de 2; tarjeta del grupo → 33 |
+| 5b | `Invitar` | **Solo el código** corto (`K7P2-9XQ-4MN`, siempre en una línea, con "Copiar"; sin tarjeta de enlace porque `changuito://` no se abre desde WhatsApp), pill "Vence en 47 h", y los botones "Compartir código", "Generar código nuevo" y "Desactivar código" (peligro). *Cambio respecto de la imagen `12` (2026-11-03, decisión de Maira).* | 5 → "Invitar"; "Desactivar código" → 23; también se llega desde 21 |
+| 5c | `MiembroOpciones` | Panel inferior de un miembro con "Quitar del grupo" (solo lo ve quien creó el grupo) | 5 → botón ⋯ |
+| 5d | `ConfirmarQuitar` | Aviso "¿Quitar a Lucía del grupo?" | 5c → "Quitar" / "Cancelar" → 5 |
+| 5e | `ConfirmarSalir` | Aviso "¿Salir de Nuestra casa?" (caso común: miembro que no creó el grupo) | 5 → "Salir del grupo" → 54 (si es su único grupo; si tiene otros → 53). Si quien sale es el creador se muestra 27; si es la última persona, 28 |
+| 6 | `Perfil` | Avatar, nombre, cuenta de Google, grupo actual, fila **Notificaciones**, "Cerrar sesión" | 5 (avatar) → Notificaciones → 39; "Cerrar sesión" → 1 |
+| 17 | `SinHogar` | Sin grupo: "Armá tu grupo o sumate a uno." con "Crear un grupo" y "Tengo un código de invitación" | Después de entrar con Google por primera vez sin tener grupo → 20 / 18. Quien ya tuvo grupos y se quedó sin ninguno ve 54 |
 | 18 | `SinHogarCodigo` | Campo para escribir o pegar el código; "Unirme" se habilita al haber texto | 17 → Inicio (2) |
-| 19 | `SinHogarSacaron` | Aviso centrado "Ya no sos parte de Nuestra casa" con "Continuar" | Cuando sacan a la persona del hogar → 17 |
-| 20 | `CrearHogar` | Campo "Nombre del hogar"; "Crear hogar" se habilita al haber texto | 17 → 21 |
-| 21 | `HogarCreado` | "¡Listo, ya tenés hogar!" con "Invitar" y "Más tarde" | 20 → Invitar (5b) / "Más tarde" → 29 (hogar nuevo, sin listas) |
-| 22 | `InvitarSinEnlace` | "El enlace ya no está activo" (venció o se desactivó) con "Generar enlace nuevo" | 23 "Desactivar" (o cuando venció) → 5b |
-| 23 | `DesactivarEnlace` | Aviso "¿Desactivar el enlace?" con "Desactivar" (peligro) y "Cancelar" | 5b → 22 / 5b |
+| 19 | `SinHogarSacaron` | Aviso centrado "Ya no sos parte de Nuestra casa" con "Continuar" | Cuando sacan a la persona del grupo → 54 (si no le queda ningún grupo) o Inicio de otro grupo |
+| 20 | `CrearHogar` | Campo "Nombre del grupo"; "Crear grupo" se habilita al haber texto | 17 → 21 (para crear un segundo grupo, ver 49) |
+| 21 | `HogarCreado` | "¡Listo, ya tenés grupo!" con "Invitar" y "Más tarde" | 20 → Invitar (5b) / "Más tarde" → 29 (grupo nuevo, sin listas) |
+| 22 | `InvitarSinEnlace` | "El código ya no está activo" (venció o se desactivó) con "Generar código nuevo" | 23 "Desactivar" (o cuando venció) → 5b |
+| 23 | `DesactivarEnlace` | Aviso "¿Desactivar el código?" con "Desactivar" (peligro) y "Cancelar" | 5b → 22 / 5b |
 | 24 | `ErrorEnlace` | Error en la pantalla de unirse: "Este enlace ya no sirve. Pedile otro enlace a quien te invitó." | Al abrir un enlace vencido, desactivado o inválido → Bienvenida (1) / código (18) |
 | 25 | `ErrorLogin` | Error: "No pudimos entrar / Algo salió mal" con "Reintentar" | Si falla el inicio de sesión con Google → Inicio (2) al reintentar |
 | 26 | `ErrorSinConexion` | Error: "Necesitás internet para unirte" con "Reintentar" y "Ahora no" | Al intentar unirse sin conexión → 1b / 1 |
-| 27 | `SalirCreador` | Variante del aviso de salir: avisa que el rol de creador pasa a otro miembro (muestra a Lucía) | Quien creó el hogar toca "Salir del hogar" en 5 → 17 / 5 |
-| 28 | `SalirUltimo` | Variante del aviso de salir: "Sos la última persona del hogar"; el hogar se archiva | La última persona del hogar toca "Salir del hogar" → 17 / 5 |
-| 29 | `InicioSinListas` | Inicio de un hogar recién creado: título "Listas", mensaje "Todavía no hay listas", botón extendido **Nueva lista** y barra inferior | 21 "Más tarde" → FAB → 2b; pestaña Hogar → 5. Se muestra siempre que el hogar no tenga listas |
+| 27 | `SalirCreador` | Variante del aviso de salir: avisa que el rol de creador pasa a otro miembro (muestra a Lucía) | Quien creó el grupo toca "Salir del grupo" en 5 → 54 (si es su único grupo) o su otro grupo / 5 |
+| 28 | `SalirUltimo` | Variante del aviso de salir: "Sos la última persona del grupo"; el grupo se archiva | La última persona del grupo toca "Salir del grupo" → 54 (si es su único grupo) o su otro grupo / 5 |
+| 29 | `InicioSinListas` | Inicio de un grupo recién creado: título "Listas", mensaje "Todavía no hay listas", botón extendido **Nueva lista** y barra inferior | 21 "Más tarde" → FAB → 2b; pestaña Grupo → 5. Se muestra siempre que el grupo no tenga listas |
 | 30 | `ErrorCodigo` | Variante de 18 con el código mal escrito: campo con borde rojo y mensaje debajo "Este código no existe o ya venció. Revisalo o pedí uno nuevo." | 18 al tocar "Unirme" con un código inválido. Al editar el campo o tocar "Pegar" el error se borra |
-| 31 | `ErrorCrearHogar` | Variante de 20 si falla la creación: "No pudimos crear el hogar", el nombre escrito se conserva, aviso rojo y botón **Reintentar** | 20 al tocar "Crear hogar" y fallar → "Reintentar" → 21 / "Ahora no" → 17 |
-| 32 | `ErrorCarga` | Error general de lectura de datos: "No pudimos cargar tus datos" con **Reintentar**; conserva el título y la barra inferior | Cuando falla la lectura (Inicio, Hogar, etc.) → "Reintentar" → 2 |
-| 33 | `EditarHogar` | Panel inferior "Nombre del hogar": nombre actual, campo editable, **Guardar** (se deshabilita si el campo queda vacío) y Cancelar | 5 (tarjeta del hogar) → Guardar / Cancelar → 5 |
+| 31 | `ErrorCrearHogar` | Variante de 20 si falla la creación: "No pudimos crear el grupo", el nombre escrito se conserva, aviso rojo y botón **Reintentar** | 20 al tocar "Crear grupo" y fallar → "Reintentar" → 21 / "Ahora no" → 17 |
+| 32 | `ErrorCarga` | Error general de lectura de datos: "No pudimos cargar tus datos" con **Reintentar**; conserva el título y la barra inferior | Cuando falla la lectura (Inicio, Grupo, etc.) → "Reintentar" → 2 |
+| 33 | `EditarHogar` | Panel inferior "Nombre del grupo": nombre actual, campo editable, **Guardar** (se deshabilita si el campo queda vacío) y Cancelar | 5 (tarjeta del grupo) → Guardar / Cancelar → 5 |
 | 34 | `MenuLista` | Panel inferior de la lista (se abre con el ⋯ del encabezado de 3): nombre, cantidad de ítems, **Renombrar**, **Silenciar** ("No te avisamos de esta lista") y **Eliminar lista** (peligro) | 3 → ⋯ → Renombrar → 35 / Silenciar → 43 (en el prototipo; en la app se cierra el panel y la lista queda silenciada) / Eliminar lista → 36 / Cancelar → 3 |
 | 35 | `RenombrarLista` | Panel inferior como el de 33: "Nombre de la lista", nombre actual, campo editable, **Guardar** (se deshabilita si queda vacío) y Cancelar | 34 → Guardar / Cancelar → 3 |
-| 36 | `EliminarLista` | Aviso centrado "¿Eliminar Supermercado?": dice cuántos ítems se pierden (10: 7 pendientes y 3 comprados), que desaparece para todo el hogar y que no se puede deshacer. Botones **Eliminar lista** (rojo) y Cancelar | 34 → Eliminar lista → 2 / Cancelar → 3 |
+| 36 | `EliminarLista` | Aviso centrado "¿Eliminar Supermercado?": dice cuántos ítems se pierden (10: 7 pendientes y 3 comprados), que desaparece para todo el grupo y que no se puede deshacer. Botones **Eliminar lista** (rojo) y Cancelar | 34 → Eliminar lista → 2 / Cancelar → 3 |
 | 37 | `ErrorGuardar` | Lista con un cambio que no se pudo guardar (agregar, tildar o editar un ítem): pill roja **Sin guardar** en el encabezado, aviso rojo "No pudimos guardar 2 cambios" con **Reintentar** y **Descartar**, y las filas afectadas marcadas con "!" y el motivo ("No se guardó: ítem nuevo", "No se guardó: cantidad (antes 1 kg)") | Cuando falla una escritura con conexión: Reintentar → 3 (queda sincronizada) / Descartar → 3 (vuelve a como estaba) |
 | 38 | `ListaEliminada` | Aviso centrado, sin forma de cerrarlo, "Esta lista ya no existe": "Lucía eliminó Supermercado…", botón **Volver a las listas** | Cuando otra persona elimina la lista que tenés abierta → 2 |
 | 39 | `AjustesNotificaciones` | Interruptor **"Avisarme cuando agreguen o borren ítems"** ("Solo si no tenés la lista abierta") y **Listas silenciadas** (Verdulería, Farmacia) cada una con "Dejar de silenciar". Con el interruptor apagado la sección de listas se atenúa; sin listas silenciadas dice cómo silenciar | 6 Perfil → Notificaciones; flecha atrás → 6 |
-| 40 | `PermisoNotificaciones` | Pedido inicial de permiso (pantalla previa al diálogo de Android): "¿Te avisamos cuando haya cambios?", ejemplo de notificación ("Lucía agregó 2 ítems"), **Activar avisos** y "Ahora no" | Una sola vez, al llegar a Inicio por primera vez (después de crear o unirse a un hogar) → Inicio (2) |
+| 40 | `PermisoNotificaciones` | Pedido inicial de permiso (pantalla previa al diálogo de Android): "¿Te avisamos cuando haya cambios?", ejemplo de notificación ("Lucía agregó 2 ítems"), **Activar avisos** y "Ahora no" | Una sola vez, al llegar a Inicio por primera vez (después de crear o unirse a un grupo) → Inicio (2) |
 | 41 | `AjustesSinPermiso` | Variante de 39 cuando el permiso está rechazado: aviso ámbar "Las notificaciones están bloqueadas en tu celular" con **Abrir ajustes del celular**, interruptor deshabilitado y la lista de silenciadas atenuada | 6 → Notificaciones, cuando Android tiene las notificaciones de Changuito bloqueadas (rechazó el pedido o tocó "Ahora no" y no lo activó) → "Abrir ajustes" abre los ajustes de Android; al volver, 39 |
 | 42 | `InicioSilenciada` | Inicio con la tarjeta Verdulería silenciada: ícono de campana tachada junto al contador de pendientes (el contador sigue visible) | Mismo Inicio (2) para quien silenció esa lista |
 | 43 | `MenuListaSilenciada` | Menú de una lista silenciada: "Dejar de silenciar" ("Volvé a recibir avisos de esta lista") y el subtítulo "10 ítems · Silenciada" | 3 → ⋯ cuando la lista está silenciada → 34 |
 | 44 | `IconoApp` | Hoja del ícono: combinado con máscara circular, las tres capas (primer plano, fondo, monocromático) con la zona segura de 66 dp, y el ícono con otras máscaras y con tema de color | Solo referencia (no es una pantalla de la app); los archivos están en `icono/` |
 | 45 | `Splash` | Pantalla de carga inicial: logo (carrito sobre verde) centrado y "Changuito", sobre el fondo `#F7F8F3`; abajo "Lista de compras compartida" | Al abrir la app → 1 Bienvenida (si no hay sesión) o 46 (si ya hay sesión) |
-| 46 | `CargandoEntrada` | Mismo logo y nombre en la misma posición que 45, más un indicador circular y "Entrando… Estamos buscando tu hogar y tus listas." | Después de iniciar sesión con Google, o al abrir la app con sesión iniciada → 2 Inicio (o 17 Sin hogar si no tiene hogar) |
+| 46 | `CargandoEntrada` | Mismo logo y nombre en la misma posición que 45, más un indicador circular y "Entrando… Estamos buscando tu grupo y tus listas." | Después de iniciar sesión con Google, o al abrir la app con sesión iniciada → 2 Inicio (o 17 Sin grupo si no tiene grupo) |
+| 47 | `CambiarGrupo` | Panel inferior "Tus grupos" sobre Inicio: un renglón por grupo (ícono de color según el tipo, nombre, "N miembros · N pendientes"), tilde en el actual, botones **Crear grupo** y **Unirme con un código**, y el enlace "Ver todos mis grupos y archivados" | 2 → tocar el nombre del grupo (⌄) → elegir un grupo → 2 de ese grupo / Crear grupo → 49 / Unirme con un código → 50 / Ver todos → 48 |
+| 48 | `MisGrupos` | Lista completa: **Activos** (con "Viendo" en el actual y el rol: "Creaste el grupo" / "Miembro"), **Archivados** (en gris, con la fecha) y los botones Crear grupo y Unirme con un código | 5 (fila Mis grupos) o 47 → grupo activo → 2 / archivado → 52 / Crear → 49 / Unirme → 50 |
+| 49 | `CrearOtroGrupo` | Como 20 más el **tipo de grupo** (Familia, Amigos, Evento) con aviso: para Evento, "Cuando termine el evento, podés archivar el grupo…" | 47 / 48 → Crear grupo → 21 (grupo creado) |
+| 50 | `UnirseOtroGrupo` | Como 18 pero para quien ya está en otros grupos: "Seguís en tus otros grupos" | 47 / 48 → Unirme → 2 del grupo nuevo. Los errores son los de 24 y 30 |
+| 51 | `ArchivarGrupo` | Aviso "¿Archivar Cumple de los chicos?": queda en solo lectura, deja de avisar, queda en Archivados y se puede desarchivar. Botones **Archivar grupo** y Cancelar | 5 → Archivar grupo (solo quien creó el grupo) → 48 con el grupo en Archivados |
+| 52 | `GrupoArchivado` | Un grupo archivado visto desde Archivados: "Archivado · solo lectura", aviso "Este grupo está archivado", botón **Desarchivar grupo** (solo quien lo creó) y las listas en gris con candado, sin contadores ni botón Nueva lista | 48 (renglón de Archivados) / 54 → Desarchivar → 48 |
+| 53 | `SalirGrupoConOtros` | Variante de 5e para quien tiene otros grupos: "¿Salir de Juntada del sábado?", dice que va a pasar a Nuestra casa | 5 → Salir del grupo → Inicio del otro grupo |
+| 54 | `SinGrupo` | Estado "sin grupo": "Ya no estás en ningún grupo" con Crear un grupo, Tengo un código y "Ver mis grupos archivados (1)" | Al salir del último grupo (5e, 27, 28), o cuando sacan a la persona (19) y no le quedan otros → 20 / 18 / 52 |
 
 ## Ícono y pantallas de carga
 
@@ -153,19 +170,8 @@ Uso previsto con Expo (`app.json`, sin inventar nada nuevo): `android.adaptiveIc
 
 **Pantallas de carga**:
 - **Splash (45)**: fondo `#F7F8F3`, logo de 132 px con esquinas de 38 px (la imagen `splash-icon.png`) y "Changuito" en Nunito 800 de 34 px. Android 12 y posteriores muestran **solo el ícono** sobre el color de fondo (no pueden mostrar texto): el nombre y el pie "Lista de compras compartida" se ven en Android 11 o anterior. En la app real, al terminar de arrancar se pasa a la pantalla que corresponda.
-- **Cargando después de iniciar sesión (46)**: misma composición que 45 para que el cambio sea continuo (el logo no se mueve), con un indicador circular (anillo `#CFE8D9` con tramo `#2E7D57` girando) y el texto "Entrando…". Se muestra mientras se lee el hogar y las listas; si tarda o falla, se pasa a 32 (error de carga). Con "reducir animaciones" activado el indicador no gira.
+- **Cargando después de iniciar sesión (46)**: misma composición que 45 para que el cambio sea continuo (el logo no se mueve), con un indicador circular (anillo `#CFE8D9` con tramo `#2E7D57` girando) y el texto "Entrando…". Se muestra mientras se lee el grupo y las listas; si tarda o falla, se pasa a 32 (error de carga). Con "reducir animaciones" activado el indicador no gira.
 - No hay modo oscuro todavía: ni el ícono ni las pantallas de carga tienen versión oscura.
-
-## Letra grande del sistema
-
-Las pantallas de diseño están dibujadas con la letra normal. Varias personas de la familia usan el tamaño de fuente de Android muy agrandado, así que la app **no limita el tamaño de letra** y se adapta (revisada con escalas 1,3 / 1,5 / 2,0). Reglas:
-
-- Las alturas fijas de filas, botones y campos pasan a **alturas mínimas**: con letra normal miden lo mismo que en el diseño y con letra grande crecen.
-- Un título que no entra pasa a más de una línea; un indicador que no entra baja **debajo del título**. En Lista, desde 1,15× el "Sincronizado" / "Sin conexión" va en su propia fila, debajo del título y del nombre del hogar (cambio respecto de `05`, `07` y `37`, que solo aplica con letra grande).
-- Los nombres de ítems pueden ocupar dos líneas; las tarjetas de Inicio achican el nombre hasta el 70 %.
-- Bienvenida, Sin hogar, Unirse, Crear hogar, Invitar y los paneles/avisos **se desplazan** si no entran; los botones principales de los formularios quedan fijos abajo.
-- Áreas táctiles de al menos 44 dp en todo (también con letra grande).
-- **Excepciones con tope de 1,3×:** los nombres de las pestañas de la barra inferior (alto fijo) y el campo del código de invitación (una sola línea). En los campos con un botón adentro ("Pegar") el botón baja debajo del texto con letra grande.
 
 ## Comportamientos que muestra el prototipo
 
@@ -176,14 +182,15 @@ Las pantallas de diseño están dibujadas con la letra normal. Varias personas d
 
 ## Textos placeholder y cosas que son de ejemplo
 
-- Nombre de app "Changuito", hogar "Nuestra casa", miembros "Vos / Lucía / Diego": ejemplos.
+- Nombre de app "Changuito", grupo "Nuestra casa", miembros "Vos / Lucía / Diego": ejemplos.
 - `[enlace de invitación]` y `[cuenta de Google]` son marcadores: no hay enlace ni mail reales.
 - En 39 "Dejar de silenciar" saca la lista del listado y el interruptor se enciende y apaga, pero no se refleja en 42 ni en 34 (el prototipo no comparte estado entre pantallas). En 40 "Activar avisos" y "Ahora no" van igual a Inicio: el diálogo de Android no está dibujado. Silenciar en 34 abre 43 para mostrar el estado. 41 solo se llega desde el lienzo.
 - 45 y 46 se tocan en cualquier parte para pasar a la pantalla siguiente (el prototipo no tiene temporizador). 46 es la única con animación (indicador girando).
+- El selector 47 y Mis grupos 48 llevan siempre al mismo Inicio (el prototipo tiene un solo Inicio, el de Nuestra casa). En 53 "Salir del grupo" y en 5e/27/28 la elección entre 53 y 54 depende de cuántos grupos tiene la persona: en el lienzo se ven las dos. Los nombres de ejemplo "Juntada del sábado", "Cumple de los chicos" y "Cena de fin de año" son datos de ejemplo.
 - Las tarjetas Verdulería y Farmacia (Inicio) y el ⋯ de Diego no tienen pantalla destino; en la app real se comportarían igual que sus equivalentes.
 - La flecha atrás de una lista siempre muestra el aviso 3d en el prototipo; en la app real solo cuando haya ítems comprados.
 - El detalle siempre muestra "Leche"; en la app real muestra el ítem tocado.
-- En el prototipo "Salir del hogar" de Hogar siempre abre la variante común (5e); las variantes 27 y 28 se ven directamente en el lienzo. En la app real se elige la variante según el caso.
+- En el prototipo "Salir del grupo" de Grupo siempre abre la variante común (5e); las variantes 27 y 28 se ven directamente en el lienzo. En la app real se elige la variante según el caso.
 - El ⋯ de 3b y 3c abre el menú de Supermercado (el prototipo tiene un solo menú). En 36 "Eliminar lista" vuelve a 2 donde la tarjeta sigue; en la app real desaparece.
 - El prototipo no conecta 19 (te sacaron), 24–26, 30–32, 37 ni 38 (errores y avisos) con un disparador real: se ven en el lienzo para diseñar el estado.
 - En 33 el nombre nuevo no se refleja al volver a 5 (el prototipo no guarda datos). Quién puede editar el nombre no está decidido en el diseño: el panel no dice nada al respecto.

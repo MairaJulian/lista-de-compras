@@ -136,60 +136,53 @@ describe('ProfileScreen', () => {
 describe('InviteScreen', () => {
   beforeEach(() => resetMockStore());
 
-  it('muestra enlace, código y vencimiento', async () => {
+  it('muestra solo el código (sin enlace) y el vencimiento', async () => {
     await render(<InviteScreen />);
     expect(screen.getByText('Sumá a alguien a Nuestra casa')).toBeTruthy();
-    expect(screen.getByText('changuito://unirse/K7P2-9XQ-4MN')).toBeTruthy();
+    expect(screen.queryByText('changuito://unirse/K7P2-9XQ-4MN')).toBeNull();
+    expect(screen.queryByLabelText('Copiar enlace')).toBeNull();
     expect(screen.getByText('K7P2-9XQ-4MN')).toBeTruthy();
     expect(screen.getByText('Vence en 47 h')).toBeTruthy();
   });
 
-  it('Copiar cambia a Copiado solo en lo que se tocó y copia el código', async () => {
+  it('Copiar cambia a Copiado y copia el código', async () => {
     const onCopyText = jest.fn(async () => {});
     await render(<InviteScreen onCopyText={onCopyText} />);
     await fireEvent.press(screen.getByLabelText('Copiar código'));
-    expect(screen.getByLabelText('Copiado código')).toBeTruthy();
-    expect(screen.getByLabelText('Copiar enlace')).toBeTruthy();
+    expect(screen.getByLabelText('Copiado')).toBeTruthy();
     expect(onCopyText).toHaveBeenCalledWith('K7P2-9XQ-4MN');
   });
 
-  it('Copiar el enlace copia el enlace completo', async () => {
-    const onCopyText = jest.fn(async () => {});
-    await render(<InviteScreen onCopyText={onCopyText} />);
-    await fireEvent.press(screen.getByLabelText('Copiar enlace'));
-    expect(onCopyText).toHaveBeenCalledWith('changuito://unirse/K7P2-9XQ-4MN');
-  });
-
-  it('Compartir enlace pasa el código y el enlace al menú de compartir', async () => {
+  it('Compartir código pasa el mensaje con el código al menú de compartir', async () => {
     const onShare = jest.fn();
     await render(<InviteScreen onShare={onShare} />);
-    await fireEvent.press(screen.getByText('Compartir enlace'));
+    await fireEvent.press(screen.getByText('Compartir código'));
     expect(onShare).toHaveBeenCalledWith(expect.stringContaining('Código: K7P2-9XQ-4MN'));
     expect(onShare).toHaveBeenCalledWith(expect.stringContaining('pegá este código'));
   });
 
-  it('Generar enlace nuevo cambia el código y el vencimiento', async () => {
+  it('Generar código nuevo cambia el código y el vencimiento', async () => {
     await render(<InviteScreen />);
-    await fireEvent.press(screen.getByText('Generar enlace nuevo'));
+    await fireEvent.press(screen.getByText('Generar código nuevo'));
     expect(screen.getByText('R4WD-3ZT-8HC')).toBeTruthy();
     expect(screen.getByText('Vence en 48 h')).toBeTruthy();
   });
 
   it('Desactivar pide confirmación; Cancelar lo deja activo', async () => {
     await render(<InviteScreen />);
-    await fireEvent.press(screen.getByText('Desactivar enlace'));
-    expect(screen.getByText('¿Desactivar el enlace?')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Desactivar código'));
+    expect(screen.getByText('¿Desactivar el código?')).toBeTruthy();
     await fireEvent.press(screen.getByText('Cancelar'));
     expect(screen.getByText('K7P2-9XQ-4MN')).toBeTruthy();
   });
 
-  it('Desactivar muestra "El enlace ya no está activo" y Generar lo reactiva', async () => {
+  it('Desactivar muestra "El código ya no está activo" y Generar lo reactiva', async () => {
     await render(<InviteScreen />);
-    await fireEvent.press(screen.getByText('Desactivar enlace'));
+    await fireEvent.press(screen.getByText('Desactivar código'));
     await fireEvent.press(screen.getByText('Desactivar'));
-    expect(screen.getByText('El enlace ya no está activo')).toBeTruthy();
+    expect(screen.getByText('El código ya no está activo')).toBeTruthy();
     expect(screen.queryByText('K7P2-9XQ-4MN')).toBeNull();
-    await fireEvent.press(screen.getByText('Generar enlace nuevo'));
+    await fireEvent.press(screen.getByText('Generar código nuevo'));
     expect(screen.getByText('Sumá a alguien a Nuestra casa')).toBeTruthy();
     expect(screen.getByText('R4WD-3ZT-8HC')).toBeTruthy();
   });

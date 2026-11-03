@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, whenRouterReady } from '../navigation/safeRouter';
 import { useRef } from 'react';
 import { Alert } from 'react-native';
 
@@ -43,4 +43,4 @@ export function useGoogleSignIn({ onCancelled, onError }: Options = {}) {
   };
 }
 
-export const openLoginError = () => router.push('/error-login');
+export const openLoginError = () => whenRouterReady(() => router.push('/error-login'));

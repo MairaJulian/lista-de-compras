@@ -1,9 +1,10 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import { goToStart } from '../navigation/session';
 import { OfflineJoinErrorScreen } from '../screens/ErrorScreens';
 
 export default function OfflineJoinErrorRoute() {
+  const router = useRouter();
   // El código de la invitación, para volver a intentar con la misma.
   const { codigo } = useLocalSearchParams<{ codigo?: string }>();
   return (

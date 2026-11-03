@@ -1,10 +1,11 @@
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import { normalizeInviteCode } from '../data/joinLogic';
 import { useJoinFlow } from '../navigation/useJoinFlow';
 import { JoinWithCodeScreen } from '../screens/JoinWithCodeScreen';
 
 export default function JoinWithCodeRoute() {
+  const router = useRouter();
   const join = useJoinFlow();
 
   return (

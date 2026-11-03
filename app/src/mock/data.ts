@@ -15,7 +15,7 @@ export const mockHousehold: Household = {
   ],
 };
 
-// Invitaciones de ejemplo: la primera es la de `12-invitar`; "Generar enlace nuevo" pasa a la
+// Invitaciones de ejemplo: la primera es la de `12-invitar`; "Generar código nuevo" pasa a la
 // segunda (R4WD-3ZT-8HC, 48 h) y después vuelve a dar vueltas entre ambas.
 export const mockInvites: Invite[] = [
   { code: 'K7P2-9XQ-4MN', hoursLeft: 47, active: true },

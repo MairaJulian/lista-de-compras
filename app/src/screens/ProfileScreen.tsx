@@ -30,7 +30,15 @@ export function ProfileScreen({ onBack, onSignOut }: Props) {
           <Avatar name={member.name} tone={member.tone} size={96} />
         </View>
         <Text style={styles.name}>{member.name}</Text>
-        <Text style={styles.email}>{email}</Text>
+        {/* El correo no crece más de 1,3× y, si no entra, va en una sola línea recortada en el medio. */}
+        <Text
+          maxFontSizeMultiplier={1.3}
+          numberOfLines={1}
+          ellipsizeMode="middle"
+          style={styles.email}
+        >
+          {email}
+        </Text>
       </View>
 
       {hasHousehold && (
@@ -59,7 +67,12 @@ const styles = StyleSheet.create({
   identity: { paddingTop: 48, paddingHorizontal: 32, alignItems: 'center', gap: 6 },
   avatar: { marginBottom: 10 },
   name: { fontFamily: fonts.heading, fontSize: 28, lineHeight: 31, color: colors.textPrimary },
-  email: { fontFamily: fonts.body, fontSize: fontSizes.body, color: colors.textSecondary },
+  email: {
+    maxWidth: '100%',
+    fontFamily: fonts.body,
+    fontSize: fontSizes.body,
+    color: colors.textSecondary,
+  },
   householdCard: {
     marginHorizontal: 24,
     marginTop: 32,
