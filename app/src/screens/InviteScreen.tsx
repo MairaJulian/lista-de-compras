@@ -22,8 +22,8 @@ type Failure = 'generate' | 'deactivate';
 
 // Textos míos: el diseño no trae una variante para estos errores (ver las notas del PR 4).
 const failureMessages: Record<Failure, string> = {
-  generate: 'No pudimos generar el enlace. Revisá tu conexión y probá de nuevo.',
-  deactivate: 'No pudimos desactivar el enlace. Revisá tu conexión y probá de nuevo.',
+  generate: 'No pudimos generar el código. Revisá tu conexión y probá de nuevo.',
+  deactivate: 'No pudimos desactivar el código. Revisá tu conexión y probá de nuevo.',
 };
 
 /** Invitar (`12-invitar`) y su estado sin enlace (`22-invitar-sin-enlace`). */
@@ -103,14 +103,14 @@ export function InviteScreen({
                 onPress={() => onShare(inviteMessage(household.name, invite.code))}
               />
               <Button
-                label="Generar enlace nuevo"
+                label="Generar código nuevo"
                 icon="refresh"
                 variant="secondary"
                 disabled={busy}
                 onPress={() => run(regenerate, 'generate')}
               />
               <Button
-                label="Desactivar enlace"
+                label="Desactivar código"
                 variant="danger"
                 disabled={busy}
                 onPress={() => setConfirmOpen(true)}
@@ -124,7 +124,7 @@ export function InviteScreen({
                 <Icon name="linkOff" size={48} color={colors.neutralText} />
               </View>
               <Text accessibilityRole="header" style={styles.inactiveTitle}>
-                El enlace ya no está activo
+                El código ya no está activo
               </Text>
               <Text style={styles.inactiveText}>
                 Venció o lo desactivaste. Generá uno nuevo para seguir invitando.
@@ -136,7 +136,7 @@ export function InviteScreen({
             <View style={[styles.actions, { paddingBottom: 40 + Math.max(bottom, 24) }]}>
               <FailureNote failure={failure} />
               <Button
-                label="Generar enlace nuevo"
+                label="Generar código nuevo"
                 icon="refresh"
                 large
                 disabled={busy}
@@ -151,7 +151,7 @@ export function InviteScreen({
         visible={confirmOpen}
         icon="linkOff"
         tone="danger"
-        title="¿Desactivar el enlace?"
+        title="¿Desactivar el código?"
         message="Nadie va a poder unirse con este código. Podés generar uno nuevo cuando quieras."
         onClose={() => setConfirmOpen(false)}
       >

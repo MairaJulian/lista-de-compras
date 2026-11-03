@@ -39,7 +39,7 @@ export function leaveHousehold(members: Member[], byId: string): Member[] {
     .map((member) => (member.id === successor?.id ? { ...member, role: 'creator' } : member));
 }
 
-/** Pasa al siguiente enlace de la lista de ejemplo (activo), como "Generar enlace nuevo". */
+/** Pasa al siguiente enlace de la lista de ejemplo (activo), como "Generar código nuevo". */
 export function regenerateInvite(invites: Invite[], current: Invite): Invite {
   const index = invites.findIndex((invite) => invite.code === current.code);
   return { ...invites[(index + 1) % invites.length], active: true };

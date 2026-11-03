@@ -317,7 +317,7 @@ describe('navegación', () => {
 
   it('Unirse con el enlace desactivado muestra el error y "Entendido" vuelve al inicio', async () => {
     await renderRouter(routes, { initialUrl: '/invitar' });
-    await fireEvent.press(screen.getByText('Desactivar enlace'));
+    await fireEvent.press(screen.getByText('Desactivar código'));
     await fireEvent.press(screen.getByText('Desactivar'));
     await act(async () => router.push('/unirse'));
     await fireEvent.press(screen.getByText('Entrar y unirme'));

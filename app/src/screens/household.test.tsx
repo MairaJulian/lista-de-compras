@@ -161,28 +161,28 @@ describe('InviteScreen', () => {
     expect(onShare).toHaveBeenCalledWith(expect.stringContaining('pegá este código'));
   });
 
-  it('Generar enlace nuevo cambia el código y el vencimiento', async () => {
+  it('Generar código nuevo cambia el código y el vencimiento', async () => {
     await render(<InviteScreen />);
-    await fireEvent.press(screen.getByText('Generar enlace nuevo'));
+    await fireEvent.press(screen.getByText('Generar código nuevo'));
     expect(screen.getByText('R4WD-3ZT-8HC')).toBeTruthy();
     expect(screen.getByText('Vence en 48 h')).toBeTruthy();
   });
 
   it('Desactivar pide confirmación; Cancelar lo deja activo', async () => {
     await render(<InviteScreen />);
-    await fireEvent.press(screen.getByText('Desactivar enlace'));
-    expect(screen.getByText('¿Desactivar el enlace?')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Desactivar código'));
+    expect(screen.getByText('¿Desactivar el código?')).toBeTruthy();
     await fireEvent.press(screen.getByText('Cancelar'));
     expect(screen.getByText('K7P2-9XQ-4MN')).toBeTruthy();
   });
 
-  it('Desactivar muestra "El enlace ya no está activo" y Generar lo reactiva', async () => {
+  it('Desactivar muestra "El código ya no está activo" y Generar lo reactiva', async () => {
     await render(<InviteScreen />);
-    await fireEvent.press(screen.getByText('Desactivar enlace'));
+    await fireEvent.press(screen.getByText('Desactivar código'));
     await fireEvent.press(screen.getByText('Desactivar'));
-    expect(screen.getByText('El enlace ya no está activo')).toBeTruthy();
+    expect(screen.getByText('El código ya no está activo')).toBeTruthy();
     expect(screen.queryByText('K7P2-9XQ-4MN')).toBeNull();
-    await fireEvent.press(screen.getByText('Generar enlace nuevo'));
+    await fireEvent.press(screen.getByText('Generar código nuevo'));
     expect(screen.getByText('Sumá a alguien a Nuestra casa')).toBeTruthy();
     expect(screen.getByText('R4WD-3ZT-8HC')).toBeTruthy();
   });
