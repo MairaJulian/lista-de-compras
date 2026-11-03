@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mis grupos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+input::placeholder{color:#5B675F;opacity:1}
+@keyframes subir{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes velo{from{opacity:0}to{opacity:1}}
+@keyframes aparecer{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #2E7D57;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F7F8F3;font-family:'DM Sans',system-ui,sans-serif;color:#1C2621;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="padding:48px 16px 0 8px;display:flex;align-items:center;gap:4px">
+    <a href="Hogar.dc.html" aria-label="Volver al grupo" style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;flex:none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <h1 style="margin:0;font-family:Nunito,sans-serif;font-weight:800;font-size:24px">Mis grupos</h1>
+  </div>
+  <p style="margin:6px 28px 0;font-size:15px;line-height:1.45;color:#5B675F">Tocá uno para verlo. Podés estar en todos los que quieras.</p>
+  <div style="margin:22px 24px 10px;display:flex;align-items:baseline;gap:8px"><h2 style="margin:0;font-size:15px;font-weight:700">Activos</h2><span style="font-size:15px;font-weight:700;color:#5B675F">3</span></div>
+  <div style="margin:0 24px;border-radius:20px;overflow:hidden;background:#EEF1EA;display:flex;flex-direction:column;gap:1px">
+    <a href="Inicio.dc.html" style="min-height:72px;padding:12px 14px 12px 16px;background:#fff;display:flex;align-items:center;gap:14px"><span style="width:44px;height:44px;border-radius:14px;background:#E3F1E8;color:#2E7D57;display:flex;align-items:center;justify-content:center;flex:none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg></span><span style="flex:1;min-width:0"><span style="display:block;font-size:17px;font-weight:700;color:#1C2621">Nuestra casa</span><span style="display:block;font-size:13px;color:#5B675F;margin-top:2px">Creaste el grupo · 3 miembros</span></span><span style="height:28px;padding:0 10px;border-radius:14px;background:#E3F1E8;color:#1F5C3E;font-size:12px;font-weight:700;display:flex;align-items:center;flex:none">Viendo</span></a>
+    <a href="Inicio.dc.html" style="min-height:72px;padding:12px 14px 12px 16px;background:#fff;display:flex;align-items:center;gap:14px"><span style="width:44px;height:44px;border-radius:14px;background:#DDEBF7;color:#1D4E75;display:flex;align-items:center;justify-content:center;flex:none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.5 3-5.5 6.5-5.5s6 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17.5 14.5c2.5.3 4 2 4.5 5"/></svg></span><span style="flex:1;min-width:0"><span style="display:block;font-size:17px;font-weight:700;color:#1C2621">Juntada del sábado</span><span style="display:block;font-size:13px;color:#5B675F;margin-top:2px">Miembro · 5 miembros</span></span><span style="color:#5B675F;flex:none;display:flex"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></a>
+    <a href="Inicio.dc.html" style="min-height:72px;padding:12px 14px 12px 16px;background:#fff;display:flex;align-items:center;gap:14px"><span style="width:44px;height:44px;border-radius:14px;background:#FCEBCB;color:#7A4300;display:flex;align-items:center;justify-content:center;flex:none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="2"/><path d="M12 9v12M3 14h18M12 9C11 4.5 6.5 4.5 7 7.5 7.3 9 10 9 12 9zm0 0c1-4.5 5.5-4.5 5-1.5C16.7 9 14 9 12 9z"/></svg></span><span style="flex:1;min-width:0"><span style="display:block;font-size:17px;font-weight:700;color:#1C2621">Cumple de los chicos</span><span style="display:block;font-size:13px;color:#5B675F;margin-top:2px">Creaste el grupo · 2 miembros</span></span><span style="color:#5B675F;flex:none;display:flex"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></a>
+  </div>
+  <div style="margin:22px 24px 10px;display:flex;align-items:baseline;gap:8px"><h2 style="margin:0;font-size:15px;font-weight:700">Archivados</h2><span style="font-size:15px;font-weight:700;color:#5B675F">1</span></div>
+  <div style="margin:0 24px;border-radius:20px;overflow:hidden;background:#EEF1EA;display:flex;flex-direction:column;gap:1px">
+    <a href="GrupoArchivado.dc.html" style="min-height:72px;padding:12px 14px 12px 16px;background:#fff;display:flex;align-items:center;gap:14px"><span style="width:44px;height:44px;border-radius:14px;background:#ECEEE8;color:#5B675F;display:flex;align-items:center;justify-content:center;flex:none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/></svg></span><span style="flex:1;min-width:0"><span style="display:block;font-size:17px;font-weight:700;color:#5B675F">Cena de fin de año</span><span style="display:block;font-size:13px;color:#5B675F;margin-top:2px">Archivado el 12 de agosto · solo lectura</span></span><span style="color:#5B675F;flex:none;display:flex"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></a>
+  </div>
+  <div style="flex:1"></div>
+  <div style="padding:0 24px 32px"><div style="display:flex;gap:10px">
+      <a href="CrearOtroGrupo.dc.html" style="flex:1;height:52px;border-radius:26px;background:#2E7D57;color:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Crear grupo</a>
+      <a href="UnirseOtroGrupo.dc.html" style="flex:1;height:52px;box-sizing:border-box;border:1.5px solid #D5DAD0;border-radius:26px;background:#fff;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center">Unirme con un código</a>
+    </div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
