@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, fontSizes, fonts, radii } from '../theme';
 import { Button } from './Button';
+import { ButtonRow } from './ButtonRow';
 import { Icon } from './Icon';
 
 type Props = {
@@ -25,16 +26,16 @@ export function SaveErrorNotice({ title, message, onRetry, onDiscard }: Props) {
           <Text style={styles.message}>{message}</Text>
         </View>
       </View>
-      <View style={styles.actions}>
+      <ButtonRow>
         <Button
           label="Reintentar"
           icon="refresh"
           variant="dangerFilled"
-          flex={3}
+          grow={3}
           onPress={onRetry}
         />
-        <Button label="Descartar" variant="danger" flex={2} onPress={onDiscard} />
-      </View>
+        <Button label="Descartar" variant="danger" grow={2} onPress={onDiscard} />
+      </ButtonRow>
     </View>
   );
 }
@@ -60,5 +61,4 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: colors.danger,
   },
-  actions: { flexDirection: 'row', gap: 12 },
 });

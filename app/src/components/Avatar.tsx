@@ -21,7 +21,13 @@ export function Avatar({ name, tone, size = sizes.avatar }: Props) {
         { width: size, height: size, borderRadius: size / 2, backgroundColor: background },
       ]}
     >
-      <Text style={[styles.initial, { color: text, fontSize: initialSize(size) }]}>{initial}</Text>
+      {/* La inicial vive en un círculo de tamaño fijo: con letra grande no crece más de 1,15×. */}
+      <Text
+        maxFontSizeMultiplier={1.15}
+        style={[styles.initial, { color: text, fontSize: initialSize(size) }]}
+      >
+        {initial}
+      </Text>
     </View>
   );
 }

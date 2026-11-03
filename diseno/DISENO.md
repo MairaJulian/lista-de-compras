@@ -102,7 +102,7 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 | 3e | `Notificacion` | Notificaciones de Android: "Lucía agregó 2 ítems", "Diego borró un ítem" | Tocar → 3 |
 | 4 | `Detalle` | Panel que sube desde abajo: nombre, cantidad (− / +), nota, "Agregado por", Guardar / Eliminar | 3 → vuelve a 3 |
 | 5 | `Hogar` | Tarjeta con el nombre del hogar (con lápiz, se toca para editarlo), miembros con rol, botón **Invitar**, "Salir del hogar", avatar de perfil arriba a la derecha | pestaña Hogar de 2; tarjeta del hogar → 33 |
-| 5b | `Invitar` | Enlace + código corto (`K7P2-9XQ-4MN`), cada uno con "Copiar", pill "Vence en 47 h", y los botones "Compartir enlace", "Generar enlace nuevo" y "Desactivar enlace" (peligro) | 5 → "Invitar"; "Desactivar enlace" → 23; también se llega desde 21 |
+| 5b | `Invitar` | **Solo el código** corto (`K7P2-9XQ-4MN`, siempre en una línea, con "Copiar"; sin tarjeta de enlace porque `changuito://` no se abre desde WhatsApp), pill "Vence en 47 h", y los botones "Compartir código", "Generar enlace nuevo" y "Desactivar enlace" (peligro). *Cambio respecto del diseño `12` (2026-11-03, decisión de Maira).* | 5 → "Invitar"; "Desactivar enlace" → 23; también se llega desde 21 |
 | 5c | `MiembroOpciones` | Panel inferior de un miembro con "Quitar del hogar" (solo lo ve quien creó el hogar) | 5 → botón ⋯ |
 | 5d | `ConfirmarQuitar` | Aviso "¿Quitar a Lucía del hogar?" | 5c → "Quitar" / "Cancelar" → 5 |
 | 5e | `ConfirmarSalir` | Aviso "¿Salir de Nuestra casa?" (caso común: miembro que no creó el hogar) | 5 → "Salir del hogar" → 17. Si quien sale es el creador se muestra 27; si es la última persona, 28 |

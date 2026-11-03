@@ -1,14 +1,16 @@
-import { router } from 'expo-router';
+import { router, whenRouterReady } from './safeRouter';
 
 import { startRoute } from '../auth/sessionState';
 import { getSession } from '../auth/sessionStore';
 
 /** Cierra todo lo que haya abierto y deja `path` como única pantalla (entrar, cerrar sesión, salir del hogar). */
 function resetTo(path: Parameters<typeof router.replace>[0]) {
-  if (router.canDismiss()) {
-    router.dismissAll();
-  }
-  router.replace(path);
+  whenRouterReady(() => {
+    if (router.canDismiss()) {
+      router.dismissAll();
+    }
+    router.replace(path);
+  });
 }
 
 /**
@@ -38,5 +40,5 @@ export function goToHouseholdCreated() {
 /** "Invitar" de Hogar creado: queda Hogar debajo para que la flecha de Invitar vuelva ahí. */
 export function goToInvite() {
   resetTo('/hogar');
-  router.push('/invitar');
+  whenRouterReady(() => router.push('/invitar'));
 }

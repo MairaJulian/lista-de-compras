@@ -1,6 +1,7 @@
 export { Avatar } from './Avatar';
 export { BottomSheet } from './BottomSheet';
 export { Button } from './Button';
+export { ButtonRow } from './ButtonRow';
 export { CenteredDialog } from './CenteredDialog';
 export { Icon } from './Icon';
 export type { IconName } from './Icon';

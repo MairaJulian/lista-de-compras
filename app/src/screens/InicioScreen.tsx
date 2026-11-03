@@ -90,7 +90,6 @@ export function InicioScreen({ onOpenList }: Props) {
                     onPress={onOpenList && (() => onOpenList(list))}
                   />
                 ))}
-                {row.length === 1 && <View style={styles.spacer} />}
               </View>
             ))}
           </View>
@@ -132,7 +131,6 @@ const styles = StyleSheet.create({
   notice: { marginHorizontal: 24, marginTop: 12 },
   grid: { paddingHorizontal: 24, paddingVertical: 16, gap: 16 },
   row: { flexDirection: 'row', gap: 16 },
-  spacer: { flex: 1 },
   fill: { flex: 1 },
   fab: { position: 'absolute', right: 20, bottom: 20 },
 });

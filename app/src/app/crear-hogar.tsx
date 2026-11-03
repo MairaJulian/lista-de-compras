@@ -1,10 +1,11 @@
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import { useCreateHousehold } from '../data/hooks';
 import { goToHouseholdCreated } from '../navigation/session';
 import { CreateHouseholdScreen } from '../screens/CreateHouseholdScreen';
 
 export default function CreateHouseholdRoute() {
+  const router = useRouter();
   const createHousehold = useCreateHousehold();
 
   return (

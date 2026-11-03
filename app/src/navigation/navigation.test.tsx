@@ -141,6 +141,26 @@ describe('navegación', () => {
     expect(screen.getByText('Supermercado')).toBeTruthy();
   });
 
+  // Crash real (Crashlytics): al cambiar la letra del sistema con la app abierta se vuelve a montar el
+  // árbol de navegación y el router imperativo (`import { router }`) queda sin enganchar: lanzaba
+  // "The imperative router is unavailable before the first render has finished" al tocar una lista.
+  // Las pantallas usan `useRouter()`, que no depende de ese enganche.
+  it('tocar una lista anda aunque el router imperativo esté desenganchado', async () => {
+    await renderRouter(routes, { initialUrl: '/listas' });
+    const { unboundRouter } = jest.requireActual('expo-router/build/global-state/router');
+    const bound = { ...router };
+    Object.assign(router, unboundRouter);
+    try {
+      expect(() => router.push('/perfil')).toThrow('imperative router is unavailable');
+      await fireEvent.press(screen.getByText('Ferretería'));
+      expect(screen.getByText('Esta lista está vacía')).toBeTruthy();
+      await fireEvent.press(screen.getByLabelText('Volver a las listas'));
+      expect(screen.getByText('Nueva lista')).toBeTruthy();
+    } finally {
+      Object.assign(router, bound);
+    }
+  });
+
   it('abre una lista desde Inicio y la flecha vuelve a Inicio', async () => {
     await renderRouter(routes, { initialUrl: '/listas' });
     await fireEvent.press(screen.getByText('Ferretería'));

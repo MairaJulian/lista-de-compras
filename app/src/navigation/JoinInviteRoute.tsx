@@ -1,4 +1,4 @@
-import { Redirect, router } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { useSession } from '../auth/sessionStore';
@@ -16,6 +16,7 @@ import { useJoinFlow } from './useJoinFlow';
  */
 export function JoinInviteRoute({ code }: { code: string }) {
   const session = useSession();
+  const router = useRouter();
   const signedOut = session.status === 'signedOut';
   const real = session.status === 'signedIn' && !session.demo;
   // Quien ya tiene un hogar no se une a otro con un enlace (no hay pantalla para eso): solo se mira al abrir.
@@ -33,7 +34,7 @@ export function JoinInviteRoute({ code }: { code: string }) {
     } else if (alreadyHasHousehold) {
       goToStart();
     }
-  }, [signedOut, alreadyHasHousehold, code]);
+  }, [signedOut, alreadyHasHousehold, code, router]);
 
   if (signedOut || alreadyHasHousehold) {
     return <LoadingScreen />;

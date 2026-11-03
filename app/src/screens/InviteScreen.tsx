@@ -6,13 +6,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, CenteredDialog, Icon, ScreenHeader } from '../components';
 import { formatExpiry } from '../data/householdLogic';
 import { useHousehold, useInvite } from '../data/hooks';
-import { inviteLink, inviteMessage } from '../data/inviteLogic';
+import { inviteMessage } from '../data/inviteLogic';
 import { colors, fontSizes, fonts, radii } from '../theme';
 import { LoadErrorState } from './InicioStates';
 
 type Props = {
   onBack?: () => void;
-  /** Cómo se comparte el enlace; por defecto abre el menú de compartir de Android. */
+  /** Cómo se comparte el código; por defecto abre el menú de compartir de Android. */
   onShare?: (message: string) => void;
   /** Cómo se copia al portapapeles; por defecto el del sistema. */
   onCopyText?: (text: string) => Promise<unknown>;
@@ -34,7 +34,7 @@ export function InviteScreen({
 }: Props) {
   const household = useHousehold();
   const { status, invite, regenerate, deactivate, retry } = useInvite();
-  const [copied, setCopied] = useState<'link' | 'code'>();
+  const [copied, setCopied] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<Failure>();
@@ -44,7 +44,7 @@ export function InviteScreen({
   const run = async (action: () => Promise<void>, onFail: Failure) => {
     setBusy(true);
     setFailure(undefined);
-    setCopied(undefined);
+    setCopied(false);
     try {
       await action();
     } catch {
@@ -53,8 +53,8 @@ export function InviteScreen({
     setBusy(false);
   };
 
-  const copy = (kind: 'link' | 'code', text: string) => {
-    setCopied(kind);
+  const copy = (text: string) => {
+    setCopied(true);
     onCopyText(text);
   };
 
@@ -79,39 +79,25 @@ export function InviteScreen({
               <Text accessibilityRole="header" style={styles.heading}>
                 Sumá a alguien a {household.name}
               </Text>
-              <Text style={styles.subtitle}>
-                Pasale el enlace o el código. Se une con su cuenta de Google.
-              </Text>
+              <Text style={styles.subtitle}>Pasale el código. Se une con su cuenta de Google.</Text>
             </View>
 
-            <InviteCard
-              label="Enlace"
-              value={inviteLink(invite.code)}
-              copied={copied === 'link'}
-              onCopy={() => copy('link', inviteLink(invite.code))}
-            />
-            <InviteCard
-              label="Código"
-              value={invite.code}
-              code
-              copied={copied === 'code'}
-              onCopy={() => copy('code', invite.code)}
-            />
+            <InviteCard value={invite.code} copied={copied} onCopy={() => copy(invite.code)} />
 
             <View style={styles.expiry}>
               <View style={styles.expiryPill}>
                 <Icon name="clock" size={16} color={colors.neutralText} />
                 <Text style={styles.expiryText}>{formatExpiry(invite)}</Text>
               </View>
-              <Text style={styles.expiryNote}>Funciona con el enlace y con el código.</Text>
+              <Text style={styles.expiryNote}>Se usa en «Tengo un código de invitación».</Text>
             </View>
 
             <View style={styles.spacer} />
 
-            <View style={[styles.actions, { paddingBottom: 32 + bottom }]}>
+            <View style={[styles.actions, { paddingBottom: 32 + Math.max(bottom, 24) }]}>
               <FailureNote failure={failure} />
               <Button
-                label="Compartir enlace"
+                label="Compartir código"
                 icon="share"
                 large
                 onPress={() => onShare(inviteMessage(household.name, invite.code))}
@@ -147,7 +133,7 @@ export function InviteScreen({
 
             <View style={styles.spacer} />
 
-            <View style={[styles.actions, { paddingBottom: 40 + bottom }]}>
+            <View style={[styles.actions, { paddingBottom: 40 + Math.max(bottom, 24) }]}>
               <FailureNote failure={failure} />
               <Button
                 label="Generar enlace nuevo"
@@ -166,7 +152,7 @@ export function InviteScreen({
         icon="linkOff"
         tone="danger"
         title="¿Desactivar el enlace?"
-        message="Nadie va a poder unirse con este enlace ni con su código. Podés generar uno nuevo cuando quieras."
+        message="Nadie va a poder unirse con este código. Podés generar uno nuevo cuando quieras."
         onClose={() => setConfirmOpen(false)}
       >
         <Button
@@ -196,24 +182,31 @@ function FailureNote({ failure }: { failure?: Failure }) {
 }
 
 type CardProps = {
-  label: string;
   value: string;
-  code?: boolean;
   copied: boolean;
   onCopy: () => void;
 };
 
-function InviteCard({ label, value, code, copied, onCopy }: CardProps) {
+/**
+ * Tarjeta del código. El código va siempre en una sola línea (con letra grande se achica hasta un
+ * tope en vez de partirse en el guion) y "Copiar" pasa abajo si no entra al lado.
+ */
+function InviteCard({ value, copied, onCopy }: CardProps) {
   return (
     <View style={styles.card}>
-      <Text style={styles.cardLabel}>{label}</Text>
+      <Text style={styles.cardLabel}>Código</Text>
       <View style={styles.cardRow}>
-        <Text style={[styles.cardValue, code ? styles.cardValueCode : styles.cardValueLink]}>
+        <Text
+          maxFontSizeMultiplier={1.3}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={styles.cardValue}
+        >
           {value}
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${copied ? 'Copiado' : 'Copiar'} ${label.toLowerCase()}`}
+          accessibilityLabel={copied ? 'Copiado' : 'Copiar código'}
           onPress={onCopy}
           style={styles.copy}
         >
@@ -255,9 +248,14 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   cardRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  cardValue: { flexGrow: 1, flexShrink: 1, color: colors.textPrimary },
-  cardValueLink: { fontFamily: fonts.body, fontSize: fontSizes.body },
-  cardValueCode: { fontFamily: fonts.heading, fontSize: 24, letterSpacing: 0.5 },
+  cardValue: {
+    flexGrow: 1,
+    maxWidth: '100%',
+    color: colors.textPrimary,
+    fontFamily: fonts.heading,
+    fontSize: 24,
+    letterSpacing: 0.5,
+  },
   copy: {
     minHeight: 44,
     paddingVertical: 6,
