@@ -165,9 +165,7 @@ describe('InviteScreen', () => {
     await render(<InviteScreen onShare={onShare} />);
     await fireEvent.press(screen.getByText('Compartir enlace'));
     expect(onShare).toHaveBeenCalledWith(expect.stringContaining('Código: K7P2-9XQ-4MN'));
-    expect(onShare).toHaveBeenCalledWith(
-      expect.stringContaining('Enlace: changuito://unirse/K7P2-9XQ-4MN'),
-    );
+    expect(onShare).toHaveBeenCalledWith(expect.stringContaining('pegá este código'));
   });
 
   it('Generar enlace nuevo cambia el código y el vencimiento', async () => {

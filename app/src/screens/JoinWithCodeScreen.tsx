@@ -91,7 +91,8 @@ export function JoinWithCodeScreen({
 
 const styles = StyleSheet.create({
   paste: {
-    height: 44,
+    minHeight: 44,
+    paddingVertical: 6,
     paddingHorizontal: 16,
     borderRadius: 22,
     backgroundColor: colors.primarySoft,

@@ -43,7 +43,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   input: {
     flex: 1,
-    height: heights.field,
+    minHeight: heights.field,
+    paddingVertical: 8,
     paddingHorizontal: 20,
     borderWidth: 1.5,
     borderColor: colors.border,

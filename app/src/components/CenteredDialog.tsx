@@ -1,4 +1,4 @@
-import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fonts, fontSizes, motion, radii } from '../theme';
 import { Icon, IconName } from './Icon';
@@ -66,17 +66,27 @@ export function CenteredDialog({
           accessibilityRole="alert"
           style={[styles.dialog, { opacity: progress, transform: [{ scale }] }]}
         >
-          {leading ?? (
-            <View style={[styles.iconCircle, { backgroundColor: toneColors[tone].background }]}>
-              {icon && <Icon name={icon} size={28} color={toneColors[tone].icon} />}
-            </View>
-          )}
-          <Text accessibilityRole="header" style={styles.title}>
-            {title}
-          </Text>
-          <Text style={[styles.message, detail ? styles.messageWithDetail : null]}>{message}</Text>
-          {detail && <View style={styles.detail}>{detail}</View>}
-          <View style={styles.actions}>{children}</View>
+          {/* Con letra grande el aviso puede ser más alto que la pantalla: se desplaza. */}
+          <ScrollView
+            bounces={false}
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
+            {leading ?? (
+              <View style={[styles.iconCircle, { backgroundColor: toneColors[tone].background }]}>
+                {icon && <Icon name={icon} size={28} color={toneColors[tone].icon} />}
+              </View>
+            )}
+            <Text accessibilityRole="header" style={styles.title}>
+              {title}
+            </Text>
+            <Text style={[styles.message, detail ? styles.messageWithDetail : null]}>
+              {message}
+            </Text>
+            {detail && <View style={styles.detail}>{detail}</View>}
+            <View style={styles.actions}>{children}</View>
+          </ScrollView>
         </Animated.View>
       </View>
     </Modal>
@@ -94,14 +104,13 @@ const styles = StyleSheet.create({
   },
   center: { flex: 1, justifyContent: 'center', paddingHorizontal: 35 },
   dialog: {
-    paddingTop: 28,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-    gap: 12,
+    maxHeight: '92%',
     backgroundColor: colors.surface,
     borderRadius: radii.dialog,
     elevation: 24,
   },
+  scroll: { flexGrow: 0 },
+  content: { paddingTop: 28, paddingHorizontal: 24, paddingBottom: 24, gap: 12 },
   iconCircle: {
     width: 56,
     height: 56,

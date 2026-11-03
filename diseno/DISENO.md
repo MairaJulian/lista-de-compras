@@ -10,8 +10,9 @@ App de lista de compras compartida para el hogar: 3 adultos de la misma casa, ca
 
 - `DISENO.md`: este documento (decisiones, estilo, pantallas, flujos).
 - `pantallas/`: una imagen PNG por pantalla (780 × 1688, el doble del tamaño de diseño) más el PDF original `Changuito-pantallas.pdf`. El número del archivo sigue el orden de la tabla de pantallas de abajo:
-  `01-bienvenida`, `02-invitacion-recibida`, `03-inicio`, `04-nueva-lista`, `05-lista`, `06-lista-vacia`, `07-lista-sin-conexion`, `08-salir-de-la-lista`, `09-notificacion`, `10-detalle-item`, `11-hogar`, `12-invitar`, `13-opciones-miembro`, `14-confirmar-quitar`, `15-confirmar-salir`, `16-perfil`, `17-sin-hogar`, `18-sin-hogar-codigo`, `19-sin-hogar-te-sacaron`, `20-crear-hogar`, `21-hogar-creado`, `22-invitar-sin-enlace`, `23-desactivar-enlace`, `24-error-enlace-invalido`, `25-error-inicio-sesion`, `26-error-sin-conexion-unirse`, `27-salir-hogar-creador`, `28-salir-hogar-ultima-persona`, `29-inicio-sin-listas`, `30-error-codigo`, `31-error-crear-hogar`, `32-error-carga`, `33-editar-hogar`, `34-menu-lista`, `35-renombrar-lista`, `36-eliminar-lista`, `37-error-guardar`, `38-lista-eliminada`, `39-ajustes-notificaciones`, `40-permiso-notificaciones`, `41-ajustes-sin-permiso`, `42-inicio-silenciada`, `43-menu-lista-silenciada`.
+  `01-bienvenida`, `02-invitacion-recibida`, `03-inicio`, `04-nueva-lista`, `05-lista`, `06-lista-vacia`, `07-lista-sin-conexion`, `08-salir-de-la-lista`, `09-notificacion`, `10-detalle-item`, `11-hogar`, `12-invitar`, `13-opciones-miembro`, `14-confirmar-quitar`, `15-confirmar-salir`, `16-perfil`, `17-sin-hogar`, `18-sin-hogar-codigo`, `19-sin-hogar-te-sacaron`, `20-crear-hogar`, `21-hogar-creado`, `22-invitar-sin-enlace`, `23-desactivar-enlace`, `24-error-enlace-invalido`, `25-error-inicio-sesion`, `26-error-sin-conexion-unirse`, `27-salir-hogar-creador`, `28-salir-hogar-ultima-persona`, `29-inicio-sin-listas`, `30-error-codigo`, `31-error-crear-hogar`, `32-error-carga`, `33-editar-hogar`, `34-menu-lista`, `35-renombrar-lista`, `36-eliminar-lista`, `37-error-guardar`, `38-lista-eliminada`, `39-ajustes-notificaciones`, `40-permiso-notificaciones`, `41-ajustes-sin-permiso`, `42-inicio-silenciada`, `43-menu-lista-silenciada`, `44-icono-app`, `45-splash`, `46-cargando-entrada`.
   Ojo: las barras de desplazamiento visibles en `05-lista` son un detalle de la exportación, no parte del diseño. En `12-invitar` la pill "Vence en 47 h" se ve partida en dos líneas porque la captura es anterior a un ajuste; en el diseño final va en una sola línea (ver `referencia-html/Invitar.dc.html`).
+- `icono/`: el ícono de la app listo para usar (ver "Ícono y pantallas de carga" más abajo): capas SVG y PNG del ícono adaptable de Android, ícono de Play Store y la imagen del splash.
 - `referencia-html/`: el código fuente de cada pantalla (`*.dc.html`). Sirve **solo para copiar valores exactos** (colores, tamaños, textos, márgenes). No es código de la app y no se ejecuta suelto (depende de un `support.js` que no está acá).
 
 ## Decisiones de producto (ya tomadas)
@@ -133,6 +134,38 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 | 41 | `AjustesSinPermiso` | Variante de 39 cuando el permiso está rechazado: aviso ámbar "Las notificaciones están bloqueadas en tu celular" con **Abrir ajustes del celular**, interruptor deshabilitado y la lista de silenciadas atenuada | 6 → Notificaciones, cuando Android tiene las notificaciones de Changuito bloqueadas (rechazó el pedido o tocó "Ahora no" y no lo activó) → "Abrir ajustes" abre los ajustes de Android; al volver, 39 |
 | 42 | `InicioSilenciada` | Inicio con la tarjeta Verdulería silenciada: ícono de campana tachada junto al contador de pendientes (el contador sigue visible) | Mismo Inicio (2) para quien silenció esa lista |
 | 43 | `MenuListaSilenciada` | Menú de una lista silenciada: "Dejar de silenciar" ("Volvé a recibir avisos de esta lista") y el subtítulo "10 ítems · Silenciada" | 3 → ⋯ cuando la lista está silenciada → 34 |
+| 44 | `IconoApp` | Hoja del ícono: combinado con máscara circular, las tres capas (primer plano, fondo, monocromático) con la zona segura de 66 dp, y el ícono con otras máscaras y con tema de color | Solo referencia (no es una pantalla de la app); los archivos están en `icono/` |
+| 45 | `Splash` | Pantalla de carga inicial: logo (carrito sobre verde) centrado y "Changuito", sobre el fondo `#F7F8F3`; abajo "Lista de compras compartida" | Al abrir la app → 1 Bienvenida (si no hay sesión) o 46 (si ya hay sesión) |
+| 46 | `CargandoEntrada` | Mismo logo y nombre en la misma posición que 45, más un indicador circular y "Entrando… Estamos buscando tu hogar y tus listas." | Después de iniciar sesión con Google, o al abrir la app con sesión iniciada → 2 Inicio (o 17 Sin hogar si no tiene hogar) |
+
+## Ícono y pantallas de carga
+
+**Concepto**: un carrito blanco con dos ítems de colores pastel (durazno `#F8DDAE` y verde claro `#CFE8D9`) sobre un fondo verde con degradé suave (`#3A8F65` → `#276B49`; el verde de marca es `#2E7D57`). El carrito de la marca es relleno; el carrito de línea de los encabezados de las pantallas es el ícono de interfaz y no cambia.
+
+Archivos en `icono/` (todos salen de las mismas formas, en una grilla de 108 × 108):
+- `icon-foreground.svg` / `ic_launcher_foreground.png` (432 × 432, transparente): capa de **primer plano** del ícono adaptable. El dibujo cabe dentro de los 66 dp centrales (zona segura), así que ninguna máscara lo corta.
+- `icon-background.svg` / `ic_launcher_background.png` (432 × 432): capa de **fondo**, opaca, con el degradé verde.
+- `icon-monochrome.svg` / `ic_launcher_monochrome.png` (432 × 432, transparente): capa **monocromática** para el ícono con tema de Android 13+ (una sola tinta; Android la pinta con el color del tema).
+- `play-store-icon.svg` / `play-store-icon-512.png` (512 × 512): ícono de Play Store (fondo + primer plano, cuadrado completo; Play le pone la máscara).
+- `splash-icon.svg` / `splash-icon.png` (1024 × 1024, transparente): el logo (cuadrado verde redondeado con el carrito) para la imagen del splash.
+
+Uso previsto con Expo (`app.json`, sin inventar nada nuevo): `android.adaptiveIcon.foregroundImage` = `ic_launcher_foreground.png`, `backgroundImage` = `ic_launcher_background.png`, `monochromeImage` = `ic_launcher_monochrome.png`; `icon` = `play-store-icon-512.png`; el plugin `expo-splash-screen` con `image` = `splash-icon.png` y `backgroundColor` = `#F7F8F3`.
+
+**Pantallas de carga**:
+- **Splash (45)**: fondo `#F7F8F3`, logo de 132 px con esquinas de 38 px (la imagen `splash-icon.png`) y "Changuito" en Nunito 800 de 34 px. Android 12 y posteriores muestran **solo el ícono** sobre el color de fondo (no pueden mostrar texto): el nombre y el pie "Lista de compras compartida" se ven en Android 11 o anterior. En la app real, al terminar de arrancar se pasa a la pantalla que corresponda.
+- **Cargando después de iniciar sesión (46)**: misma composición que 45 para que el cambio sea continuo (el logo no se mueve), con un indicador circular (anillo `#CFE8D9` con tramo `#2E7D57` girando) y el texto "Entrando…". Se muestra mientras se lee el hogar y las listas; si tarda o falla, se pasa a 32 (error de carga). Con "reducir animaciones" activado el indicador no gira.
+- No hay modo oscuro todavía: ni el ícono ni las pantallas de carga tienen versión oscura.
+
+## Letra grande del sistema
+
+Las pantallas de diseño están dibujadas con la letra normal. Varias personas de la familia usan el tamaño de fuente de Android muy agrandado, así que la app **no limita el tamaño de letra** y se adapta (revisada con escalas 1,3 / 1,5 / 2,0). Reglas:
+
+- Las alturas fijas de filas, botones y campos pasan a **alturas mínimas**: con letra normal miden lo mismo que en el diseño y con letra grande crecen.
+- Un título que no entra pasa a más de una línea; un indicador que no entra baja **debajo del título**. En Lista, desde 1,15× el "Sincronizado" / "Sin conexión" va en su propia fila, debajo del título y del nombre del hogar (cambio respecto de `05`, `07` y `37`, que solo aplica con letra grande).
+- Los nombres de ítems pueden ocupar dos líneas; las tarjetas de Inicio achican el nombre hasta el 70 %.
+- Bienvenida, Sin hogar, Unirse, Crear hogar, Invitar y los paneles/avisos **se desplazan** si no entran; los botones principales de los formularios quedan fijos abajo.
+- Áreas táctiles de al menos 44 dp en todo (también con letra grande).
+- **Excepciones con tope de 1,3×:** los nombres de las pestañas de la barra inferior (alto fijo) y el campo del código de invitación (una sola línea). En los campos con un botón adentro ("Pegar") el botón baja debajo del texto con letra grande.
 
 ## Comportamientos que muestra el prototipo
 
@@ -146,6 +179,7 @@ Simple, limpio y amigable. Fondo claro verdoso, un verde fresco como color princ
 - Nombre de app "Changuito", hogar "Nuestra casa", miembros "Vos / Lucía / Diego": ejemplos.
 - `[enlace de invitación]` y `[cuenta de Google]` son marcadores: no hay enlace ni mail reales.
 - En 39 "Dejar de silenciar" saca la lista del listado y el interruptor se enciende y apaga, pero no se refleja en 42 ni en 34 (el prototipo no comparte estado entre pantallas). En 40 "Activar avisos" y "Ahora no" van igual a Inicio: el diálogo de Android no está dibujado. Silenciar en 34 abre 43 para mostrar el estado. 41 solo se llega desde el lienzo.
+- 45 y 46 se tocan en cualquier parte para pasar a la pantalla siguiente (el prototipo no tiene temporizador). 46 es la única con animación (indicador girando).
 - Las tarjetas Verdulería y Farmacia (Inicio) y el ⋯ de Diego no tienen pantalla destino; en la app real se comportarían igual que sus equivalentes.
 - La flecha atrás de una lista siempre muestra el aviso 3d en el prototipo; en la app real solo cuando haya ítems comprados.
 - El detalle siempre muestra "Leche"; en la app real muestra el ítem tocado.

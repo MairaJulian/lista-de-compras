@@ -54,7 +54,7 @@ export function MemberOptionsSheet({ visible, member, householdName, onClose, on
 }
 
 const styles = StyleSheet.create({
-  member: { height: 64, marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  member: { minHeight: 64, marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 14 },
   name: { fontFamily: fonts.heading, fontSize: 20, lineHeight: 22, color: colors.textPrimary },
   role: {
     marginTop: 2,
@@ -63,7 +63,8 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   remove: {
-    height: 60,
+    minHeight: 60,
+    paddingVertical: 8,
     marginTop: 8,
     paddingHorizontal: 16,
     borderRadius: 16,

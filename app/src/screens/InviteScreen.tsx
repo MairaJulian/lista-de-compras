@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, CenteredDialog, Icon, ScreenHeader } from '../components';
@@ -71,92 +71,95 @@ export function InviteScreen({
     <View style={styles.screen}>
       <ScreenHeader title="Invitar" backLabel="Volver a Hogar" onBack={onBack} />
 
-      {invite.active ? (
-        <>
-          <View style={styles.intro}>
-            <Text accessibilityRole="header" style={styles.heading}>
-              Sumá a alguien a {household.name}
-            </Text>
-            <Text style={styles.subtitle}>
-              Pasale el enlace o el código. Se une con su cuenta de Google.
-            </Text>
-          </View>
-
-          <InviteCard
-            label="Enlace"
-            value={inviteLink(invite.code)}
-            copied={copied === 'link'}
-            onCopy={() => copy('link', inviteLink(invite.code))}
-          />
-          <InviteCard
-            label="Código"
-            value={invite.code}
-            code
-            copied={copied === 'code'}
-            onCopy={() => copy('code', invite.code)}
-          />
-
-          <View style={styles.expiry}>
-            <View style={styles.expiryPill}>
-              <Icon name="clock" size={16} color={colors.neutralText} />
-              <Text style={styles.expiryText}>{formatExpiry(invite)}</Text>
+      {/* Con letra grande no entra todo en pantalla: se desplaza y los botones quedan al final. */}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        {invite.active ? (
+          <>
+            <View style={styles.intro}>
+              <Text accessibilityRole="header" style={styles.heading}>
+                Sumá a alguien a {household.name}
+              </Text>
+              <Text style={styles.subtitle}>
+                Pasale el enlace o el código. Se une con su cuenta de Google.
+              </Text>
             </View>
-            <Text style={styles.expiryNote}>Funciona con el enlace y con el código.</Text>
-          </View>
 
-          <View style={styles.spacer} />
+            <InviteCard
+              label="Enlace"
+              value={inviteLink(invite.code)}
+              copied={copied === 'link'}
+              onCopy={() => copy('link', inviteLink(invite.code))}
+            />
+            <InviteCard
+              label="Código"
+              value={invite.code}
+              code
+              copied={copied === 'code'}
+              onCopy={() => copy('code', invite.code)}
+            />
 
-          <View style={[styles.actions, { paddingBottom: 32 + bottom }]}>
-            <FailureNote failure={failure} />
-            <Button
-              label="Compartir enlace"
-              icon="share"
-              large
-              onPress={() => onShare(inviteMessage(household.name, invite.code))}
-            />
-            <Button
-              label="Generar enlace nuevo"
-              icon="refresh"
-              variant="secondary"
-              disabled={busy}
-              onPress={() => run(regenerate, 'generate')}
-            />
-            <Button
-              label="Desactivar enlace"
-              variant="danger"
-              disabled={busy}
-              onPress={() => setConfirmOpen(true)}
-            />
-          </View>
-        </>
-      ) : (
-        <>
-          <View style={styles.inactive}>
-            <View style={styles.inactiveCircle}>
-              <Icon name="linkOff" size={48} color={colors.neutralText} />
+            <View style={styles.expiry}>
+              <View style={styles.expiryPill}>
+                <Icon name="clock" size={16} color={colors.neutralText} />
+                <Text style={styles.expiryText}>{formatExpiry(invite)}</Text>
+              </View>
+              <Text style={styles.expiryNote}>Funciona con el enlace y con el código.</Text>
             </View>
-            <Text accessibilityRole="header" style={styles.inactiveTitle}>
-              El enlace ya no está activo
-            </Text>
-            <Text style={styles.inactiveText}>
-              Venció o lo desactivaste. Generá uno nuevo para seguir invitando.
-            </Text>
-          </View>
 
-          <View style={styles.spacer} />
+            <View style={styles.spacer} />
 
-          <View style={[styles.actions, { paddingBottom: 40 + bottom }]}>
-            <FailureNote failure={failure} />
-            <Button
-              label="Generar enlace nuevo"
-              icon="refresh"
-              large
-              disabled={busy}
-              onPress={() => run(regenerate, 'generate')}
-            />
-          </View>
-        </>
-      )}
+            <View style={[styles.actions, { paddingBottom: 32 + bottom }]}>
+              <FailureNote failure={failure} />
+              <Button
+                label="Compartir enlace"
+                icon="share"
+                large
+                onPress={() => onShare(inviteMessage(household.name, invite.code))}
+              />
+              <Button
+                label="Generar enlace nuevo"
+                icon="refresh"
+                variant="secondary"
+                disabled={busy}
+                onPress={() => run(regenerate, 'generate')}
+              />
+              <Button
+                label="Desactivar enlace"
+                variant="danger"
+                disabled={busy}
+                onPress={() => setConfirmOpen(true)}
+              />
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.inactive}>
+              <View style={styles.inactiveCircle}>
+                <Icon name="linkOff" size={48} color={colors.neutralText} />
+              </View>
+              <Text accessibilityRole="header" style={styles.inactiveTitle}>
+                El enlace ya no está activo
+              </Text>
+              <Text style={styles.inactiveText}>
+                Venció o lo desactivaste. Generá uno nuevo para seguir invitando.
+              </Text>
+            </View>
+
+            <View style={styles.spacer} />
+
+            <View style={[styles.actions, { paddingBottom: 40 + bottom }]}>
+              <FailureNote failure={failure} />
+              <Button
+                label="Generar enlace nuevo"
+                icon="refresh"
+                large
+                disabled={busy}
+                onPress={() => run(regenerate, 'generate')}
+              />
+            </View>
+          </>
+        )}
+      </ScrollView>
 
       <CenteredDialog
         visible={confirmOpen}
@@ -205,10 +208,7 @@ function InviteCard({ label, value, code, copied, onCopy }: CardProps) {
     <View style={styles.card}>
       <Text style={styles.cardLabel}>{label}</Text>
       <View style={styles.cardRow}>
-        <Text
-          numberOfLines={1}
-          style={[styles.cardValue, code ? styles.cardValueCode : styles.cardValueLink]}
-        >
+        <Text style={[styles.cardValue, code ? styles.cardValueCode : styles.cardValueLink]}>
           {value}
         </Text>
         <Pressable
@@ -254,12 +254,13 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.caption,
     color: colors.textSecondary,
   },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardValue: { flex: 1, color: colors.textPrimary },
+  cardRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  cardValue: { flexGrow: 1, flexShrink: 1, color: colors.textPrimary },
   cardValueLink: { fontFamily: fonts.body, fontSize: fontSizes.body },
   cardValueCode: { fontFamily: fonts.heading, fontSize: 24, letterSpacing: 0.5 },
   copy: {
-    height: 44,
+    minHeight: 44,
+    paddingVertical: 6,
     paddingHorizontal: 16,
     borderRadius: 22,
     backgroundColor: colors.primarySoft,
@@ -272,11 +273,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     marginTop: 12,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
   },
   expiryPill: {
-    height: 32,
+    minHeight: 32,
+    paddingVertical: 4,
     paddingLeft: 10,
     paddingRight: 12,
     borderRadius: 16,
@@ -296,7 +299,9 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.secondary,
     color: colors.textSecondary,
   },
-  spacer: { flex: 1 },
+  scroll: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  spacer: { flexGrow: 1, minHeight: 12 },
   failure: {
     textAlign: 'center',
     fontFamily: fonts.body,

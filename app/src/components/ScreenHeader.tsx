@@ -34,5 +34,10 @@ export function ScreenHeader({ title, backLabel, onBack }: Props) {
 const styles = StyleSheet.create({
   header: { paddingLeft: 8, paddingRight: 16, flexDirection: 'row', alignItems: 'center', gap: 4 },
   back: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: fonts.heading, fontSize: fontSizes.screenTitle, color: colors.textPrimary },
+  title: {
+    flex: 1,
+    fontFamily: fonts.heading,
+    fontSize: fontSizes.screenTitle,
+    color: colors.textPrimary,
+  },
 });

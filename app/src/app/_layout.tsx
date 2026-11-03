@@ -6,11 +6,13 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { startSession, useSession } from '../auth/sessionStore';
+import { setEntered, setSigningIn, useEntered, useSigningIn } from '../auth/signingInStore';
 import { startCrashReporting } from '../data/crashReporting';
 import { clearFailures } from '../data/failureStore';
 import { forgetHousehold } from '../data/householdSource';
 import { startHousehold, useHouseholdState } from '../data/householdStore';
 import { configureFirestore } from '../data/firestoreConfig';
+import { useListsLoad } from '../data/hooks';
 import { startListData, useListData } from '../data/listStore';
 import { purgeOncePerOpening } from '../data/purgeSource';
 import { goToNoHousehold, goToRemoved } from '../navigation/session';
@@ -88,6 +90,24 @@ export default function RootLayout() {
     }
   }, [navigationReady, householdId, household]);
 
+  // Pantalla `46-cargando-entrada`: desde que se elige la cuenta de Google, y al abrir la app con
+  // sesión, hasta la primera lectura del hogar y las listas (tapa la navegación sin desmontarla).
+  // Si tarda o falla se destapa Inicio, que muestra `32-error-carga` con "Reintentar".
+  const signingIn = useSigningIn();
+  const listsLoad = useListsLoad();
+  const entryDone = useEntered();
+  const signedInNow = session.status === 'signedIn';
+  useEffect(() => {
+    if (signedInNow) setSigningIn(false);
+  }, [signedInNow]);
+  useEffect(() => {
+    if (session.status === 'signedOut') setEntered(false);
+    else if (realSignedIn && listsLoad.status !== 'loading') setEntered(true);
+  }, [session.status, realSignedIn, listsLoad.status]);
+  const showEntering =
+    signingIn ||
+    (realSignedIn && householdId !== null && !entryDone && listsLoad.status === 'loading');
+
   if (!fontsLoaded) {
     return <View style={styles.container} />;
   }
@@ -123,6 +143,11 @@ export default function RootLayout() {
             <Stack.Screen name="error-enlace" />
             <Stack.Screen name="error-sin-conexion" />
           </Stack>
+        )}
+        {showEntering && (
+          <View style={StyleSheet.absoluteFill}>
+            <LoadingScreen entering />
+          </View>
         )}
         {DevMenu && <DevMenu />}
       </View>

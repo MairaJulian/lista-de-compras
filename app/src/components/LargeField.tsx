@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 
-import { colors, fontSizes, fonts } from '../theme';
+import { colors, fontSizes, fonts, MAX_FONT_SCALE_FIXED, useLargeText } from '../theme';
 import { Icon } from './Icon';
 
 type Props = Omit<TextInputProps, 'style'> & {
@@ -16,6 +16,8 @@ type Props = Omit<TextInputProps, 'style'> & {
 /** Campo grande de las pantallas Crear hogar (60) y Unirme con un código (64). */
 export function LargeField({ label, code, trailing, error, ...inputProps }: Props) {
   const invalid = Boolean(error);
+  // Con letra grande el botón ("Pegar") baja debajo del texto en vez de comérselo.
+  const largeText = useLargeText();
   return (
     <View style={styles.container}>
       <Text style={[styles.label, invalid && styles.labelError]}>{label}</Text>
@@ -24,6 +26,7 @@ export function LargeField({ label, code, trailing, error, ...inputProps }: Prop
         style={[
           styles.box,
           code ? styles.boxCode : styles.boxName,
+          largeText && styles.boxWrap,
           {
             borderWidth: invalid ? 2 : 1.5,
             borderColor: invalid ? colors.danger : colors.border,
@@ -35,7 +38,13 @@ export function LargeField({ label, code, trailing, error, ...inputProps }: Prop
           accessibilityLabel={label}
           placeholderTextColor={colors.textSecondary}
           autoCorrect={false}
-          style={[styles.input, code ? styles.inputCode : styles.inputName]}
+          // El código es de una sola línea y largo: se agranda hasta 1,3 veces para que entre entero.
+          maxFontSizeMultiplier={code ? MAX_FONT_SCALE_FIXED : undefined}
+          style={[
+            styles.input,
+            code ? styles.inputCode : styles.inputName,
+            largeText && styles.inputWrap,
+          ]}
           {...inputProps}
         />
         {trailing}
@@ -60,8 +69,10 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 18,
   },
-  boxName: { height: 60, paddingHorizontal: 18 },
-  boxCode: { height: 64, paddingLeft: 18, paddingRight: 8 },
+  boxName: { minHeight: 60, paddingHorizontal: 18, paddingVertical: 6 },
+  boxCode: { minHeight: 64, paddingLeft: 18, paddingRight: 8, paddingVertical: 6 },
+  boxWrap: { flexWrap: 'wrap' },
+  inputWrap: { minWidth: '100%' },
   input: { flex: 1, minWidth: 0, padding: 0, color: colors.textPrimary },
   inputName: { fontFamily: fonts.bodyMedium, fontSize: 18 },
   inputCode: { fontFamily: fonts.heading, fontSize: 22, letterSpacing: 1 },

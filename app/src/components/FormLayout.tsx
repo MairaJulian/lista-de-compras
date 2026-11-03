@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fontSizes, fonts } from '../theme';
@@ -38,29 +38,35 @@ export function FormLayout({
   return (
     <View style={styles.screen}>
       <ScreenHeader title={headerTitle} backLabel="Volver" onBack={onBack} />
-      <View style={styles.intro}>
-        <View style={[styles.circle, tone === 'amber' && styles.circleAmber]}>
-          <Icon
-            name={icon}
-            size={48}
-            color={tone === 'amber' ? colors.amberText : colors.primary}
-          />
-        </View>
-        <Text accessibilityRole="header" style={styles.title}>
-          {title}
-        </Text>
-        <Text style={styles.message}>{message}</Text>
-      </View>
-      <View style={styles.field}>
-        {children}
-        {notice && (
-          <View accessibilityRole="alert" style={styles.notice}>
-            <Icon name="alertCircle" size={22} color={colors.danger} />
-            <Text style={styles.noticeText}>{notice}</Text>
+      {/* Lo de arriba se desplaza (letra grande, teclado); el botón queda siempre a la vista. */}
+      <ScrollView
+        style={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.intro}>
+          <View style={[styles.circle, tone === 'amber' && styles.circleAmber]}>
+            <Icon
+              name={icon}
+              size={48}
+              color={tone === 'amber' ? colors.amberText : colors.primary}
+            />
           </View>
-        )}
-      </View>
-      <View style={styles.spacer} />
+          <Text accessibilityRole="header" style={styles.title}>
+            {title}
+          </Text>
+          <Text style={styles.message}>{message}</Text>
+        </View>
+        <View style={styles.field}>
+          {children}
+          {notice && (
+            <View accessibilityRole="alert" style={styles.notice}>
+              <Icon name="alertCircle" size={22} color={colors.danger} />
+              <Text style={styles.noticeText}>{notice}</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
       <View style={[styles.footer, { paddingBottom: 40 + bottom }]}>{footer}</View>
     </View>
   );
@@ -110,6 +116,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: colors.danger,
   },
-  spacer: { flex: 1 },
-  footer: { paddingHorizontal: 24, gap: 10 },
+  scroll: { flex: 1 },
+  footer: { paddingTop: 12, paddingHorizontal: 24, gap: 10 },
 });

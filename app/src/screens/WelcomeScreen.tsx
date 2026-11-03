@@ -31,7 +31,9 @@ export function WelcomeScreen({ onSignIn }: Props) {
                 >
                   {row.done && <Icon name="check" size={14} color={colors.onPrimary} />}
                 </View>
-                <Text style={[styles.rowName, row.done && styles.rowNameDone]}>{row.name}</Text>
+                <Text style={[styles.rowName, row.done && styles.rowNameDone]}>
+                  {row.done ? <Text style={styles.struck}>{row.name}</Text> : row.name}
+                </Text>
                 <Avatar name={row.initial} tone={row.tone} />
               </View>
             ))}
@@ -93,7 +95,8 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.bodyLarge,
     color: colors.textPrimary,
   },
-  rowNameDone: { color: colors.textSecondary, textDecorationLine: 'line-through' },
+  rowNameDone: { color: colors.textSecondary },
+  struck: { textDecorationLine: 'line-through' },
   terms: {
     marginTop: 4,
     textAlign: 'center',

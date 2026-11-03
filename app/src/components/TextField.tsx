@@ -40,7 +40,8 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   singleLine: {
-    height: heights.field,
+    minHeight: heights.field,
+    paddingVertical: 8,
     paddingHorizontal: 16,
     fontFamily: fonts.bodyMedium,
     fontSize: 18,

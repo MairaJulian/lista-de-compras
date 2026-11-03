@@ -141,6 +141,7 @@ Deja el archivo en `app/dist/changuito.apk` (la carpeta `dist/` no se versiona).
 - **Firma:** se firma con la clave de debug del proyecto (`android/app/debug.keystore`, la que genera el template de Expo, con contraseña `android`). Su huella SHA-1 `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25` es la que está registrada en Firebase, por eso anda el login con Google. Para ver la huella de un APK: `apksigner verify --print-certs dist/changuito.apk`. Si algún día se publica en Play Store hará falta una clave propia y reinstalar la app.
 - **Sin Metro:** el JavaScript va dentro del APK. Tampoco incluye el menú DEV ni el acceso a los datos de ejemplo (`__DEV__` es falso en release).
 - **No se versionan** el APK ni las claves: `dist/`, `android/`, `*.keystore` y `google-services.json` están en `.gitignore`.
+- **Ícono y splash:** salen de `app/assets/` (copias de `diseno/icono/`) y de `app/app.json`. Son código nativo: `npm run build:apk` ya regenera `android/` con `expo prebuild --clean`, así que alcanza con volver a generar el APK. Para el build de desarrollo, `npx expo prebuild --platform android --clean` y después `npx expo run:android`.
 - Instalarlo en un celular o emulador conectado: `adb install -r dist/changuito.apk`. Instala encima de la versión de desarrollo porque tiene la misma firma.
 
 ## Instalar Changuito en tu celular (guía para la familia)

@@ -88,6 +88,7 @@ La Etapa 8 termina cuando:
 - [x] `USO-REAL.md`
 - [x] Higiene del repo
 - [x] Borrador de `ETAPA-9.md`
+- [x] PR 2 (`etapa-8/02-ajustes-uso-real`): ajustes de la primera observación del uso real (tachado, letra grande, pantalla de carga, mensaje de invitación, ícono y splash). Ver `USO-REAL.md`.
 - [ ] Maira: pantalla de consentimiento de Google
 - [ ] Maira: APK instalado en la familia
 - [ ] Dos semanas de uso real

@@ -67,7 +67,10 @@ export function inviteLink(code: string): string {
   return `changuito://unirse/${code}`;
 }
 
-/** Mensaje que se comparte: el código, por si el enlace no se puede tocar, y el enlace. */
+/**
+ * Mensaje que se comparte: el código y cómo usarlo. Sin el enlace `changuito://`, porque WhatsApp
+ * no lo muestra como tocable (la página puente con un enlace https queda pendiente).
+ */
 export function inviteMessage(householdName: string, code: string): string {
-  return `Sumate a ${householdName} en Changuito.\nCódigo: ${code}\nEnlace: ${inviteLink(code)}`;
+  return `Sumate a ${householdName} en Changuito.\nCódigo: ${code}\nAbrí Changuito, tocá 'Tengo un código de invitación' y pegá este código.`;
 }

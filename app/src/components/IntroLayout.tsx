@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fontSizes, fonts } from '../theme';
@@ -20,7 +20,13 @@ export function IntroLayout({ heroHeight, hero, title, message, children }: Prop
   const { top, bottom } = useSafeAreaInsets();
 
   return (
-    <View style={styles.screen}>
+    // Con letra grande el texto y los botones pueden no entrar en pantalla: todo se desplaza.
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      bounces={false}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={{ height: heroHeight }}>
         <View style={styles.blob} />
         <View style={[styles.brand, { top: top + 32 }]}>
@@ -38,12 +44,13 @@ export function IntroLayout({ heroHeight, hero, title, message, children }: Prop
         <Text style={styles.message}>{message}</Text>
         {children}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background, overflow: 'hidden' },
+  screen: { flex: 1, backgroundColor: colors.background },
+  content: { flexGrow: 1, overflow: 'hidden' },
   blob: {
     position: 'absolute',
     left: -65,
@@ -63,7 +70,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandName: { fontFamily: fonts.heading, fontSize: 22, color: colors.textPrimary },
-  body: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: 24, gap: 12 },
+  body: { flexGrow: 1, justifyContent: 'flex-end', paddingHorizontal: 24, paddingTop: 16, gap: 12 },
   title: {
     fontFamily: fonts.heading,
     fontSize: 32,

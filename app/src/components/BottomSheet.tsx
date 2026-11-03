@@ -3,6 +3,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -60,7 +61,15 @@ export function BottomSheet({ visible, title, onClose, showHeader = true, childr
               </Pressable>
             </View>
           )}
-          {children}
+          {/* Con letra grande el contenido puede no entrar en pantalla: se desplaza. */}
+          <ScrollView
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={styles.body}
+          >
+            {children}
+          </ScrollView>
         </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
@@ -83,7 +92,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radii.panel,
     borderTopRightRadius: radii.panel,
     elevation: 16,
+    maxHeight: '92%',
   },
+  body: { flexGrow: 0, flexShrink: 1 },
   handle: {
     width: sizes.handleWidth,
     height: sizes.handleHeight,
@@ -94,12 +105,17 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   header: {
-    height: heights.panelHeader,
+    minHeight: heights.panelHeader,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  title: { fontFamily: fonts.heading, fontSize: fontSizes.panelTitle, color: colors.textPrimary },
+  title: {
+    flex: 1,
+    fontFamily: fonts.heading,
+    fontSize: fontSizes.panelTitle,
+    color: colors.textPrimary,
+  },
   close: {
     width: heights.touchTarget,
     height: heights.touchTarget,

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, IconName } from '../components';
-import { colors, fontSizes, fonts, heights, radii, sizes } from '../theme';
+import { colors, fontSizes, fonts, heights, MAX_FONT_SCALE_FIXED, radii, sizes } from '../theme';
 
 const tabs: { name: string; label: string; icon: IconName }[] = [
   { name: 'listas', label: 'Listas', icon: 'list' },
@@ -37,7 +37,13 @@ export function TabBar({ state, navigateToTab }: BottomTabBarProps) {
               {selected && <View style={styles.indicatorFill} />}
               <Icon name={icon} color={selected ? colors.primaryText : colors.textSecondary} />
             </View>
-            <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
+            {/* La barra tiene alto fijo: el nombre de la pestaña no crece más de 1,3 veces. */}
+            <Text
+              maxFontSizeMultiplier={MAX_FONT_SCALE_FIXED}
+              style={[styles.label, selected && styles.labelSelected]}
+            >
+              {label}
+            </Text>
           </Pressable>
         );
       })}

@@ -30,7 +30,7 @@ export function Button({
   flex,
   icon,
 }: Props) {
-  const height = large ? heights.buttonLarge : heights.button;
+  const minHeight = large ? heights.buttonLarge : heights.button;
   const filled = variant === 'primary' || variant === 'dangerFilled';
   // El principal deshabilitado es gris ("Unirme" sin código), no un verde transparente.
   const greyedOut = disabled && variant === 'primary';
@@ -52,7 +52,7 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        { height, flex },
+        { minHeight, flex },
         variant === 'primary' && (greyedOut ? styles.primaryDisabled : styles.primary),
         variant === 'dangerFilled' && styles.dangerFilled,
         (variant === 'secondary' || variant === 'danger') && styles.outlined,
@@ -71,14 +71,31 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  base: { alignItems: 'center', justifyContent: 'center', borderRadius: radii.pill },
-  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  base: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.pill,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  content: {
+    flexShrink: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
   primary: { backgroundColor: colors.primary },
   primaryDisabled: { backgroundColor: colors.tabBarBorder },
   dangerFilled: { backgroundColor: colors.danger },
   outlined: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.85 },
-  label: { fontFamily: fonts.bodyBold, fontSize: fontSizes.body },
+  label: {
+    flexShrink: 1,
+    textAlign: 'center',
+    fontFamily: fonts.bodyBold,
+    fontSize: fontSizes.body,
+  },
   labelLarge: { fontSize: fontSizes.bodyLarge },
 });

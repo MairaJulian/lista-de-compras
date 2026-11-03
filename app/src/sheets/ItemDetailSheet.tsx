@@ -97,7 +97,7 @@ function DetailForm({
 
 const styles = StyleSheet.create({
   quantityRow: {
-    height: 64,
+    minHeight: 64,
     marginTop: 6,
     flexDirection: 'row',
     alignItems: 'center',
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.label,
     color: colors.textPrimary,
   },
-  author: { height: 64, marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  author: { minHeight: 64, marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 12 },
   authorLabel: {
     fontFamily: fonts.body,
     fontSize: fontSizes.caption,
