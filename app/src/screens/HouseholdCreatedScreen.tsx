@@ -23,8 +23,8 @@ export function HouseholdCreatedScreen({ onInvite, onLater }: Props) {
           subtitle={count === 1 ? '1 miembro' : `${count} miembros`}
         />
       }
-      title="¡Listo, ya tenés hogar!"
-      message="¿Querés invitar a alguien ahora? También podés hacerlo después desde Hogar."
+      title="¡Listo, grupo creado!"
+      message="¿Querés invitar a alguien ahora? También podés hacerlo después desde Grupo."
     >
       <Button label="Invitar" icon="userPlus" large onPress={onInvite} />
       <Button label="Más tarde" variant="text" onPress={onLater} />

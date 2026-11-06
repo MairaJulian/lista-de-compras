@@ -9,10 +9,19 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  updateDoc,
   where,
 } from '@react-native-firebase/firestore';
 
-import { activeMembers, memberFromDocument, newHouseholdDocuments } from './householdLogic';
+import {
+  activeMembers,
+  groupTypeFromDocument,
+  isArchivedDocument,
+  memberFromDocument,
+  needsOwnUid,
+  newHouseholdDocuments,
+  type GroupType,
+} from './householdLogic';
 import type { Member } from './types';
 
 /**
@@ -22,6 +31,10 @@ import type { Member } from './types';
 export type LoadedHousehold = {
   id: string;
   name: string;
+  /** Tipo de grupo (`tipo`); los grupos anteriores a la Etapa 9 no lo tienen y son `familia`. */
+  type: GroupType;
+  /** `archivado`: el grupo está en solo lectura para todos. */
+  archived: boolean;
   activeInviteId: string | null;
   me: Member;
   members: Member[];
@@ -66,7 +79,15 @@ export async function createHousehold(
   if (!me) {
     throw new Error('El miembro creador no quedó activo.');
   }
-  return { id: householdRef.id, name, activeInviteId: null, me, members: [me] };
+  return {
+    id: householdRef.id,
+    name,
+    type: 'familia',
+    archived: false,
+    activeInviteId: null,
+    me,
+    members: [me],
+  };
 }
 
 /**
@@ -82,7 +103,7 @@ export async function renameHousehold(householdId: string, name: string): Promis
     // Leer primero obliga a hablar con el servidor: sin conexión la transacción falla acá.
     const household = await transaction.get(householdRef);
     if (!household.exists()) {
-      throw new Error('El hogar no existe.');
+      throw new Error('El grupo no existe.');
     }
     transaction.update(householdRef, { nombre: name });
   });
@@ -105,7 +126,7 @@ export async function removeMemberFromHousehold(householdId: string, memberId: s
       return;
     }
     if (data.rol !== 'miembro') {
-      throw new Error('Quien creó el hogar no se puede quitar.');
+      throw new Error('Quien creó el grupo no se puede quitar.');
     }
     transaction.update(memberRef, { estado: 'quitado', hasta: serverTimestamp() });
   });
@@ -140,7 +161,7 @@ export async function leaveCurrentHousehold(householdId: string, successorId?: s
     if (member.exists() && member.data()?.estado === 'activo') {
       if (successorRef && successorId && member.data()?.rol === 'creador') {
         if (successor?.data()?.estado !== 'activo' || successor.data()?.rol !== 'miembro') {
-          throw new Error('Esa persona ya no puede quedar a cargo del hogar.');
+          throw new Error('Esa persona ya no puede quedar a cargo del grupo.');
         }
         transaction.update(memberRef, {
           estado: 'salio',
@@ -190,6 +211,18 @@ export async function isActiveMember(householdId: string): Promise<boolean | und
   }
 }
 
+/**
+ * Completa el campo `uid` del documento propio de `miembros` (solo ese campo, igual al propio: las
+ * reglas no admiten otra cosa). Es lo que usa la consulta de "mis grupos". Nunca rechaza.
+ */
+export async function completeOwnUid(householdId: string, uid: string): Promise<void> {
+  try {
+    await updateDoc(doc(getFirestore(), 'hogares', householdId, 'miembros', uid), { uid });
+  } catch {
+    // Ver el comentario de quien lo llama: es opcional y se reintenta al abrir el grupo.
+  }
+}
+
 /** Por qué la membresía propia dejó de estar activa. */
 export type RemovalReason = 'quitado' | 'salio';
 
@@ -225,13 +258,16 @@ export function watchHousehold(
   }
   const db = getFirestore();
   let name: string | undefined;
+  let type: GroupType = 'familia';
+  let archived = false;
   let activeInviteId: string | null = null;
   let me: Member | undefined;
   let members: Member[] | undefined;
+  let uidRequested = false;
 
   const emit = () => {
     if (name !== undefined && me && members) {
-      onData({ id: householdId, name, activeInviteId, me, members });
+      onData({ id: householdId, name, type, archived, activeInviteId, me, members });
     }
   };
 
@@ -244,6 +280,8 @@ export function watchHousehold(
         return;
       }
       name = data.nombre;
+      type = groupTypeFromDocument(data.tipo);
+      archived = isArchivedDocument(data.archivado);
       activeInviteId =
         typeof data.invitacionActivaId === 'string' && data.invitacionActivaId
           ? data.invitacionActivaId
@@ -257,6 +295,13 @@ export function watchHousehold(
     (snapshot) => {
       const data = snapshot.data();
       me = memberFromDocument(uid, data);
+      if (me && !uidRequested && needsOwnUid(data, uid)) {
+        // Los miembros anteriores a la Etapa 9 no guardan su `uid`: se completa una sola vez, en
+        // segundo plano. Nada depende de esto para abrir el grupo (se entra por `hogarActualId`);
+        // si falla (sin conexión, reglas) se vuelve a intentar la próxima vez que se abra.
+        uidRequested = true;
+        void completeOwnUid(householdId, uid);
+      }
       if (!me) {
         // Su propio documento siempre se puede leer: si dice que ya no está activa, la sacaron.
         const reason = snapshot.exists() ? data?.estado : undefined;

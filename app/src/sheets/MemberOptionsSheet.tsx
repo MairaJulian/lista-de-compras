@@ -30,7 +30,7 @@ export function MemberOptionsSheet({ visible, member, householdName, onClose, on
                 {member.name}
               </Text>
               <Text style={styles.role}>
-                {member.role === 'creator' ? 'Creó el hogar' : 'Miembro'}
+                {member.role === 'creator' ? 'Creó el grupo' : 'Miembro'}
               </Text>
             </View>
           </View>
@@ -40,11 +40,11 @@ export function MemberOptionsSheet({ visible, member, householdName, onClose, on
             style={styles.remove}
           >
             <Icon name="userMinus" color={colors.danger} />
-            <Text style={styles.removeLabel}>Quitar del hogar</Text>
+            <Text style={styles.removeLabel}>Quitar del grupo</Text>
           </Pressable>
           <Text style={styles.note}>
             {member.name} dejará de ver las listas de {householdName}. Solo vos, que creaste el
-            hogar, podés hacerlo.
+            grupo, podés hacerlo.
           </Text>
           <Button label="Cancelar" variant="secondary" onPress={onClose} />
         </View>

@@ -31,7 +31,7 @@ function RenameListForm({ name, onClose, onSave }: Omit<Props, 'visible'>) {
     <View>
       <Text style={styles.current}>
         Ahora se llama <Text style={styles.currentName}>{name}</Text>. Lo ven todas las personas del
-        hogar.
+        grupo.
       </Text>
       <TextField
         label="Nuevo nombre"

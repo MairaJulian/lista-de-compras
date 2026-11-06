@@ -97,6 +97,26 @@ export function newHouseholdDocuments(profile: HouseholdProfile, name: string, n
   };
 }
 
+/** Tipo de grupo: solo cambia el aspecto (color e ícono). Ausente o desconocido = familia. */
+export type GroupType = 'familia' | 'amigos' | 'evento';
+
+export function groupTypeFromDocument(value: unknown): GroupType {
+  return value === 'amigos' || value === 'evento' ? value : 'familia';
+}
+
+/** Si el grupo está archivado (solo lectura). Ausente o cualquier otro valor = no archivado. */
+export function isArchivedDocument(value: unknown): boolean {
+  return value === true;
+}
+
+/**
+ * Si el documento propio de `miembros` todavía no tiene el `uid` que usa la consulta "mis grupos"
+ * (los miembros anteriores a la Etapa 9 no lo tienen). `undefined`: el documento no existe.
+ */
+export function needsOwnUid(data: { uid?: unknown } | undefined, uid: string): boolean {
+  return data !== undefined && data.uid !== uid;
+}
+
 type MemberDocument = { nombre?: unknown; rol?: unknown; estado?: unknown; colorAvatar?: unknown };
 
 /** Miembro de la app a partir de su documento en `miembros`; `undefined` si no existe o no está activo. */

@@ -57,7 +57,7 @@ export function JoinWithCodeScreen({
       onBack={onBack}
       icon="link"
       title="Escribí o pegá tu código"
-      message="Te lo pasó quien creó el hogar. Tiene letras y números."
+      message="Te lo pasó quien creó el grupo. Tiene letras y números."
       footer={
         <Button
           label={joining ? 'Uniéndome…' : 'Unirme'}

@@ -36,17 +36,17 @@ export function CreateHouseholdScreen({ onBack, onCreate, onDismiss }: Props) {
 
   return (
     <FormLayout
-      headerTitle="Crear hogar"
+      headerTitle="Crear grupo"
       onBack={onBack}
       icon={failed ? 'homeAlert' : 'home'}
       tone={failed ? 'amber' : 'primary'}
-      title={failed ? 'No pudimos crear el hogar' : '¿Cómo le ponemos a tu hogar?'}
+      title={failed ? 'No pudimos crear el grupo' : '¿Cómo le ponemos a tu grupo?'}
       message={
         failed
           ? 'Algo salió mal de nuestro lado. Probá de nuevo en un momento.'
           : 'Lo van a ver todas las personas que invites.'
       }
-      notice={failed ? 'Tu hogar no se creó. No se perdió nada de lo que escribiste.' : undefined}
+      notice={failed ? 'Tu grupo no se creó. No se perdió nada de lo que escribiste.' : undefined}
       footer={
         failed ? (
           <>
@@ -61,7 +61,7 @@ export function CreateHouseholdScreen({ onBack, onCreate, onDismiss }: Props) {
           </>
         ) : (
           <Button
-            label={creating ? 'Creando…' : 'Crear hogar'}
+            label={creating ? 'Creando…' : 'Crear grupo'}
             large
             disabled={!hasName || creating}
             onPress={() => void create()}
@@ -70,7 +70,7 @@ export function CreateHouseholdScreen({ onBack, onCreate, onDismiss }: Props) {
       }
     >
       <LargeField
-        label="Nombre del hogar"
+        label="Nombre del grupo"
         value={name}
         onChangeText={setName}
         editable={!creating}

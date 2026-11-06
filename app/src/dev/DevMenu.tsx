@@ -86,7 +86,7 @@ export function DevMenu() {
           router.push('/unirse');
         }}
       />
-      <DevButton label="Ver sin hogar" onPress={() => go('/sin-hogar')} />
+      <DevButton label="Ver sin grupo" onPress={() => go('/sin-hogar')} />
       <DevButton label="Ver aviso de que te sacaron" onPress={() => go('/sin-hogar?sacaron=1')} />
       <DevButton label="Ver error de inicio de sesión" onPress={() => go('/error-login')} />
       {page === 'firestore' ? (

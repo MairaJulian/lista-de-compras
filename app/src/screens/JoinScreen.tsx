@@ -37,7 +37,7 @@ export function JoinScreen({
           </View>
         </View>
       }
-      title="Te invitaron a unirte al hogar."
+      title="Te invitaron a unirte al grupo."
       message={
         signedIn
           ? 'Vas a ver y editar las listas de compras junto con los demás.'

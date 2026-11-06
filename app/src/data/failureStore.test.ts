@@ -115,7 +115,7 @@ describe('trackWrite', () => {
     expect(result.current).toHaveLength(1);
   });
 
-  it('un rechazo que llega después de dejar de leer el hogar no cuenta', async () => {
+  it('un rechazo que llega después de dejar de leer el grupo no cuenta', async () => {
     const { result } = await renderHook(() => useFailures('l1'));
     let reject: (error: Error) => void = () => {};
     trackWrite(new Promise((_, no) => (reject = no)), adding);

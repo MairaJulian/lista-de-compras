@@ -8,29 +8,29 @@ import { HouseholdCreatedScreen } from './HouseholdCreatedScreen';
 import { JoinWithCodeScreen } from './JoinWithCodeScreen';
 import { NoHouseholdScreen } from './NoHouseholdScreen';
 
-describe('Salir del hogar: variantes del aviso', () => {
+describe('Salir del grupo: variantes del aviso', () => {
   beforeEach(() => resetMockStore());
 
-  it('quien creó el hogar ve que el rol pasa a otro miembro', async () => {
+  it('quien creó el grupo ve que el rol pasa a otro miembro', async () => {
     await render(<HogarScreen />);
-    await fireEvent.press(screen.getByText('Salir del hogar'));
+    await fireEvent.press(screen.getByText('Salir del grupo'));
     expect(
-      screen.getByText('Vos creaste el hogar. Si salís, el rol de creador pasa a otro miembro.'),
+      screen.getByText('Vos creaste el grupo. Si salís, el rol de creador pasa a otro miembro.'),
     ).toBeTruthy();
     expect(screen.getByText('Será la nueva persona a cargo')).toBeTruthy();
   });
 
-  it('la última persona ve que el hogar se archiva y confirma con "Salir y archivar"', async () => {
+  it('la última persona ve que el grupo se archiva y confirma con "Salir y archivar"', async () => {
     const onLeft = jest.fn();
     await render(<HogarScreen onLeft={onLeft} />);
     await fireEvent.press(screen.getByLabelText('Opciones de Lucía'));
-    await fireEvent.press(screen.getByText('Quitar del hogar'));
+    await fireEvent.press(screen.getByText('Quitar del grupo'));
     await fireEvent.press(screen.getByText('Quitar'));
     await fireEvent.press(screen.getByLabelText('Opciones de Diego'));
-    await fireEvent.press(screen.getByText('Quitar del hogar'));
+    await fireEvent.press(screen.getByText('Quitar del grupo'));
     await fireEvent.press(screen.getByText('Quitar'));
-    await fireEvent.press(screen.getByText('Salir del hogar'));
-    expect(screen.getByText('Sos la última persona del hogar')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Salir del grupo'));
+    expect(screen.getByText('Sos la última persona del grupo')).toBeTruthy();
     expect(
       screen.getByText(
         'Si salís, Nuestra casa se archiva y no queda nadie con acceso a sus listas.',
@@ -41,16 +41,16 @@ describe('Salir del hogar: variantes del aviso', () => {
   });
 });
 
-describe('Sin hogar y sus flujos', () => {
+describe('Sin grupo y sus flujos', () => {
   beforeEach(() => resetMockStore());
 
-  it('Sin hogar avisa crear hogar y escribir un código', async () => {
+  it('Sin grupo avisa crear grupo y escribir un código', async () => {
     const onCreate = jest.fn();
     const onEnterCode = jest.fn();
     await render(<NoHouseholdScreen onCreate={onCreate} onEnterCode={onEnterCode} />);
-    expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
     expect(screen.queryByText(/Ya no sos parte/)).toBeNull();
-    await fireEvent.press(screen.getByText('Crear un hogar'));
+    await fireEvent.press(screen.getByText('Crear un grupo'));
     await fireEvent.press(screen.getByText('Tengo un código de invitación'));
     expect(onCreate).toHaveBeenCalledTimes(1);
     expect(onEnterCode).toHaveBeenCalledTimes(1);
@@ -63,13 +63,13 @@ describe('Sin hogar y sus flujos', () => {
     await waitFor(() => expect(screen.queryByText('Ya no sos parte de Nuestra casa')).toBeNull());
   });
 
-  it('Crear hogar se habilita al escribir un nombre y lo entrega sin espacios sobrantes', async () => {
+  it('Crear grupo se habilita al escribir un nombre y lo entrega sin espacios sobrantes', async () => {
     const onCreate = jest.fn();
     await render(<CreateHouseholdScreen onCreate={onCreate} />);
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     expect(onCreate).not.toHaveBeenCalled();
-    await fireEvent.changeText(screen.getByLabelText('Nombre del hogar'), '  Casa nueva ');
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
+    await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), '  Casa nueva ');
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     expect(onCreate).toHaveBeenCalledWith('Casa nueva');
   });
 
@@ -121,11 +121,11 @@ describe('Sin hogar y sus flujos', () => {
     expect(screen.queryByText(/Este código no existe/)).toBeNull();
   });
 
-  it('Hogar creado muestra el hogar y avisa Invitar y Más tarde', async () => {
+  it('Grupo creado muestra el grupo y avisa Invitar y Más tarde', async () => {
     const onInvite = jest.fn();
     const onLater = jest.fn();
     await render(<HouseholdCreatedScreen onInvite={onInvite} onLater={onLater} />);
-    expect(screen.getByText('¡Listo, ya tenés hogar!')).toBeTruthy();
+    expect(screen.getByText('¡Listo, grupo creado!')).toBeTruthy();
     await fireEvent.press(screen.getByText('Invitar'));
     await fireEvent.press(screen.getByText('Más tarde'));
     expect(onInvite).toHaveBeenCalledTimes(1);

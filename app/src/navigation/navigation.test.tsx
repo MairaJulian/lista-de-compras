@@ -130,13 +130,13 @@ describe('navegación', () => {
     mockSignIn.mockResolvedValue({ status: 'success' });
   });
 
-  it('abre en Listas y cambia a Hogar con la barra inferior', async () => {
+  it('abre en Listas y cambia a Grupo con la barra inferior', async () => {
     await renderRouter(routes, { initialUrl: '/listas' });
     expect(screen.getByText('Supermercado')).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
-    await fireEvent.press(screen.getByRole('tab', { name: 'Hogar' }));
-    expect(screen.getByText('Salir del hogar')).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Hogar', selected: true })).toBeTruthy();
+    await fireEvent.press(screen.getByRole('tab', { name: 'Grupo' }));
+    expect(screen.getByText('Salir del grupo')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Grupo', selected: true })).toBeTruthy();
     await fireEvent.press(screen.getByRole('tab', { name: 'Listas' }));
     expect(screen.getByText('Supermercado')).toBeTruthy();
   });
@@ -169,14 +169,14 @@ describe('navegación', () => {
     expect(screen.getByText('Nueva lista')).toBeTruthy();
   });
 
-  it('atrás en Hogar vuelve a Listas', async () => {
+  it('atrás en Grupo vuelve a Listas', async () => {
     await renderRouter(routes, { initialUrl: '/hogar' });
-    expect(screen.getByRole('tab', { name: 'Hogar', selected: true })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Grupo', selected: true })).toBeTruthy();
     await act(async () => router.back());
     expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
   });
 
-  it('la app abre en Bienvenida y "Entrar con Google" lleva a Sin hogar', async () => {
+  it('la app abre en Bienvenida y "Entrar con Google" lleva a Sin grupo', async () => {
     firebaseSession({ status: 'signedOut' });
     mockSignIn.mockImplementation(async () => {
       await emitAuth(signedInState(account, { hogarActualId: null }));
@@ -185,7 +185,7 @@ describe('navegación', () => {
     await renderRouter(routes);
     expect(screen.getByText('Las compras de casa, entre todos.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Entrar con Google'));
-    expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
     expect(screen.queryByText('Entrar con Google')).toBeNull();
     expect(router.canGoBack()).toBe(false);
   });
@@ -211,7 +211,7 @@ describe('navegación', () => {
     await fireEvent.press(screen.getByText('Entrar con Google'));
     expect(await screen.findByText('Algo salió mal.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Reintentar'));
-    expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
   });
 
   it('si el reintento falla de nuevo se queda en el error, y si cancela vuelve a Bienvenida', async () => {
@@ -228,7 +228,7 @@ describe('navegación', () => {
 
   it('Unirse: "Entrar y unirme" lleva a Listas, y "Ahora no" a donde arranca la sesión', async () => {
     await renderRouter(routes, { initialUrl: '/unirse' });
-    expect(screen.getByText('Te invitaron a unirte al hogar.')).toBeTruthy();
+    expect(screen.getByText('Te invitaron a unirte al grupo.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Entrar y unirme'));
     expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
     await act(async () => router.push('/unirse'));
@@ -236,12 +236,12 @@ describe('navegación', () => {
     expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
   });
 
-  it('Hogar abre Perfil y la flecha vuelve; Cerrar sesión lleva a Bienvenida', async () => {
+  it('Grupo abre Perfil y la flecha vuelve; Cerrar sesión lleva a Bienvenida', async () => {
     await renderRouter(routes, { initialUrl: '/hogar' });
     await fireEvent.press(screen.getByLabelText('Tu perfil'));
     expect(screen.getByText('[cuenta de Google]')).toBeTruthy();
-    await fireEvent.press(screen.getByLabelText('Volver a Hogar'));
-    expect(screen.getByText('Salir del hogar')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Volver a Grupo'));
+    expect(screen.getByText('Salir del grupo')).toBeTruthy();
     await fireEvent.press(screen.getByLabelText('Tu perfil'));
     await fireEvent.press(screen.getByText('Cerrar sesión'));
     expect(screen.getByText('Entrar con Google')).toBeTruthy();
@@ -249,51 +249,51 @@ describe('navegación', () => {
     expect(router.canGoBack()).toBe(false);
   });
 
-  it('Hogar abre Invitar y la flecha vuelve', async () => {
+  it('Grupo abre Invitar y la flecha vuelve', async () => {
     await renderRouter(routes, { initialUrl: '/hogar' });
     await fireEvent.press(screen.getByText('Invitar'));
     expect(screen.getByText('Sumá a alguien a Nuestra casa')).toBeTruthy();
-    await fireEvent.press(screen.getByLabelText('Volver a Hogar'));
-    expect(screen.getByText('Salir del hogar')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Volver a Grupo'));
+    expect(screen.getByText('Salir del grupo')).toBeTruthy();
   });
 
-  it('Salir del hogar confirma y lleva a Sin hogar, sin volver atrás', async () => {
+  it('Salir del grupo confirma y lleva a Sin grupo, sin volver atrás', async () => {
     await renderRouter(routes, { initialUrl: '/hogar' });
-    await fireEvent.press(screen.getByText('Salir del hogar'));
+    await fireEvent.press(screen.getByText('Salir del grupo'));
     expect(screen.getByText('¿Salir de Nuestra casa?')).toBeTruthy();
-    await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
-    expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
+    expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
     expect(router.canGoBack()).toBe(false);
   });
 
-  it('crear un hogar: Sin hogar → Crear hogar → Hogar creado → Invitar', async () => {
+  it('crear un grupo: Sin grupo → Crear grupo → Grupo creado → Invitar', async () => {
     await renderRouter(routes, { initialUrl: '/sin-hogar' });
-    await fireEvent.press(screen.getByText('Crear un hogar'));
-    await fireEvent.changeText(screen.getByLabelText('Nombre del hogar'), 'Casa nueva');
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
-    expect(screen.getByText('¡Listo, ya tenés hogar!')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Crear un grupo'));
+    await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Casa nueva');
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+    expect(screen.getByText('¡Listo, grupo creado!')).toBeTruthy();
     expect(screen.getByText('Casa nueva')).toBeTruthy();
     expect(screen.getByText('1 miembro')).toBeTruthy();
     await fireEvent.press(screen.getByText('Invitar'));
     expect(screen.getByText('Sumá a alguien a Casa nueva')).toBeTruthy();
-    await fireEvent.press(screen.getByLabelText('Volver a Hogar'));
-    expect(screen.getByRole('tab', { name: 'Hogar', selected: true })).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('Volver a Grupo'));
+    expect(screen.getByRole('tab', { name: 'Grupo', selected: true })).toBeTruthy();
   });
 
-  it('Hogar creado: "Más tarde" lleva a Listas', async () => {
+  it('Grupo creado: "Más tarde" lleva a Listas', async () => {
     await renderRouter(routes, { initialUrl: '/sin-hogar' });
-    await fireEvent.press(screen.getByText('Crear un hogar'));
-    await fireEvent.changeText(screen.getByLabelText('Nombre del hogar'), 'Casa nueva');
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
+    await fireEvent.press(screen.getByText('Crear un grupo'));
+    await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Casa nueva');
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     await fireEvent.press(screen.getByText('Más tarde'));
     expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
   });
 
-  it('Sin hogar → código → Unirme lleva a Listas', async () => {
+  it('Sin grupo → código → Unirme lleva a Listas', async () => {
     await renderRouter(routes, { initialUrl: '/sin-hogar' });
     await fireEvent.press(screen.getByText('Tengo un código de invitación'));
     await fireEvent.press(screen.getByLabelText('Volver'));
-    expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Tengo un código de invitación'));
     await fireEvent.changeText(screen.getByLabelText('Código de invitación'), 'K7P2-9XQ-4MN');
     await fireEvent.press(screen.getByText('Unirme'));
@@ -301,10 +301,10 @@ describe('navegación', () => {
     expect(router.canGoBack()).toBe(false);
   });
 
-  it('salir del hogar y volver a entrar con Google lleva a Sin hogar', async () => {
+  it('salir del grupo y volver a entrar con Google lleva a Sin grupo', async () => {
     await renderRouter(routes, { initialUrl: '/hogar' });
-    await fireEvent.press(screen.getByText('Salir del hogar'));
-    await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
+    await fireEvent.press(screen.getByText('Salir del grupo'));
+    await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
     // Termina la sesión de ejemplo y se vuelve a entrar con una cuenta sin hogar.
     await act(async () => resetSession({ status: 'signedOut' }));
     mockSignIn.mockImplementation(async () => {
@@ -312,7 +312,7 @@ describe('navegación', () => {
       return { status: 'success' };
     });
     await fireEvent.press(screen.getByText('Entrar con Google'));
-    expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
   });
 
   it('Unirse con el enlace desactivado muestra el error y "Entendido" vuelve al inicio', async () => {
@@ -333,7 +333,7 @@ describe('navegación', () => {
     await fireEvent.press(screen.getByText('Entrar y unirme'));
     expect(screen.getByText('Necesitás internet para unirte.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Reintentar'));
-    expect(screen.getByText('Te invitaron a unirte al hogar.')).toBeTruthy();
+    expect(screen.getByText('Te invitaron a unirte al grupo.')).toBeTruthy();
   });
 
   it('error de enlace: "Tengo un código" abre el campo del código', async () => {
@@ -351,10 +351,10 @@ describe('navegación', () => {
     await renderRouter(routes, { initialUrl: '/error-login' });
     expect(screen.getByText('Algo salió mal.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Reintentar'));
-    expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+    expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
   });
 
-  it('"te sacaron" muestra el aviso encima de Sin hogar', async () => {
+  it('"te sacaron" muestra el aviso encima de Sin grupo', async () => {
     await renderRouter(routes, { initialUrl: '/sin-hogar?sacaron=1' });
     expect(screen.getByText('Ya no sos parte de Nuestra casa')).toBeTruthy();
     await fireEvent.press(screen.getByText('Continuar'));
@@ -377,19 +377,19 @@ describe('navegación', () => {
       expect(screen.queryByText('Nueva lista')).toBeNull();
     });
 
-    it('con sesión y sin hogar abre Sin hogar', async () => {
+    it('con sesión y sin grupo abre Sin grupo', async () => {
       firebaseSession(signedInState(account, { hogarActualId: null }));
       await renderRouter(routes);
-      expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+      expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
     });
 
-    it('con sesión y sin hogar, pedir Listas lleva a Sin hogar', async () => {
+    it('con sesión y sin grupo, pedir Listas lleva a Sin grupo', async () => {
       firebaseSession(signedInState(account, { hogarActualId: null }));
       await renderRouter(routes, { initialUrl: '/listas' });
-      expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+      expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
     });
 
-    it('con sesión y hogar abre Listas, sin pasar por Bienvenida', async () => {
+    it('con sesión y grupo abre Listas, sin pasar por Bienvenida', async () => {
       firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
       await renderRouter(routes);
       expect(screen.getByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
@@ -403,7 +403,7 @@ describe('navegación', () => {
       expect(screen.queryByText('Algo salió mal.')).toBeNull();
     });
 
-    it('Perfil muestra el nombre y el mail reales, y sin hogar no muestra la tarjeta de hogar', async () => {
+    it('Perfil muestra el nombre y el mail reales, y sin grupo no muestra la tarjeta de grupo', async () => {
       firebaseSession(signedInState(account, { nombre: 'Maira J.', hogarActualId: null }));
       await renderRouter(routes, { initialUrl: '/perfil' });
       expect(screen.getByText('Maira J.')).toBeTruthy();
@@ -426,7 +426,7 @@ describe('navegación', () => {
       expect(signOutEverywhere).toHaveBeenCalledTimes(1);
       expect(router.canGoBack()).toBe(false);
       await fireEvent.press(screen.getByText('Entrar con Google'));
-      expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+      expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
     });
 
     it('si no se puede cerrar la sesión avisa y se queda en Perfil', async () => {
@@ -440,7 +440,7 @@ describe('navegación', () => {
       alert.mockRestore();
     });
 
-    describe('hogar real', () => {
+    describe('grupo real', () => {
       const me = { id: 'u1', name: 'Maira', role: 'creator' as const, tone: 'green' as const };
       const readsHousehold = (name: string) =>
         (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
@@ -448,7 +448,7 @@ describe('navegación', () => {
           return () => {};
         });
 
-      it('con hogar y sin listas abre Inicio sin listas, y "Nueva lista" crea la lista de verdad', async () => {
+      it('con grupo y sin listas abre Inicio sin listas, y "Nueva lista" crea la lista de verdad', async () => {
         readsHousehold('Casa real');
         firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
         await renderRouter(routes);
@@ -729,7 +729,7 @@ describe('navegación', () => {
             await fireEvent.press(screen.getByLabelText('Menú de la lista'));
           };
 
-          it('el ⋯ abre el menú con el nombre, la cantidad de ítems y el hogar', async () => {
+          it('el ⋯ abre el menú con el nombre, la cantidad de ítems y el grupo', async () => {
             await openMenu();
             expect(screen.getByText('4 ítems · Casa real')).toBeTruthy();
             expect(screen.getByText('Renombrar')).toBeTruthy();
@@ -938,7 +938,7 @@ describe('navegación', () => {
         expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
       });
 
-      it('si falla la lectura del hogar muestra el error y "Reintentar" vuelve a leer', async () => {
+      it('si falla la lectura del grupo muestra el error y "Reintentar" vuelve a leer', async () => {
         (watchHousehold as jest.Mock).mockImplementationOnce((_id, _onData, onError) => {
           onError();
           return () => {};
@@ -953,7 +953,7 @@ describe('navegación', () => {
         expect(screen.getByText('Casa real')).toBeTruthy();
       });
 
-      it('Hogar muestra a los miembros reales, y uno nuevo aparece en tiempo real', async () => {
+      it('Grupo muestra a los miembros reales, y uno nuevo aparece en tiempo real', async () => {
         const lucia = { id: 'u2', name: 'Lucía', role: 'member' as const, tone: 'amber' as const };
         let push: (members: Member[]) => void = () => {};
         (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
@@ -963,9 +963,9 @@ describe('navegación', () => {
         });
         firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
         await renderRouter(routes);
-        await fireEvent.press(screen.getByRole('tab', { name: 'Hogar' }));
+        await fireEvent.press(screen.getByRole('tab', { name: 'Grupo' }));
         expect(screen.getByText('1 miembro')).toBeTruthy();
-        expect(screen.getByText('Creaste el hogar')).toBeTruthy();
+        expect(screen.getByText('Creaste el grupo')).toBeTruthy();
         expect(screen.queryByText('Lucía')).toBeNull();
         await act(async () => push([me, lucia]));
         expect(screen.getByText('2 miembros')).toBeTruthy();
@@ -973,7 +973,7 @@ describe('navegación', () => {
         expect(screen.getByLabelText('Opciones de Lucía')).toBeTruthy();
       });
 
-      it('Hogar: editar el nombre lo guarda en el hogar real y lo cambia al llegar la lectura', async () => {
+      it('Grupo: editar el nombre lo guarda en el grupo real y lo cambia al llegar la lectura', async () => {
         let push: (name: string) => void = () => {};
         (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
           push = (name) => onData({ id, name, me, members: [me] });
@@ -983,16 +983,16 @@ describe('navegación', () => {
         (renameHousehold as jest.Mock).mockImplementation(async () => push('Casa nueva'));
         firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
         await renderRouter(routes);
-        await fireEvent.press(screen.getByRole('tab', { name: 'Hogar' }));
-        await fireEvent.press(screen.getByLabelText('Editar el nombre del hogar'));
+        await fireEvent.press(screen.getByRole('tab', { name: 'Grupo' }));
+        await fireEvent.press(screen.getByLabelText('Editar el nombre del grupo'));
         await fireEvent.changeText(screen.getByLabelText('Nuevo nombre'), '  Casa nueva ');
         await fireEvent.press(screen.getByRole('button', { name: 'Guardar' }));
         await waitFor(() => expect(renameHousehold).toHaveBeenCalledWith('h1', 'Casa nueva'));
-        await waitFor(() => expect(screen.queryByText('Nombre del hogar')).toBeNull());
+        await waitFor(() => expect(screen.queryByText('Nombre del grupo')).toBeNull());
         expect(screen.getByText('Casa nueva')).toBeTruthy();
       });
 
-      it('Hogar: si falla la lectura muestra el error 32 y "Reintentar" vuelve a leer', async () => {
+      it('Grupo: si falla la lectura muestra el error 32 y "Reintentar" vuelve a leer', async () => {
         (watchHousehold as jest.Mock).mockImplementationOnce((_id, _onData, onError) => {
           onError();
           return () => {};
@@ -1000,12 +1000,12 @@ describe('navegación', () => {
         readsHousehold('Casa real');
         firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
         await renderRouter(routes);
-        await fireEvent.press(screen.getByRole('tab', { name: 'Hogar' }));
+        await fireEvent.press(screen.getByRole('tab', { name: 'Grupo' }));
         expect(screen.getByText('No pudimos cargar tus datos')).toBeTruthy();
-        expect(screen.queryByText('Salir del hogar')).toBeNull();
+        expect(screen.queryByText('Salir del grupo')).toBeNull();
         expect(screen.getByLabelText('Tu perfil')).toBeTruthy();
         await fireEvent.press(screen.getByText('Reintentar'));
-        expect(await screen.findByText('Salir del hogar')).toBeTruthy();
+        expect(await screen.findByText('Salir del grupo')).toBeTruthy();
         expect(screen.getByText('Casa real')).toBeTruthy();
       });
 
@@ -1032,20 +1032,20 @@ describe('navegación', () => {
         async function openHogar() {
           firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
           await renderRouter(routes);
-          await fireEvent.press(screen.getByRole('tab', { name: 'Hogar' }));
+          await fireEvent.press(screen.getByRole('tab', { name: 'Grupo' }));
         }
 
-        it('quien creó el hogar quita a un miembro: se confirma y se pide al servidor', async () => {
+        it('quien creó el grupo quita a un miembro: se confirma y se pide al servidor', async () => {
           readsMembers(creatorMe, [creatorMe, lucia]);
           await openHogar();
           await fireEvent.press(screen.getByLabelText('Opciones de Lucía'));
-          await fireEvent.press(screen.getByText('Quitar del hogar'));
+          await fireEvent.press(screen.getByText('Quitar del grupo'));
           await fireEvent.press(screen.getByText('Quitar'));
           await waitFor(() => expect(removeMemberFromHousehold).toHaveBeenCalledWith('h1', 'u2'));
-          await waitFor(() => expect(screen.queryByText('¿Quitar a Lucía del hogar?')).toBeNull());
+          await waitFor(() => expect(screen.queryByText('¿Quitar a Lucía del grupo?')).toBeNull());
         });
 
-        it('quien no creó el hogar no ve las opciones de los demás', async () => {
+        it('quien no creó el grupo no ve las opciones de los demás', async () => {
           readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
           await openHogar();
           expect(screen.queryByLabelText(/Opciones de/)).toBeNull();
@@ -1056,41 +1056,41 @@ describe('navegación', () => {
           (removeMemberFromHousehold as jest.Mock).mockRejectedValueOnce(new Error('unavailable'));
           await openHogar();
           await fireEvent.press(screen.getByLabelText('Opciones de Lucía'));
-          await fireEvent.press(screen.getByText('Quitar del hogar'));
+          await fireEvent.press(screen.getByText('Quitar del grupo'));
           await fireEvent.press(screen.getByText('Quitar'));
           expect(
             await screen.findByText(/No pudimos quitar a Lucía\. Revisá tu conexión/),
           ).toBeTruthy();
-          expect(screen.getByText('¿Quitar a Lucía del hogar?')).toBeTruthy();
+          expect(screen.getByText('¿Quitar a Lucía del grupo?')).toBeTruthy();
           await fireEvent.press(screen.getByText('Quitar'));
           await waitFor(() => expect(removeMemberFromHousehold).toHaveBeenCalledTimes(2));
-          await waitFor(() => expect(screen.queryByText('¿Quitar a Lucía del hogar?')).toBeNull());
+          await waitFor(() => expect(screen.queryByText('¿Quitar a Lucía del grupo?')).toBeNull());
         });
 
-        it('un miembro común sale sin traspaso y va a Sin hogar', async () => {
+        it('un miembro común sale sin traspaso y va a Sin grupo', async () => {
           readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
           (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
             await emitAuth(signedInState(account, { hogarActualId: null }));
           });
           await openHogar();
-          await fireEvent.press(screen.getByText('Salir del hogar'));
-          await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
-          expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          await fireEvent.press(screen.getByText('Salir del grupo'));
+          await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
+          expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
           expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined);
           expect(screen.queryByText(/Ya no sos parte/)).toBeNull();
         });
 
-        it('quien creó el hogar pasa el rol a quien lleva más tiempo y se muestra a quién', async () => {
+        it('quien creó el grupo pasa el rol a quien lleva más tiempo y se muestra a quién', async () => {
           const diego = { id: 'u3', name: 'Diego', role: 'member' as const, tone: 'blue' as const };
           readsMembers(creatorMe, [creatorMe, lucia, diego]);
           (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
             await emitAuth(signedInState(account, { hogarActualId: null }));
           });
           await openHogar();
-          await fireEvent.press(screen.getByText('Salir del hogar'));
+          await fireEvent.press(screen.getByText('Salir del grupo'));
           expect(screen.getByText('Será la nueva persona a cargo')).toBeTruthy();
-          await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
-          expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
+          expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
           expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', 'u2');
         });
 
@@ -1100,32 +1100,32 @@ describe('navegación', () => {
             await emitAuth(signedInState(account, { hogarActualId: null }));
           });
           await openHogar();
-          await fireEvent.press(screen.getByText('Salir del hogar'));
-          expect(screen.getByText('Sos la última persona del hogar')).toBeTruthy();
+          await fireEvent.press(screen.getByText('Salir del grupo'));
+          expect(screen.getByText('Sos la última persona del grupo')).toBeTruthy();
           await fireEvent.press(screen.getByText('Salir y archivar'));
-          expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
           expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined);
         });
 
-        it('si no se pudo salir (sin conexión) sigue en Hogar con el error y se puede reintentar', async () => {
+        it('si no se pudo salir (sin conexión) sigue en Grupo con el error y se puede reintentar', async () => {
           readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
           (leaveCurrentHousehold as jest.Mock).mockRejectedValueOnce(new Error('unavailable'));
           await openHogar();
-          await fireEvent.press(screen.getByText('Salir del hogar'));
-          await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
+          await fireEvent.press(screen.getByText('Salir del grupo'));
+          await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
           expect(
-            await screen.findByText(/No pudimos sacarte del hogar\. Revisá tu conexión/),
+            await screen.findByText(/No pudimos sacarte del grupo\. Revisá tu conexión/),
           ).toBeTruthy();
-          expect(screen.queryByText('Armá tu hogar o sumate a uno.')).toBeNull();
+          expect(screen.queryByText('Armá tu grupo o sumate a uno.')).toBeNull();
           (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
             await emitAuth(signedInState(account, { hogarActualId: null }));
           });
-          await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
-          expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
+          expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
           expect(leaveCurrentHousehold).toHaveBeenCalledTimes(2);
         });
 
-        it('si te quitan mientras la app está abierta: aviso, Sin hogar y hogarActualId vaciado', async () => {
+        it('si te quitan mientras la app está abierta: aviso, Sin grupo y hogarActualId vaciado', async () => {
           readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
           (forgetHousehold as jest.Mock).mockImplementation(async () => {
             await emitAuth(signedInState(account, { hogarActualId: null }));
@@ -1133,7 +1133,7 @@ describe('navegación', () => {
           await openHogar();
           await act(async () => removed('quitado', 'Casa real'));
           expect(await screen.findByText('Ya no sos parte de Casa real')).toBeTruthy();
-          expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
           expect(forgetHousehold).toHaveBeenCalledWith('h1');
           await fireEvent.press(screen.getByText('Continuar'));
           await waitFor(() =>
@@ -1189,24 +1189,24 @@ describe('navegación', () => {
           expect(forgetHousehold).toHaveBeenCalledWith('h1');
         });
 
-        it('sin el nombre del hogar el aviso dice "tu hogar"', async () => {
+        it('sin el nombre del grupo el aviso dice "tu grupo"', async () => {
           (watchHousehold as jest.Mock).mockImplementation((_id, _onData, _onError, onRemoved) => {
             onRemoved('quitado', '');
             return () => {};
           });
           firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
           await renderRouter(routes);
-          expect(await screen.findByText('Ya no sos parte de tu hogar')).toBeTruthy();
+          expect(await screen.findByText('Ya no sos parte de tu grupo')).toBeTruthy();
         });
 
-        it('si saliste desde otro celular va a Sin hogar sin el aviso de "te sacaron"', async () => {
+        it('si saliste desde otro celular va a Sin grupo sin el aviso de "te sacaron"', async () => {
           (watchHousehold as jest.Mock).mockImplementation((_id, _onData, _onError, onRemoved) => {
             onRemoved('salio', 'Casa real');
             return () => {};
           });
           firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
           await renderRouter(routes);
-          expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+          expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
           expect(screen.queryByText(/Ya no sos parte/)).toBeNull();
           expect(forgetHousehold).toHaveBeenCalledWith('h1');
         });
@@ -1223,17 +1223,17 @@ describe('navegación', () => {
         });
       });
 
-      it('Sin hogar: el avatar abre Perfil y la flecha vuelve', async () => {
+      it('Sin grupo: el avatar abre Perfil y la flecha vuelve', async () => {
         firebaseSession(signedInState(account, { hogarActualId: null }));
         await renderRouter(routes);
         await fireEvent.press(screen.getByLabelText('Tu perfil'));
         expect(screen.getByText('maira@example.com')).toBeTruthy();
         expect(screen.getByText('Cerrar sesión')).toBeTruthy();
         await fireEvent.press(screen.getByLabelText('Volver'));
-        expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+        expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
       });
 
-      it('crear el hogar: Hogar creado y "Más tarde" lleva a Inicio sin listas', async () => {
+      it('crear el grupo: Grupo creado y "Más tarde" lleva a Inicio sin listas', async () => {
         readsHousehold('Casa nueva');
         (createHousehold as jest.Mock).mockImplementation(async (name: string) => {
           await emitAuth(signedInState(account, { hogarActualId: 'h-nuevo' }));
@@ -1241,10 +1241,10 @@ describe('navegación', () => {
         });
         firebaseSession(signedInState(account, { hogarActualId: null }));
         await renderRouter(routes);
-        await fireEvent.press(screen.getByText('Crear un hogar'));
-        await fireEvent.changeText(screen.getByLabelText('Nombre del hogar'), 'Casa nueva');
-        await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
-        expect(await screen.findByText('¡Listo, ya tenés hogar!')).toBeTruthy();
+        await fireEvent.press(screen.getByText('Crear un grupo'));
+        await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Casa nueva');
+        await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+        expect(await screen.findByText('¡Listo, grupo creado!')).toBeTruthy();
         expect(createHousehold).toHaveBeenCalledWith('Casa nueva', {
           name: 'Maira Julián',
           photo: null,
@@ -1254,7 +1254,7 @@ describe('navegación', () => {
         expect(screen.getByText('Casa nueva')).toBeTruthy();
       });
 
-      it('si falla crear el hogar muestra el error con el nombre escrito; "Reintentar" lo crea', async () => {
+      it('si falla crear el grupo muestra el error con el nombre escrito; "Reintentar" lo crea', async () => {
         readsHousehold('Casa nueva');
         (createHousehold as jest.Mock)
           .mockRejectedValueOnce(new Error('unavailable'))
@@ -1264,24 +1264,24 @@ describe('navegación', () => {
           });
         firebaseSession(signedInState(account, { hogarActualId: null }));
         await renderRouter(routes);
-        await fireEvent.press(screen.getByText('Crear un hogar'));
-        await fireEvent.changeText(screen.getByLabelText('Nombre del hogar'), 'Casa nueva');
-        await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
-        expect(await screen.findByText('No pudimos crear el hogar')).toBeTruthy();
+        await fireEvent.press(screen.getByText('Crear un grupo'));
+        await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Casa nueva');
+        await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+        expect(await screen.findByText('No pudimos crear el grupo')).toBeTruthy();
         expect(screen.getByDisplayValue('Casa nueva')).toBeTruthy();
         await fireEvent.press(screen.getByText('Reintentar'));
-        expect(await screen.findByText('¡Listo, ya tenés hogar!')).toBeTruthy();
+        expect(await screen.findByText('¡Listo, grupo creado!')).toBeTruthy();
       });
 
-      it('"Ahora no" del error de crear hogar vuelve a Sin hogar', async () => {
+      it('"Ahora no" del error de crear grupo vuelve a Sin grupo', async () => {
         (createHousehold as jest.Mock).mockRejectedValue(new Error('unavailable'));
         firebaseSession(signedInState(account, { hogarActualId: null }));
         await renderRouter(routes);
-        await fireEvent.press(screen.getByText('Crear un hogar'));
-        await fireEvent.changeText(screen.getByLabelText('Nombre del hogar'), 'Casa nueva');
-        await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
+        await fireEvent.press(screen.getByText('Crear un grupo'));
+        await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Casa nueva');
+        await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
         await fireEvent.press(await screen.findByText('Ahora no'));
-        expect(screen.getByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+        expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
       });
     });
 
@@ -1300,7 +1300,7 @@ describe('navegación', () => {
         });
       });
 
-      it('con el enlace muestra el hogar y quién invitó, y "Unirme" lleva a Inicio', async () => {
+      it('con el enlace muestra el grupo y quién invitó, y "Unirme" lleva a Inicio', async () => {
         firebaseSession(signedInState(account, { hogarActualId: null }));
         (joinHousehold as jest.Mock).mockImplementation(async () => {
           await emitAuth(signedInState(account, { hogarActualId: 'h1' }));
@@ -1315,13 +1315,13 @@ describe('navegación', () => {
         expect(router.canGoBack()).toBe(false);
       });
 
-      it('mientras la sesión no sabe del hogar nuevo no navega: queda en "Uniéndome…"', async () => {
+      it('mientras la sesión no sabe del grupo nuevo no navega: queda en "Uniéndome…"', async () => {
         firebaseSession(signedInState(account, { hogarActualId: null }));
         (joinHousehold as jest.Mock).mockResolvedValue(undefined);
         await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
         await fireEvent.press(await screen.findByRole('button', { name: 'Unirme' }));
         expect(await screen.findByRole('button', { name: 'Uniéndome…' })).toBeDisabled();
-        expect(screen.queryByText('Armá tu hogar o sumate a uno.')).toBeNull();
+        expect(screen.queryByText('Armá tu grupo o sumate a uno.')).toBeNull();
       });
 
       it('un enlace cuya invitación no existe, venció o está revocada muestra el error de enlace', async () => {
@@ -1330,7 +1330,7 @@ describe('navegación', () => {
         await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
         expect(await screen.findByText('Este enlace ya no sirve.')).toBeTruthy();
         await fireEvent.press(screen.getByText('Entendido'));
-        expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+        expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
       });
 
       it('si la invitación se revoca antes de confirmar, "Unirme" muestra el error de enlace', async () => {
@@ -1359,7 +1359,7 @@ describe('navegación', () => {
         await fireEvent.press(await screen.findByRole('button', { name: 'Unirme' }));
         expect(await screen.findByText('Necesitás internet para unirte.')).toBeTruthy();
         await fireEvent.press(screen.getByText('Ahora no'));
-        expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+        expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
       });
 
       it('sin sesión conserva el código: entra con Google y sigue en la invitación', async () => {
@@ -1375,10 +1375,10 @@ describe('navegación', () => {
         expect(await screen.findByText('Te invitó Lucía')).toBeTruthy();
         expect(readInvitePreview).toHaveBeenCalledWith(CODE);
         await fireEvent.press(screen.getByText('Ahora no'));
-        expect(await screen.findByText('Armá tu hogar o sumate a uno.')).toBeTruthy();
+        expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
       });
 
-      it('si ya tiene un hogar, el enlace no lo cambia de hogar: va a Inicio', async () => {
+      it('si ya tiene un grupo, el enlace no lo cambia de grupo: va a Inicio', async () => {
         firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
         await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
         expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();

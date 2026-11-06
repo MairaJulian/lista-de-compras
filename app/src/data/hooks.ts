@@ -114,7 +114,7 @@ export function useLeaveHousehold(): () => Promise<void> {
   return useCallback(async () => {
     if (real) {
       if (!household) {
-        throw new Error('El hogar todavía no se leyó.');
+        throw new Error('El grupo todavía no se leyó.');
       }
       const successor =
         leaveCase(household.members, household.me.id) === 'creator'
@@ -179,7 +179,7 @@ export function useRenameHousehold(): (name: string) => Promise<boolean> {
       }
       if (real) {
         if (!householdId) {
-          throw new Error('El hogar todavía no se leyó.');
+          throw new Error('El grupo todavía no se leyó.');
         }
         await renameHousehold(householdId, clean);
       } else {
@@ -297,7 +297,7 @@ export function useRemoveMember(): (memberId: string) => Promise<void> {
     async (memberId) => {
       if (real) {
         if (!householdId) {
-          throw new Error('El hogar todavía no se leyó.');
+          throw new Error('El grupo todavía no se leyó.');
         }
         await removeMemberFromHousehold(householdId, memberId);
         return;
@@ -393,7 +393,7 @@ export function useInvite(): InviteControls {
       return;
     }
     if (!household) {
-      throw new Error('El hogar todavía no se leyó.');
+      throw new Error('El grupo todavía no se leyó.');
     }
     await createInvite(household.id);
   }, [real, household]);
@@ -404,7 +404,7 @@ export function useInvite(): InviteControls {
       return;
     }
     if (!household) {
-      throw new Error('El hogar todavía no se leyó.');
+      throw new Error('El grupo todavía no se leyó.');
     }
     await revokeInvite(household.id);
   }, [real, household]);

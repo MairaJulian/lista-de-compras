@@ -7,7 +7,7 @@ import { colors, fontSizes, fonts, heights, MAX_FONT_SCALE_FIXED, radii, sizes }
 
 const tabs: { name: string; label: string; icon: IconName }[] = [
   { name: 'listas', label: 'Listas', icon: 'list' },
-  { name: 'hogar', label: 'Hogar', icon: 'users' },
+  { name: 'hogar', label: 'Grupo', icon: 'users' },
 ];
 
 /** Barra inferior: 2 pestañas con indicador pill de 64 × 32. */

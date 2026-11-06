@@ -13,6 +13,8 @@ import {
 const household = {
   id: 'h1',
   name: 'Nuestra casa',
+  type: 'familia' as const,
+  archived: false,
   activeInviteId: null,
   me: { id: 'u1', name: 'Maira', role: 'creator' as const, tone: 'green' as const },
   members: [{ id: 'u1', name: 'Maira', role: 'creator' as const, tone: 'green' as const }],
@@ -65,14 +67,14 @@ describe('householdStore', () => {
     expect(stop).toHaveBeenCalledTimes(1);
   });
 
-  it('el hogar recién creado se ve enseguida y no vuelve a "leyendo" al empezar a leer', async () => {
+  it('el grupo recién creado se ve enseguida y no vuelve a "leyendo" al empezar a leer', async () => {
     const { result } = await renderHook(() => useHouseholdState());
     await act(async () => seedHousehold(household));
     await act(async () => void startHousehold('h1'));
     expect(result.current).toEqual({ status: 'ready', household });
   });
 
-  it('un hogar distinto al sembrado sí vuelve a "leyendo"', async () => {
+  it('un grupo distinto al sembrado sí vuelve a "leyendo"', async () => {
     const { result } = await renderHook(() => useHouseholdState());
     await act(async () => seedHousehold(household));
     await act(async () => void startHousehold('h2'));

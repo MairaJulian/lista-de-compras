@@ -61,7 +61,7 @@ export function InviteScreen({
   if (status !== 'ready') {
     return (
       <View style={styles.screen}>
-        <ScreenHeader title="Invitar" backLabel="Volver a Hogar" onBack={onBack} />
+        <ScreenHeader title="Invitar" backLabel="Volver a Grupo" onBack={onBack} />
         {status === 'error' && <LoadErrorState onRetry={retry} />}
       </View>
     );
@@ -69,7 +69,7 @@ export function InviteScreen({
 
   return (
     <View style={styles.screen}>
-      <ScreenHeader title="Invitar" backLabel="Volver a Hogar" onBack={onBack} />
+      <ScreenHeader title="Invitar" backLabel="Volver a Grupo" onBack={onBack} />
 
       {/* Con letra grande no entra todo en pantalla: se desplaza y los botones quedan al final. */}
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
