@@ -9,6 +9,7 @@ import Codigo from '../app/codigo';
 import CrearHogar from '../app/crear-hogar';
 import CrearOtroGrupo from '../app/crear-otro-grupo';
 import MisGrupos from '../app/mis-grupos';
+import GrupoArchivado from '../app/grupo-archivado';
 import ErrorEnlace from '../app/error-enlace';
 import ErrorLogin from '../app/error-login';
 import ErrorSinConexion from '../app/error-sin-conexion';
@@ -31,6 +32,7 @@ import {
   leaveCurrentHousehold,
   removeMemberFromHousehold,
   renameHousehold,
+  setHouseholdArchived,
   watchHousehold,
 } from '../data/householdSource';
 import { InviteInvalidError } from '../data/joinLogic';
@@ -82,6 +84,7 @@ const routes = {
   'crear-hogar': CrearHogar,
   'crear-otro-grupo': CrearOtroGrupo,
   'mis-grupos': MisGrupos,
+  'grupo-archivado': GrupoArchivado,
   'hogar-creado': HogarCreado,
   'error-enlace': ErrorEnlace,
   'error-login': ErrorLogin,
@@ -1432,6 +1435,98 @@ describe('navegación', () => {
             await waitFor(() => expect(forgetHousehold).toHaveBeenCalledWith('h1', 'h2'));
             expect(screen.queryByText(/Ya no sos parte/)).toBeNull();
             expect(screen.queryByText(/Armá (tu|un) grupo/)).toBeNull();
+          });
+        });
+
+        describe('archivar y desarchivar', () => {
+          const archivedGroup: GroupSummary = {
+            id: 'h9',
+            name: 'Cena vieja',
+            type: 'evento',
+            archived: true,
+            role: 'creator',
+            archivedAt: new Date(2026, 7, 12).getTime(),
+          };
+          const reads = (self: Member, archived: boolean, name = 'Casa real') =>
+            (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
+              onData({ id, name, type: 'familia', archived, me: self, members: [self, lucia] });
+              return () => {};
+            });
+          const otherGroup: GroupSummary = {
+            id: 'h2',
+            name: 'Juntada del sábado',
+            type: 'amigos',
+            archived: false,
+            role: 'member',
+            since: 1,
+          };
+
+          beforeEach(() => {
+            (setHouseholdArchived as jest.Mock).mockReset().mockResolvedValue(undefined);
+          });
+
+          it('quien creó el grupo lo archiva: aviso, escritura y pasa a Mis grupos en otro grupo', async () => {
+            (fetchMyGroups as jest.Mock).mockResolvedValue([otherGroup]);
+            reads(creatorMe, false);
+            await openHogar();
+            await fireEvent.press(screen.getByText('Archivar grupo'));
+            expect(await screen.findByText('¿Archivar Casa real?')).toBeTruthy();
+            expect(
+              screen.getByText(/Queda en solo lectura para las 2 personas del grupo/),
+            ).toBeTruthy();
+            await waitFor(() => expect(screen.getAllByText('Archivar grupo')[1]).toBeEnabled());
+            await fireEvent.press(screen.getAllByText('Archivar grupo')[1]);
+            await waitFor(() => expect(setHouseholdArchived).toHaveBeenCalledWith('h1', true));
+            await waitFor(() => expect(forgetHousehold).toHaveBeenCalledWith('h1', 'h2'));
+            expect(await screen.findByText('Mis grupos')).toBeTruthy();
+          });
+
+          it('quien no creó el grupo no ve "Archivar grupo"', async () => {
+            reads(luciaMe, false);
+            await openHogar();
+            expect(screen.queryByText('Archivar grupo')).toBeNull();
+          });
+
+          it('si no se pudo archivar (sin conexión) el aviso sigue con el error y se puede reintentar', async () => {
+            reads(creatorMe, false);
+            (setHouseholdArchived as jest.Mock).mockRejectedValueOnce(new Error('unavailable'));
+            await openHogar();
+            await fireEvent.press(screen.getByText('Archivar grupo'));
+            await waitFor(() => expect(screen.getAllByText('Archivar grupo')[1]).toBeEnabled());
+            await fireEvent.press(screen.getAllByText('Archivar grupo')[1]);
+            expect(await screen.findByText(/No pudimos archivar el grupo/)).toBeTruthy();
+            await fireEvent.press(screen.getAllByText('Archivar grupo')[1]);
+            await waitFor(() => expect(setHouseholdArchived).toHaveBeenCalledTimes(2));
+          });
+
+          it('abrir un archivado desde Mis grupos muestra el grupo en solo lectura', async () => {
+            (fetchMyGroups as jest.Mock).mockResolvedValue([archivedGroup]);
+            reads(creatorMe, true, 'Cena vieja');
+            firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+            await renderRouter(routes, { initialUrl: '/mis-grupos' });
+            await fireEvent.press(await screen.findByText('Cena vieja'));
+            expect(switchToGroup).toHaveBeenCalledWith('h9', true);
+            expect(await screen.findByText('Archivado · solo lectura')).toBeTruthy();
+            expect(screen.getByText('Este grupo está archivado')).toBeTruthy();
+            expect(screen.queryByText('Nueva lista')).toBeNull();
+          });
+
+          it('si la app abre en un grupo archivado, Inicio lleva a la pantalla de solo lectura', async () => {
+            reads(luciaMe, true, 'Cena vieja');
+            firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+            await renderRouter(routes);
+            expect(await screen.findByText('Este grupo está archivado')).toBeTruthy();
+            expect(screen.queryByRole('button', { name: 'Desarchivar grupo' })).toBeNull();
+            expect(screen.getByText('Solo lo puede hacer quien creó el grupo.')).toBeTruthy();
+          });
+
+          it('quien creó el grupo lo desarchiva y vuelve a Mis grupos', async () => {
+            reads(creatorMe, true, 'Cena vieja');
+            firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+            await renderRouter(routes);
+            await fireEvent.press(await screen.findByRole('button', { name: 'Desarchivar grupo' }));
+            await waitFor(() => expect(setHouseholdArchived).toHaveBeenCalledWith('h1', false));
+            expect(await screen.findByText('Mis grupos')).toBeTruthy();
           });
         });
 

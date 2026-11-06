@@ -196,6 +196,25 @@ export async function leaveCurrentHousehold(
 }
 
 /**
+ * Archiva o desarchiva el grupo (solo quien lo creó; lo verifican las reglas): una sola escritura de
+ * los tres campos de archivado. Es una transacción para que, sin conexión, rechace en vez de quedar
+ * en cola.
+ */
+export async function setHouseholdArchived(householdId: string, archived: boolean) {
+  const uid = currentUid();
+  const db = getFirestore();
+  const householdRef = doc(db, 'hogares', householdId);
+  await runTransaction(db, async (transaction) => {
+    transaction.update(
+      householdRef,
+      archived
+        ? { archivado: true, archivadoPor: uid, archivadoEn: serverTimestamp() }
+        : { archivado: false, archivadoPor: null, archivadoEn: null },
+    );
+  });
+}
+
+/**
  * Si el `hogarActualId` propio todavía apunta a este hogar (cuando te sacaron o saliste desde otro
  * celular) lo pasa a `nextId` (otro grupo activo) o lo vacía si no hay. Condicional para no pisar un
  * grupo al que la persona ya pasó o se unió después.

@@ -8,6 +8,7 @@ import {
   useCurrentMember,
   useHousehold,
   useHouseholdLoad,
+  useArchiveGroup,
   useLeaveHousehold,
   useNextGroupAfterLeaving,
   useRemoveMember,
@@ -28,6 +29,8 @@ type Props = {
   onInvite?: () => void;
   /** Después de confirmar "Salir del grupo": `stays` es si le queda otro grupo al que pasar. */
   onLeft?: (stays: boolean) => void;
+  /** Después de confirmar "Archivar grupo" (`51`): `stays` es si le queda otro grupo al que pasar. */
+  onArchived?: (stays: boolean) => void;
 };
 
 /** "Vas a pasar a X." cuando le queda otro grupo (`53`); nada si va a Sin grupo. */
@@ -65,7 +68,7 @@ function leaveDialogProps(leaving: LeaveCase, householdName: string, nextName?: 
 
 type ActionState = 'idle' | 'busy' | 'failed';
 
-function ActionError({ children }: { children: React.ReactNode }) {
+export function ActionError({ children }: { children: React.ReactNode }) {
   return (
     <Text accessibilityRole="alert" style={styles.actionError}>
       {children}
@@ -80,7 +83,7 @@ function roleLabel(member: Member, currentId: string) {
   return 'Miembro';
 }
 
-export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: Props) {
+export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft, onArchived }: Props) {
   const household = useHousehold();
   const current = useCurrentMember();
   const account = useAccount();
@@ -88,6 +91,7 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
   const renameHousehold = useRenameHousehold();
   const removeMember = useRemoveMember();
   const leaveHousehold = useLeaveHousehold();
+  const archiveGroup = useArchiveGroup();
   const { top } = useSafeAreaInsets();
   // El panel y el aviso guardan a quién se refieren aparte de si están abiertos, para que el
   // contenido no desaparezca mientras se cierran.
@@ -98,6 +102,10 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
   const [leaveOpen, setLeaveOpen] = useState(false);
   // Cada vez que se abre el aviso de salir se averigua a qué grupo pasaría (una lectura por apertura).
   const [leaveCount, setLeaveCount] = useState(0);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveCount, setArchiveCount] = useState(0);
+  const [archiveAction, setArchiveAction] = useState<ActionState>('idle');
+  const archiveTarget = useNextGroupAfterLeaving(archiveOpen ? archiveCount : undefined);
   const target = useNextGroupAfterLeaving(leaveOpen ? leaveCount : undefined);
   // Quitar y salir hablan con el servidor: mientras corren los botones se bloquean, y si fallan
   // (sin conexión, sin permiso) el aviso sigue abierto con el error para reintentar.
@@ -124,6 +132,19 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
     } catch {
       setRemoveAction('failed');
     }
+  };
+
+  const confirmArchive = async () => {
+    setArchiveAction('busy');
+    try {
+      await archiveGroup(archiveTarget.next?.id);
+    } catch {
+      setArchiveAction('failed');
+      return;
+    }
+    setArchiveOpen(false);
+    setArchiveAction('idle');
+    onArchived?.(archiveTarget.next !== undefined);
   };
 
   const confirmLeave = async () => {
@@ -232,6 +253,18 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
             </View>
 
             <View style={styles.leave}>
+              {canRemove && (
+                <Button
+                  label="Archivar grupo"
+                  variant="secondary"
+                  icon="archive"
+                  onPress={() => {
+                    setArchiveAction('idle');
+                    setArchiveCount((n) => n + 1);
+                    setArchiveOpen(true);
+                  }}
+                />
+              )}
               <Button
                 label="Salir del grupo"
                 variant="danger"
@@ -245,6 +278,46 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
           </>
         )}
       </ScrollView>
+
+      <CenteredDialog
+        visible={archiveOpen}
+        icon="archive"
+        tone="amber"
+        title={`¿Archivar ${household.name}?`}
+        message={`Queda en solo lectura para ${
+          count === 1 ? 'vos' : `las ${count} personas del grupo`
+        } y deja de avisar. Lo vas a encontrar en Mis grupos, en Archivados, y podés desarchivarlo cuando quieras.`}
+        detail={
+          archiveAction === 'failed' || archiveTarget.status === 'error' ? (
+            <ActionError>
+              {archiveAction === 'failed'
+                ? 'No pudimos archivar el grupo. Revisá tu conexión y probá de nuevo.'
+                : 'No pudimos revisar tus otros grupos. Revisá tu conexión y probá de nuevo.'}
+            </ActionError>
+          ) : undefined
+        }
+        onClose={() => archiveAction !== 'busy' && setArchiveOpen(false)}
+      >
+        <Button
+          label={
+            archiveAction === 'busy'
+              ? 'Archivando…'
+              : archiveTarget.status === 'error'
+                ? 'Reintentar'
+                : 'Archivar grupo'
+          }
+          disabled={archiveAction === 'busy' || archiveTarget.status === 'loading'}
+          onPress={() =>
+            archiveTarget.status === 'error' ? archiveTarget.retry() : void confirmArchive()
+          }
+        />
+        <Button
+          label="Cancelar"
+          variant="secondary"
+          disabled={archiveAction === 'busy'}
+          onPress={() => setArchiveOpen(false)}
+        />
+      </CenteredDialog>
 
       <EditHouseholdSheet
         visible={editOpen}
@@ -453,7 +526,7 @@ const styles = StyleSheet.create({
   },
   inviteLabel: { fontFamily: fonts.bodyBold, fontSize: fontSizes.label, color: colors.onPrimary },
   members: { marginHorizontal: 24 },
-  leave: { marginHorizontal: 24, marginTop: 24 },
+  leave: { marginHorizontal: 24, marginTop: 24, gap: 12 },
   actionError: {
     fontFamily: fonts.body,
     fontSize: fontSizes.secondary,
