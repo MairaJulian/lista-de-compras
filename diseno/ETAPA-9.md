@@ -125,7 +125,7 @@ La Etapa 9 termina cuando la secuencia anterior funciona completa, las reglas es
 
 ## Estado
 
-- [ ] PR 1 · Esquema y reglas
-- [ ] Maira publica las reglas (y el índice si hace falta)
+- [x] PR 1 · Esquema y reglas (rama `etapa-9/01-reglas-grupos`; decisiones en `ESQUEMA-DATOS.md`, "Varios grupos")
+- [ ] Maira publica las reglas y el índice (`npx firebase deploy --only firestore:rules,firestore:indexes --project changuito-31ec1`, desde `firebase/`)
 - [ ] PR 2 · Varios grupos y archivar
 - [ ] Prueba de Maira con dos cuentas
