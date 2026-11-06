@@ -17,9 +17,11 @@ import {
 } from './householdLogic';
 import {
   createHousehold,
+  forgetHousehold,
   leaveCurrentHousehold,
   removeMemberFromHousehold,
   renameHousehold,
+  setHouseholdArchived,
 } from './householdSource';
 import {
   retryHousehold,
@@ -177,6 +179,61 @@ export function useLeaveHousehold(): (nextGroupId?: string) => Promise<void> {
     },
     [real, household],
   );
+}
+
+/** Si el grupo actual está archivado (solo lectura para todos, `52`). */
+export function useCurrentGroupArchived(): boolean {
+  const real = useIsRealSession();
+  const loaded = useCurrentHouseholdState();
+  return real && loaded.status === 'ready' && loaded.household.archived;
+}
+
+// Mientras se archiva el grupo actual y todavía no se pasó a otro, Inicio no debe mandar a la
+// pantalla de grupo archivado (la persona va a Mis grupos, `51`).
+let archiving = false;
+
+export function isArchivingGroup(): boolean {
+  return archiving;
+}
+
+/**
+ * Archiva el grupo actual (solo quien lo creó) y pasa a `nextGroupId` (otro grupo activo) o, si no
+ * queda ninguno, deja la persona sin grupo actual. Rechaza si no se pudo archivar (sin conexión,
+ * sin permiso). Con los datos de ejemplo no hace nada.
+ */
+export function useArchiveGroup(): (nextGroupId?: string) => Promise<void> {
+  const real = useIsRealSession();
+  const loaded = useCurrentHouseholdState();
+  const householdId = loaded.status === 'ready' ? loaded.household.id : undefined;
+  return useCallback(
+    async (nextGroupId) => {
+      if (!real) return;
+      if (!householdId) throw new Error('El grupo todavía no se leyó.');
+      archiving = true;
+      try {
+        await setHouseholdArchived(householdId, true);
+        invalidateGroups();
+        // Ya archivado: si esto falla no pasa nada grave, se vuelve a decidir al abrir la app.
+        await forgetHousehold(householdId, nextGroupId).catch(() => {});
+      } finally {
+        archiving = false;
+      }
+    },
+    [real, householdId],
+  );
+}
+
+/** Desarchiva el grupo actual (solo quien lo creó). Rechaza si no se pudo. */
+export function useUnarchiveGroup(): () => Promise<void> {
+  const real = useIsRealSession();
+  const loaded = useCurrentHouseholdState();
+  const householdId = loaded.status === 'ready' ? loaded.household.id : undefined;
+  return useCallback(async () => {
+    if (!real) return;
+    if (!householdId) throw new Error('El grupo todavía no se leyó.');
+    await setHouseholdArchived(householdId, false);
+    invalidateGroups();
+  }, [real, householdId]);
 }
 
 export type NextGroup = {

@@ -7,6 +7,7 @@ import {
   leaveCurrentHousehold,
   removeMemberFromHousehold,
   renameHousehold,
+  setHouseholdArchived,
   watchHousehold,
 } from './householdSource';
 
@@ -327,6 +328,40 @@ describe('leaveCurrentHousehold', () => {
     mockCurrentUser = null;
     await expect(leaveCurrentHousehold('h1')).rejects.toThrow('sesión');
     expect(mockRunTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('setHouseholdArchived', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCurrentUser = { uid: 'u1' };
+    mockRunTransaction.mockImplementation((_db, update) =>
+      update({ get: mockGet, set: mockSet, update: mockUpdate }),
+    );
+  });
+
+  it('archiva con una sola escritura de los tres campos', async () => {
+    await setHouseholdArchived('h1', true);
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ path: 'hogares/h1' }), {
+      archivado: true,
+      archivadoPor: 'u1',
+      archivadoEn: 'SERVER_TIMESTAMP',
+    });
+  });
+
+  it('desarchiva vaciando los otros dos campos', async () => {
+    await setHouseholdArchived('h1', false);
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ path: 'hogares/h1' }), {
+      archivado: false,
+      archivadoPor: null,
+      archivadoEn: null,
+    });
+  });
+
+  it('sin conexión rechaza (la transacción no queda en cola)', async () => {
+    mockRunTransaction.mockRejectedValue(new Error('unavailable'));
+    await expect(setHouseholdArchived('h1', true)).rejects.toThrow('unavailable');
   });
 });
 

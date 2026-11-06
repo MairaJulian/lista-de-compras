@@ -19,7 +19,7 @@ type Props = {
   onJoin?: () => void;
   /** Después de elegir un grupo activo (ya se cambió de grupo): normalmente va a Inicio. */
   onOpened?: () => void;
-  /** Un grupo archivado se abre en `52` (Etapa 9, PR 2d); mientras tanto no se puede abrir. */
+  /** Un grupo archivado se abre en 52: cambia el grupo actual y va a esa pantalla. */
   onOpenArchived?: (group: GroupSummary) => void;
 };
 

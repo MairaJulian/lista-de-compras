@@ -160,6 +160,7 @@ export default function RootLayout() {
               <Stack.Screen name="crear-hogar" />
               <Stack.Screen name="crear-otro-grupo" />
               <Stack.Screen name="mis-grupos" />
+              <Stack.Screen name="grupo-archivado" />
               <Stack.Screen name="hogar-creado" />
             </Stack.Protected>
             {/* Se abren desde un enlace de invitación, con o sin sesión. */}

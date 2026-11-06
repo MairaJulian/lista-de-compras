@@ -10,6 +10,7 @@ export default function HogarRoute() {
       onOpenGroups={() => router.push('/mis-grupos')}
       onOpenProfile={() => router.push('/perfil')}
       onInvite={() => router.push('/invitar')}
+      onArchived={(stays) => (stays ? router.push('/mis-grupos') : goToNoHousehold())}
       onLeft={(next) => (next ? goToStart() : goToNoHousehold())}
     />
   );

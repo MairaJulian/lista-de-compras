@@ -35,6 +35,7 @@ const glyphs = {
   link: 'link-variant',
   alertCircle: 'alert-circle-outline',
   archive: 'archive-outline',
+  lock: 'lock-outline',
   alertTriangle: 'alert-outline',
   homeAlert: 'home-alert-outline',
   paste: 'content-paste',

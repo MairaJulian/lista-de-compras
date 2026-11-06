@@ -37,7 +37,8 @@ jest.mock('./src/data/householdSource', () => ({
   renameHousehold: jest.fn(),
   removeMemberFromHousehold: jest.fn(),
   leaveCurrentHousehold: jest.fn(),
-  forgetHousehold: jest.fn(),
+  forgetHousehold: jest.fn(() => Promise.resolve()),
+  setHouseholdArchived: jest.fn(() => Promise.resolve()),
   isActiveMember: jest.fn(() => Promise.resolve(true)),
 }));
 
