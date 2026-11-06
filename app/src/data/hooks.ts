@@ -7,6 +7,7 @@ import { getMockCurrentMember, mockHousehold, mockInvites } from '../mock/data';
 import { joinMockHousehold, newItemId, newListId, setState, useMockStore } from '../mock/store';
 import {
   cleanHouseholdName,
+  type GroupType,
   deactivateInvite,
   leaveCase,
   leaveHousehold,
@@ -20,7 +21,20 @@ import {
   removeMemberFromHousehold,
   renameHousehold,
 } from './householdSource';
-import { retryHousehold, seedHousehold, useHouseholdState } from './householdStore';
+import {
+  retryHousehold,
+  seedHousehold,
+  useHouseholdState,
+  type HouseholdState,
+} from './householdStore';
+import {
+  GROUP_LIMIT_MESSAGE,
+  reachedGroupLimit,
+  withLiveCounts,
+  type GroupSummary,
+} from './groupLogic';
+import { switchToGroup } from './groupSource';
+import { invalidateGroups, loadGroups, peekGroups } from './groupsStore';
 import { inviteFromDocument } from './inviteLogic';
 import { joinFailure, normalizeInviteCode, type JoinResult } from './joinLogic';
 import { joinHousehold, readInvitePreview } from './joinSource';
@@ -56,13 +70,41 @@ import {
   updateItemFields,
 } from './listSource';
 import { showLeaveUndo } from './leaveUndoStore';
-import { retryListData, useListData } from './listStore';
+import { retryListData, useListData, type ListDataState } from './listStore';
 import { canCleanUpList, startPresence } from './presenceSource';
 import { useSyncStatus } from './syncStatus';
 import type { Household, Invite, ListInfo, ListItem, ListSummary, Member } from './types';
 
 // Único punto de acceso a los datos para las pantallas. Hoy devuelve los datos de ejemplo;
 // con Firebase se reemplaza la implementación sin tocar las pantallas.
+
+/**
+ * El estado del grupo leído, pero solo si es el del grupo actual de la sesión. Entre que cambia
+ * `hogarActualId` y que la raíz empieza a leer el grupo nuevo, el estado guardado todavía es el del
+ * anterior: no se muestra (así no se ven datos de un grupo en otro ni un instante).
+ */
+function useCurrentHouseholdState(): HouseholdState {
+  const session = useSession();
+  const state = useHouseholdState();
+  const real = session.status === 'signedIn' && !session.demo;
+  if (real && state.status === 'ready' && state.household.id !== session.householdId) {
+    return { status: 'loading' };
+  }
+  return state;
+}
+
+/** Lo mismo para las listas, los ítems y los miembros. */
+function useCurrentListData(): ListDataState {
+  const session = useSession();
+  const data = useListData();
+  const real = session.status === 'signedIn' && !session.demo;
+  if (real && data.status !== 'idle' && data.householdId !== session.householdId) {
+    return session.householdId
+      ? { status: 'loading', householdId: session.householdId }
+      : { status: 'idle' };
+  }
+  return data;
+}
 
 /** Si la sesión es la real (de Google): los datos salen de Firestore. */
 export function useIsRealSession(): boolean {
@@ -73,7 +115,7 @@ export function useIsRealSession(): boolean {
 export function useHousehold(): Household {
   const { members, householdName } = useMockStore();
   const real = useIsRealSession();
-  const loaded = useHouseholdState();
+  const loaded = useCurrentHouseholdState();
   if (!real) {
     return { ...mockHousehold, name: householdName, members };
   }
@@ -88,7 +130,7 @@ export type HouseholdLoad = { status: 'loading' | 'ready' | 'error'; retry: () =
 /** Si ya se leyó el hogar de la sesión real (`error` es la pantalla `32-error-carga`). Con datos de ejemplo está siempre listo. */
 export function useHouseholdLoad(): HouseholdLoad {
   const session = useSession();
-  const loaded = useHouseholdState();
+  const loaded = useCurrentHouseholdState();
   const reading = session.status === 'signedIn' && !session.demo && session.householdId !== null;
   if (!reading || loaded.status === 'ready') {
     return { status: 'ready', retry: retryHousehold };
@@ -109,7 +151,7 @@ export function useHasHousehold(): boolean {
  */
 export function useLeaveHousehold(): () => Promise<void> {
   const real = useIsRealSession();
-  const loaded = useHouseholdState();
+  const loaded = useCurrentHouseholdState();
   const household = loaded.status === 'ready' ? loaded.household : undefined;
   return useCallback(async () => {
     if (real) {
@@ -136,18 +178,21 @@ export function useLeaveHousehold(): () => Promise<void> {
  * largo); si no se pudo crear (sin conexión, reglas) rechaza. En la sesión real lo crea en
  * Firestore con una transacción; con los datos de ejemplo, en memoria.
  */
-export function useCreateHousehold(): (name: string) => Promise<boolean> {
+export function useCreateHousehold(): (name: string, type?: GroupType) => Promise<boolean> {
   const session = useSession();
   const account = session.status === 'signedIn' && !session.demo ? session.account : undefined;
   return useCallback(
-    async (name) => {
+    async (name, type = 'familia') => {
       const clean = cleanHouseholdName(name);
       if (!clean) {
         return false;
       }
       if (account) {
         // El correo no viaja: en `miembros` solo se guardan nombre y foto.
-        seedHousehold(await createHousehold(clean, { name: account.name, photo: account.photo }));
+        seedHousehold(
+          await createHousehold(clean, { name: account.name, photo: account.photo }, type),
+        );
+        invalidateGroups();
         return true;
       }
       setState((s) => ({
@@ -169,7 +214,7 @@ export function useCreateHousehold(): (name: string) => Promise<boolean> {
  */
 export function useRenameHousehold(): (name: string) => Promise<boolean> {
   const real = useIsRealSession();
-  const loaded = useHouseholdState();
+  const loaded = useCurrentHouseholdState();
   const householdId = loaded.status === 'ready' ? loaded.household.id : undefined;
   return useCallback(
     async (name) => {
@@ -209,6 +254,7 @@ export function useJoinHousehold(): (code?: string) => Promise<JoinResult> {
             name: account.name,
             photo: account.photo,
           });
+          invalidateGroups();
           return 'joined';
         } catch (error) {
           return joinFailure(error);
@@ -291,7 +337,7 @@ export function useOnline(): boolean {
  */
 export function useRemoveMember(): (memberId: string) => Promise<void> {
   const real = useIsRealSession();
-  const loaded = useHouseholdState();
+  const loaded = useCurrentHouseholdState();
   const householdId = loaded.status === 'ready' ? loaded.household.id : undefined;
   return useCallback(
     async (memberId) => {
@@ -383,7 +429,7 @@ function useWatchedInvite(inviteId: string | null | undefined, enabled: boolean)
 export function useInvite(): InviteControls {
   const { invite: mockInvite } = useMockStore();
   const real = useIsRealSession();
-  const loaded = useHouseholdState();
+  const loaded = useCurrentHouseholdState();
   const household = loaded.status === 'ready' ? loaded.household : undefined;
   const watched = useWatchedInvite(household?.activeInviteId, real);
 
@@ -422,7 +468,7 @@ export function useInvite(): InviteControls {
 /** Las listas del hogar con sus pendientes; las eliminadas no se muestran. */
 export function useLists(): ListSummary[] {
   const { lists, items } = useMockStore();
-  const data = useListData();
+  const data = useCurrentListData();
   if (useIsRealSession()) {
     return data.status === 'ready' ? summarizeLists(data.lists, data.items) : [];
   }
@@ -438,7 +484,7 @@ export type ListsLoad = { status: 'loading' | 'ready' | 'error'; retry: () => vo
 export function useListsLoad(): ListsLoad {
   const real = useIsRealSession();
   const household = useHouseholdLoad();
-  const data = useListData();
+  const data = useCurrentListData();
   const retry = useCallback(() => {
     retryHousehold();
     retryListData();
@@ -457,7 +503,7 @@ export function useListsLoad(): ListsLoad {
 
 export function useCurrentMember(): Member {
   const real = useIsRealSession();
-  const loaded = useHouseholdState();
+  const loaded = useCurrentHouseholdState();
   return real && loaded.status === 'ready' ? loaded.household.me : getMockCurrentMember();
 }
 
@@ -471,7 +517,7 @@ export function useAccount(): { member: Member; email: string } {
 
 export function useList(listId: string): ListInfo | undefined {
   const { lists } = useMockStore();
-  const data = useListData();
+  const data = useCurrentListData();
   if (useIsRealSession()) {
     return data.status === 'ready'
       ? data.lists.find((list) => list.id === listId && !list.deleted)
@@ -486,7 +532,7 @@ export function useList(listId: string): ListInfo | undefined {
  */
 export function useCreateList(): (name: string, tone: ListTone) => string | undefined {
   const real = useIsRealSession();
-  const data = useListData();
+  const data = useCurrentListData();
   const me = useCurrentMember();
   const householdId = data.status === 'ready' ? data.householdId : undefined;
   return useCallback(
@@ -582,7 +628,7 @@ export type ListContents = {
 export function useListContents(listId: string): ListContents {
   const { items: mockItems, online: mockOnline } = useMockStore();
   const real = useIsRealSession();
-  const data = useListData();
+  const data = useCurrentListData();
   const sync = useSyncStatus(listId);
   const me = useCurrentMember();
   const householdId = data.status === 'ready' ? data.householdId : undefined;
@@ -783,7 +829,7 @@ export type ListActions = {
  */
 export function useListActions(listId: string): ListActions {
   const real = useIsRealSession();
-  const data = useListData();
+  const data = useCurrentListData();
   const me = useCurrentMember();
   const list = useList(listId);
   const householdId = data.status === 'ready' ? data.householdId : undefined;
@@ -830,7 +876,7 @@ export function useListActions(listId: string): ListActions {
  */
 export function useRemovedList(listId: string): { name: string; deletedBy?: string } | undefined {
   const real = useIsRealSession();
-  const data = useListData();
+  const data = useCurrentListData();
   if (!real || data.status !== 'ready') return undefined;
   const list = data.lists.find((candidate) => candidate.id === listId);
   return list?.deleted ? { name: list.name, deletedBy: list.deletedBy } : undefined;
@@ -842,10 +888,109 @@ export function useRemovedList(listId: string): { name: string; deletedBy?: stri
  */
 export function useMemberLookup(): (memberId: string) => Member {
   const real = useIsRealSession();
-  const data = useListData();
+  const data = useCurrentListData();
   return (memberId) =>
     real
       ? memberOrFallback(data.status === 'ready' ? data.members : [], memberId)
       : (mockHousehold.members.find((member) => member.id === memberId) ??
         mockHousehold.members[0]);
+}
+
+export type MyGroups = {
+  status: 'loading' | 'ready' | 'error';
+  groups: GroupSummary[];
+  /** El grupo que se está viendo (`hogarActualId`). */
+  currentId: string | null;
+  /** Ya tiene el máximo de grupos activos: crear y unirse muestran `GROUP_LIMIT_MESSAGE`. */
+  limitReached: boolean;
+  limitMessage: string;
+  retry: () => void;
+};
+
+type LoadedGroups = { attempt: number; groups?: GroupSummary[] };
+
+/**
+ * Los grupos de la persona para el panel `47` y la pantalla `48`. Se leen una vez al montar (no hay
+ * listeners; la lectura se reutiliza un minuto) y el grupo actual usa sus datos en vivo. Con los
+ * datos de ejemplo hay un solo grupo, el de ejemplo.
+ */
+export function useMyGroups(): MyGroups {
+  const real = useIsRealSession();
+  const session = useSession();
+  const household = useHousehold();
+  const lists = useLists();
+  const [attempt, setAttempt] = useState(0);
+  const [loaded, setLoaded] = useState<LoadedGroups>();
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  useEffect(() => {
+    if (!real) return;
+    let cancelled = false;
+    loadGroups(attempt > 0).then(
+      (groups) => !cancelled && setLoaded({ attempt, groups }),
+      () => !cancelled && setLoaded({ attempt }),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [real, attempt]);
+
+  const currentId = session.status === 'signedIn' ? session.householdId : null;
+  const live =
+    household.id !== ''
+      ? {
+          memberCount: household.members.length,
+          pendingCount: lists.reduce((sum, list) => sum + list.pendingCount, 0),
+        }
+      : undefined;
+
+  if (!real) {
+    const demo: GroupSummary = {
+      id: 'demo',
+      name: household.name,
+      type: 'familia',
+      archived: false,
+      role: 'creator',
+      ...live,
+    };
+    return {
+      status: 'ready',
+      groups: [demo],
+      currentId: 'demo',
+      limitReached: false,
+      limitMessage: GROUP_LIMIT_MESSAGE,
+      retry,
+    };
+  }
+  const answered = loaded?.attempt === attempt ? loaded : undefined;
+  // Mientras se actualiza se muestra lo último leído, si hay.
+  const known = answered?.groups ?? peekGroups();
+  const groups = known ? withLiveCounts(known, currentId, live) : [];
+  const status = answered && !answered.groups && !known ? 'error' : known ? 'ready' : 'loading';
+  return {
+    status,
+    groups,
+    currentId,
+    limitReached: reachedGroupLimit(groups),
+    limitMessage: GROUP_LIMIT_MESSAGE,
+    retry,
+  };
+}
+
+/**
+ * Pasa a otro grupo. Solo cambia `hogarActualId` (y marca `ultimoUso`): la raíz deja de leer el
+ * grupo anterior y empieza a leer el nuevo. Es una escritura simple, así que funciona sin conexión;
+ * si el servidor la rechaza no pasa nada (se queda donde estaba).
+ */
+export function useSwitchGroup(): (group: GroupSummary) => void {
+  const real = useIsRealSession();
+  const session = useSession();
+  const currentId = session.status === 'signedIn' ? session.householdId : null;
+  return useCallback(
+    (group) => {
+      if (!real || group.id === currentId) return;
+      switchToGroup(group.id, group.archived).catch(() => {});
+    },
+    [real, currentId],
+  );
 }

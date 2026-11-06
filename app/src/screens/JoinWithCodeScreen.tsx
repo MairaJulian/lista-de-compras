@@ -10,6 +10,8 @@ type Props = {
   onBack?: () => void;
   /** Se une con el código. Si devuelve `invalid` se muestra `30-error-codigo`. */
   onJoin?: (code: string) => Promise<JoinResult | void> | JoinResult | void;
+  /** Quien ya está en otros grupos (`50-unirse-otro-grupo`): no los deja al unirse. */
+  otherGroups?: boolean;
   /** Cómo se lee el portapapeles; por defecto el del sistema. */
   readClipboard?: () => Promise<string>;
 };
@@ -21,6 +23,7 @@ type Props = {
 export function JoinWithCodeScreen({
   onBack,
   onJoin,
+  otherGroups,
   readClipboard = Clipboard.getStringAsync,
 }: Props) {
   const [code, setCode] = useState('');
@@ -53,11 +56,15 @@ export function JoinWithCodeScreen({
 
   return (
     <FormLayout
-      headerTitle="Unirme con un código"
+      headerTitle={otherGroups ? 'Unirme a otro grupo' : 'Unirme con un código'}
       onBack={onBack}
       icon="link"
       title="Escribí o pegá tu código"
-      message="Te lo pasó quien creó el grupo. Tiene letras y números."
+      message={
+        otherGroups
+          ? 'Te lo pasó quien creó el grupo. Seguís en tus otros grupos.'
+          : 'Te lo pasó quien creó el grupo. Tiene letras y números.'
+      }
       footer={
         <Button
           label={joining ? 'Uniéndome…' : 'Unirme'}

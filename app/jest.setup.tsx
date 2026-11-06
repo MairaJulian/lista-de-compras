@@ -41,6 +41,14 @@ jest.mock('./src/data/householdSource', () => ({
   isActiveMember: jest.fn(() => Promise.resolve(true)),
 }));
 
+// Los grupos de la persona (`47`, `48`): la lectura y el cambio de grupo los controla cada prueba (la
+// implementación real se prueba en `groupSource.test.ts`).
+jest.mock('./src/data/groupSource', () => ({
+  fetchMyGroups: jest.fn(() => Promise.resolve([])),
+  switchToGroup: jest.fn(() => Promise.resolve()),
+  currentUserId: jest.fn(() => 'u1'),
+}));
+
 // Lo mismo con las invitaciones.
 jest.mock('./src/data/inviteSource', () => ({
   watchInvite: jest.fn(() => () => {}),

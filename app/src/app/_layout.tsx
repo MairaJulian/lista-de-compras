@@ -60,18 +60,17 @@ export default function RootLayout() {
     return () => clearTimeout(timer);
   }, [householdId, purgeReady]);
 
-  // Una invitación abierta sin sesión se retoma cuando la persona entra (y todavía no tiene hogar).
+  // Una invitación abierta sin sesión se retoma cuando la persona entra (tenga o no otros grupos).
   const navigationReady = Boolean(useRootNavigationState()?.key);
   const realSignedIn = session.status === 'signedIn' && !session.demo;
-  const hasHousehold = session.status === 'signedIn' && session.hasHousehold;
   useEffect(() => {
     if (!navigationReady || !realSignedIn) return;
     const code = takePendingInvite();
-    if (!code || hasHousehold) return;
+    if (!code) return;
     // Después de que las rutas protegidas lleven a Sin hogar, que si no pisan la invitación.
     const timer = setTimeout(() => router.push(`/unirse/${code}`), 0);
     return () => clearTimeout(timer);
-  }, [navigationReady, realSignedIn, hasHousehold, router]);
+  }, [navigationReady, realSignedIn, router]);
 
   // Si la membresía deja de estar activa (te quitaron, o saliste desde otro celular) se vacía el
   // `hogarActualId` propio y se va a Sin hogar; solo a quien quitaron se le muestra el aviso.
@@ -136,6 +135,8 @@ export default function RootLayout() {
               <Stack.Screen name="sin-hogar" />
               <Stack.Screen name="codigo" />
               <Stack.Screen name="crear-hogar" />
+              <Stack.Screen name="crear-otro-grupo" />
+              <Stack.Screen name="mis-grupos" />
               <Stack.Screen name="hogar-creado" />
             </Stack.Protected>
             {/* Se abren desde un enlace de invitación, con o sin sesión. */}

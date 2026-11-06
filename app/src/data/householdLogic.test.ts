@@ -112,6 +112,7 @@ describe('newHouseholdDocuments', () => {
 
   it('el grupo apunta a quien lo crea como creador, sin invitación', () => {
     expect(household).toEqual({
+      tipo: 'familia',
       nombre: 'Nuestra casa',
       creadoPor: 'u1',
       creadoEn: 'AHORA',
@@ -122,6 +123,8 @@ describe('newHouseholdDocuments', () => {
 
   it('el miembro es el creador activo, con el primer color y sin correo', () => {
     expect(member).toEqual({
+      uid: 'u1',
+      ultimoUso: 'AHORA',
       nombre: 'Maira',
       foto: 'http://foto/1',
       colorAvatar: 'green',
@@ -232,5 +235,17 @@ describe('tipo, archivado y uid propio del grupo', () => {
     expect(needsOwnUid({}, 'u1')).toBe(true);
     expect(needsOwnUid({ uid: 'otro' }, 'u1')).toBe(true);
     expect(needsOwnUid({ uid: 'u1' }, 'u1')).toBe(false);
+  });
+});
+
+describe('newHouseholdDocuments con tipo', () => {
+  it('guarda el tipo elegido en el grupo', () => {
+    const profile = { uid: 'u1', name: 'Maira', photo: null };
+    expect(newHouseholdDocuments(profile, 'Cumple', 'AHORA', 'evento').household.tipo).toBe(
+      'evento',
+    );
+    expect(newHouseholdDocuments(profile, 'Juntada', 'AHORA', 'amigos').household.tipo).toBe(
+      'amigos',
+    );
   });
 });

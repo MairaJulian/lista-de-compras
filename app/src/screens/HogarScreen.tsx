@@ -12,6 +12,7 @@ import {
   useRemoveMember,
   useRenameHousehold,
 } from '../data/hooks';
+import { peekGroups } from '../data/groupsStore';
 import { LeaveCase, leaveCase, nextCreator } from '../data/householdLogic';
 import type { Member } from '../data/types';
 import { EditHouseholdSheet } from '../sheets/EditHouseholdSheet';
@@ -20,6 +21,8 @@ import { colors, fontSizes, fonts, heights, radii, sizes } from '../theme';
 import { LoadErrorState } from './InicioStates';
 
 type Props = {
+  /** Fila "Mis grupos" (`48`). */
+  onOpenGroups?: () => void;
   onOpenProfile?: () => void;
   onInvite?: () => void;
   /** Después de confirmar "Salir del hogar". */
@@ -70,7 +73,7 @@ function roleLabel(member: Member, currentId: string) {
   return 'Miembro';
 }
 
-export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
+export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: Props) {
   const household = useHousehold();
   const current = useCurrentMember();
   const account = useAccount();
@@ -92,6 +95,9 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
   const [leaveAction, setLeaveAction] = useState<ActionState>('idle');
   const [editOpen, setEditOpen] = useState(false);
   const count = household.members.length;
+  // Cuántos grupos activos tiene, solo si ya se leyeron (abrir esta pestaña no lee nada nuevo).
+  const knownGroups = peekGroups();
+  const activeGroups = knownGroups?.filter((group) => !group.archived).length;
   // Solo quien creó el hogar puede sacar a otros miembros.
   const canRemove = current.role === 'creator';
   // Al salir se elige el aviso según el caso: miembro común, creador (el rol pasa a otro) o la última persona.
@@ -168,6 +174,24 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
                 <Icon name="pencil" size={20} color={colors.primaryText} />
               </Pressable>
             </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Mis grupos"
+              onPress={onOpenGroups}
+              style={styles.groupsRow}
+            >
+              <Icon name="users" size={24} color={colors.primaryText} />
+              <View style={styles.groupsText}>
+                <Text style={styles.groupsLabel}>Mis grupos</Text>
+                {activeGroups !== undefined && (
+                  <Text style={styles.groupsCount}>
+                    {activeGroups === 1 ? '1 grupo' : `${activeGroups} grupos`}
+                  </Text>
+                )}
+              </View>
+              <Icon name="chevronRight" size={24} color={colors.textSecondary} />
+            </Pressable>
 
             <View style={styles.membersHeader}>
               <Text accessibilityRole="header" style={styles.membersTitle}>
@@ -362,6 +386,26 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: fontSizes.secondary,
     color: colors.primaryText,
+  },
+  groupsRow: {
+    marginHorizontal: 24,
+    marginTop: 12,
+    minHeight: 64,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: radii.group,
+    backgroundColor: colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  groupsText: { flex: 1 },
+  groupsLabel: { fontFamily: fonts.bodyBold, fontSize: fontSizes.body, color: colors.textPrimary },
+  groupsCount: {
+    marginTop: 1,
+    fontFamily: fonts.body,
+    fontSize: fontSizes.secondary,
+    color: colors.textSecondary,
   },
   membersHeader: {
     marginHorizontal: 24,

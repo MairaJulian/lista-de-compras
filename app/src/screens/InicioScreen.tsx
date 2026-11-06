@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Fab, ListCard, SaveErrorNotice } from '../components';
+import { Fab, Icon, ListCard, SaveErrorNotice } from '../components';
 import { noticeCopy } from '../data/failureLogic';
 import {
   useCreateList,
@@ -12,19 +12,25 @@ import {
 } from '../data/hooks';
 import type { ListSummary } from '../data/types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GroupSwitcherSheet } from '../sheets/GroupSwitcherSheet';
 import { NewListSheet } from '../sheets/NewListSheet';
-import { colors, fontSizes, fonts } from '../theme';
+import { colors, fontSizes, fonts, radii } from '../theme';
 import { LoadErrorState, NoListsState } from './InicioStates';
 
 type Props = {
   onOpenList?: (list: ListSummary) => void;
+  /** Del panel "Tus grupos" (`47`): crear otro grupo, unirse a otro y ver todos. */
+  onCreateGroup?: () => void;
+  onJoinGroup?: () => void;
+  onSeeGroups?: () => void;
 };
 
-export function InicioScreen({ onOpenList }: Props) {
+export function InicioScreen({ onOpenList, onCreateGroup, onJoinGroup, onSeeGroups }: Props) {
   const household = useHousehold();
   const lists = useLists();
   const createList = useCreateList();
   const [newListOpen, setNewListOpen] = useState(false);
+  const [groupsOpen, setGroupsOpen] = useState(false);
   const load = useListsLoad();
   const failures = useHomeFailures();
   const { top } = useSafeAreaInsets();
@@ -38,7 +44,18 @@ export function InicioScreen({ onOpenList }: Props) {
   const header = (
     <View style={[styles.header, { paddingTop: top + 32 }]}>
       {/* Sin nombre (leyendo o con error) no hay nada que mostrar arriba del título. */}
-      {household.name !== '' && <Text style={styles.household}>{household.name}</Text>}
+      {household.name !== '' && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${household.name}. Cambiar de grupo`}
+          onPress={() => setGroupsOpen(true)}
+          style={styles.switcher}
+        >
+          <View style={styles.switcherFill} />
+          <Text style={styles.household}>{household.name}</Text>
+          <Icon name="chevronDown" size={20} color={colors.textSecondary} />
+        </Pressable>
+      )}
       <Text accessibilityRole="header" style={styles.title}>
         Listas
       </Text>
@@ -100,6 +117,22 @@ export function InicioScreen({ onOpenList }: Props) {
           <Fab label="Nueva lista" icon="plus" onPress={() => setNewListOpen(true)} />
         </View>
       )}
+      <GroupSwitcherSheet
+        visible={groupsOpen}
+        onClose={() => setGroupsOpen(false)}
+        onCreate={() => {
+          setGroupsOpen(false);
+          onCreateGroup?.();
+        }}
+        onJoin={() => {
+          setGroupsOpen(false);
+          onJoinGroup?.();
+        }}
+        onSeeAll={() => {
+          setGroupsOpen(false);
+          onSeeGroups?.();
+        }}
+      />
       <NewListSheet
         visible={newListOpen}
         onClose={() => setNewListOpen(false)}
@@ -117,7 +150,23 @@ const styles = StyleSheet.create({
   // Espacio abajo para que el botón flotante no tape la última fila.
   content: { paddingBottom: 100 },
   header: { paddingHorizontal: 24, paddingBottom: 8, gap: 2 },
+  // El fondo va en una capa propia (siempre montada): el redondeo se conserva en Android.
+  switcher: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    paddingLeft: 14,
+    paddingRight: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  switcherFill: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: radii.pill,
+    backgroundColor: colors.neutralSoft,
+  },
   household: {
+    flexShrink: 1,
     fontFamily: fonts.bodyBold,
     fontSize: fontSizes.label,
     color: colors.textSecondary,

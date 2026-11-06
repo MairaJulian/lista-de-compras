@@ -87,6 +87,8 @@ describe('newJoinMember', () => {
   it('arma el documento que verifican las reglas: rol miembro, activo, con la invitación', () => {
     const profile = { uid: 'u2', name: ' Lucía ', photo: 'https://f/x.png' };
     expect(newJoinMember(profile, invite, 'AHORA')).toEqual({
+      uid: 'u2',
+      ultimoUso: 'AHORA',
       nombre: 'Lucía',
       foto: 'https://f/x.png',
       colorAvatar: toneForUid('u2'),
