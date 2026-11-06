@@ -20,6 +20,7 @@ const mockUpdate = jest.fn();
 const mockRunTransaction = jest.fn();
 const snapshotHandlers: Record<string, { next: (s: unknown) => void; error: () => void }> = {};
 const mockStop = jest.fn();
+const mockUpdateDoc = jest.fn();
 let mockCurrentUser: { uid: string } | null = { uid: 'u1' };
 
 jest.mock('@react-native-firebase/auth', () => ({
@@ -41,6 +42,7 @@ jest.mock('@react-native-firebase/firestore', () => ({
   runTransaction: (...args: unknown[]) => mockRunTransaction(...args),
   query: (ref: { path: string }) => ref,
   where: jest.fn(),
+  updateDoc: (...args: unknown[]) => mockUpdateDoc(...args),
   onSnapshot: (ref: { path: string }, next: (s: unknown) => void, error: () => void) => {
     snapshotHandlers[ref.path] = { next, error };
     return mockStop;
@@ -59,7 +61,7 @@ describe('createHousehold', () => {
     );
   });
 
-  it('crea hogar, miembro creador y hogarActualId en una transacción', async () => {
+  it('crea grupo, miembro creador y hogarActualId en una transacción', async () => {
     const created = await createHousehold('Nuestra casa', account);
 
     expect(mockRunTransaction).toHaveBeenCalledTimes(1);
@@ -82,6 +84,8 @@ describe('createHousehold', () => {
     expect(created).toEqual({
       id: 'nuevo-id',
       name: 'Nuestra casa',
+      type: 'familia',
+      archived: false,
       activeInviteId: null,
       me: { id: 'u1', name: 'Maira', role: 'creator', tone: 'green' },
       members: [{ id: 'u1', name: 'Maira', role: 'creator', tone: 'green' }],
@@ -133,7 +137,7 @@ describe('renameHousehold', () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it('no escribe si el hogar no existe', async () => {
+  it('no escribe si el grupo no existe', async () => {
     mockGet.mockResolvedValue({ exists: () => false });
     await expect(renameHousehold('h1', 'Casa nueva')).rejects.toThrow();
     expect(mockUpdate).not.toHaveBeenCalled();
@@ -185,7 +189,7 @@ describe('removeMemberFromHousehold', () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it('no quita a quien creó el hogar', async () => {
+  it('no quita a quien creó el grupo', async () => {
     readsDocuments({ 'hogares/h1/miembros/u2': { estado: 'activo', rol: 'creador' } });
     await expect(removeMemberFromHousehold('h1', 'u2')).rejects.toThrow();
     expect(mockUpdate).not.toHaveBeenCalled();
@@ -232,7 +236,7 @@ describe('leaveCurrentHousehold', () => {
     expect(mockUpdate).toHaveBeenCalledTimes(2);
   });
 
-  it('quien creó el hogar traspasa el rol en un solo lote: sale como miembro, el elegido pasa a creador', async () => {
+  it('quien creó el grupo traspasa el rol en un solo lote: sale como miembro, el elegido pasa a creador', async () => {
     readsDocuments({
       'hogares/h1/miembros/u1': { estado: 'activo', rol: 'creador' },
       'hogares/h1/miembros/u2': { estado: 'activo', rol: 'miembro' },
@@ -318,7 +322,7 @@ describe('forgetHousehold', () => {
     );
   });
 
-  it('vacía hogarActualId si todavía apunta a ese hogar', async () => {
+  it('vacía hogarActualId si todavía apunta a ese grupo', async () => {
     readsDocuments({ 'usuarios/u1': { hogarActualId: 'h1' } });
     await forgetHousehold('h1');
     expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ path: 'usuarios/u1' }), {
@@ -326,7 +330,7 @@ describe('forgetHousehold', () => {
     });
   });
 
-  it('no pisa un hogar al que la persona ya se unió después', async () => {
+  it('no pisa un grupo al que la persona ya se unió después', async () => {
     readsDocuments({ 'usuarios/u1': { hogarActualId: 'h2' } });
     await forgetHousehold('h1');
     expect(mockUpdate).not.toHaveBeenCalled();
@@ -346,7 +350,7 @@ describe('watchHousehold', () => {
     docs: docs.map((d) => ({ id: d.id, data: () => d.data })),
   });
 
-  it('avisa cuando llegaron el hogar, la membresía propia y los miembros', () => {
+  it('avisa cuando llegaron el grupo, la membresía propia y los miembros', () => {
     const onData = jest.fn();
     watchHousehold('h1', onData, jest.fn(), jest.fn());
 
@@ -359,6 +363,8 @@ describe('watchHousehold', () => {
     expect(onData).toHaveBeenCalledWith({
       id: 'h1',
       name: 'Nuestra casa',
+      type: 'familia',
+      archived: false,
       activeInviteId: null,
       me: maira,
       members: [maira],
@@ -375,6 +381,66 @@ describe('watchHousehold', () => {
 
     snapshotHandlers['hogares/h1'].next(snap({ nombre: 'Otro nombre' }));
     expect(onData).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Otro nombre' }));
+  });
+
+  it('lee el tipo y si está archivado; sin esos campos es una familia no archivada', () => {
+    const onData = jest.fn();
+    watchHousehold('h1', onData, jest.fn(), jest.fn());
+    snapshotHandlers['hogares/h1/miembros/u1'].next(snap(memberDoc));
+    snapshotHandlers['hogares/h1/miembros'].next(membersSnap([{ id: 'u1', data: memberDoc }]));
+
+    snapshotHandlers['hogares/h1'].next(
+      snap({ nombre: 'Cumple', tipo: 'evento', archivado: true }),
+    );
+    expect(onData).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: 'evento', archived: true }),
+    );
+    snapshotHandlers['hogares/h1'].next(snap({ nombre: 'Cumple', tipo: 'otro', archivado: false }));
+    expect(onData).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: 'familia', archived: false }),
+    );
+    snapshotHandlers['hogares/h1'].next(snap({ nombre: 'Juntada', tipo: 'amigos' }));
+    expect(onData).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: 'amigos', archived: false }),
+    );
+  });
+
+  describe('completar el uid propio', () => {
+    it('si el documento propio no tiene uid lo completa una sola vez, solo ese campo', () => {
+      watchHousehold('h1', jest.fn(), jest.fn(), jest.fn());
+      snapshotHandlers['hogares/h1/miembros/u1'].next(snap(memberDoc));
+      snapshotHandlers['hogares/h1/miembros/u1'].next(snap({ ...memberDoc, nombre: 'Mai' }));
+      expect(mockUpdateDoc).toHaveBeenCalledTimes(1);
+      expect(mockUpdateDoc).toHaveBeenCalledWith(
+        { path: 'hogares/h1/miembros/u1', id: 'u1' },
+        { uid: 'u1' },
+      );
+    });
+
+    it('si ya lo tiene no escribe nada', () => {
+      watchHousehold('h1', jest.fn(), jest.fn(), jest.fn());
+      snapshotHandlers['hogares/h1/miembros/u1'].next(snap({ ...memberDoc, uid: 'u1' }));
+      expect(mockUpdateDoc).not.toHaveBeenCalled();
+    });
+
+    it('si ya no es miembro activa no escribe', () => {
+      watchHousehold('h1', jest.fn(), jest.fn(), jest.fn());
+      snapshotHandlers['hogares/h1/miembros/u1'].next(snap({ ...memberDoc, estado: 'salio' }));
+      expect(mockUpdateDoc).not.toHaveBeenCalled();
+    });
+
+    it('si la escritura falla la app sigue andando igual (con el grupo leído como siempre)', async () => {
+      mockUpdateDoc.mockRejectedValueOnce(new Error('permission-denied'));
+      const onData = jest.fn();
+      const onError = jest.fn();
+      watchHousehold('h1', onData, onError, jest.fn());
+      snapshotHandlers['hogares/h1'].next(snap({ nombre: 'Nuestra casa' }));
+      snapshotHandlers['hogares/h1/miembros/u1'].next(snap(memberDoc));
+      snapshotHandlers['hogares/h1/miembros'].next(membersSnap([{ id: 'u1', data: memberDoc }]));
+      await Promise.resolve();
+      expect(onData).toHaveBeenCalled();
+      expect(onError).not.toHaveBeenCalled();
+    });
   });
 
   it('cuando se suma un miembro vuelve a avisar con la lista nueva', () => {
@@ -397,7 +463,7 @@ describe('watchHousehold', () => {
     ]);
   });
 
-  it('avisa el error si falla la lectura del hogar, de la membresía o de los miembros', () => {
+  it('avisa el error si falla la lectura del grupo, de la membresía o de los miembros', () => {
     const onError = jest.fn();
     watchHousehold('h1', jest.fn(), onError, jest.fn());
     snapshotHandlers['hogares/h1'].error();
@@ -406,7 +472,7 @@ describe('watchHousehold', () => {
     expect(onError).toHaveBeenCalledTimes(3);
   });
 
-  it('avisa el error si el hogar no existe o la membresía propia no existe', () => {
+  it('avisa el error si el grupo no existe o la membresía propia no existe', () => {
     const onError = jest.fn();
     watchHousehold('h1', jest.fn(), onError, jest.fn());
     snapshotHandlers['hogares/h1'].next(snap(undefined));
@@ -416,7 +482,7 @@ describe('watchHousehold', () => {
 
   describe('si la membresía propia deja de estar activa', () => {
     it.each(['quitado', 'salio'])(
-      'avisa "%s" con el nombre del hogar que ya conocía',
+      'avisa "%s" con el nombre del grupo que ya conocía',
       async (estado) => {
         const onError = jest.fn();
         const onRemoved = jest.fn();

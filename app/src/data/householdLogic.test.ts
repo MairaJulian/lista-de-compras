@@ -1,6 +1,9 @@
 import { mockHousehold, mockInvites } from '../mock/data';
 import {
   cleanHouseholdName,
+  groupTypeFromDocument,
+  isArchivedDocument,
+  needsOwnUid,
   deactivateInvite,
   formatExpiry,
   leaveCase,
@@ -16,7 +19,7 @@ import {
 const members = mockHousehold.members;
 
 describe('removeMember', () => {
-  it('quien creó el hogar saca a otro miembro', () => {
+  it('quien creó el grupo saca a otro miembro', () => {
     const result = removeMember(members, 'lucia', 'vos');
     expect(result.map((m) => m.id)).toEqual(['vos', 'diego']);
   });
@@ -36,7 +39,7 @@ describe('removeMember', () => {
   });
 });
 
-describe('salir del hogar', () => {
+describe('salir del grupo', () => {
   it('elige el aviso según quién sale', () => {
     expect(leaveCase(members, 'lucia')).toBe('common');
     expect(leaveCase(members, 'vos')).toBe('creator');
@@ -62,7 +65,7 @@ describe('salir del hogar', () => {
     expect(members[1].role).toBe('member');
   });
 
-  it('la última persona deja el hogar vacío', () => {
+  it('la última persona deja el grupo vacío', () => {
     expect(leaveHousehold([members[0]], 'vos')).toEqual([]);
   });
 });
@@ -107,7 +110,7 @@ describe('newHouseholdDocuments', () => {
   const profile = { uid: 'u1', name: 'Maira', photo: 'http://foto/1' };
   const { household, member } = newHouseholdDocuments(profile, 'Nuestra casa', 'AHORA');
 
-  it('el hogar apunta a quien lo crea como creador, sin invitación', () => {
+  it('el grupo apunta a quien lo crea como creador, sin invitación', () => {
     expect(household).toEqual({
       nombre: 'Nuestra casa',
       creadoPor: 'u1',
@@ -205,5 +208,29 @@ describe('activeMembers', () => {
 
   it('sin documentos no hay miembros', () => {
     expect(activeMembers([])).toEqual([]);
+  });
+});
+
+describe('tipo, archivado y uid propio del grupo', () => {
+  it('el tipo ausente o desconocido es familia', () => {
+    expect(groupTypeFromDocument(undefined)).toBe('familia');
+    expect(groupTypeFromDocument('casa')).toBe('familia');
+    expect(groupTypeFromDocument('familia')).toBe('familia');
+    expect(groupTypeFromDocument('amigos')).toBe('amigos');
+    expect(groupTypeFromDocument('evento')).toBe('evento');
+  });
+
+  it('solo archivado === true es archivado (ausente = no archivado)', () => {
+    expect(isArchivedDocument(undefined)).toBe(false);
+    expect(isArchivedDocument(false)).toBe(false);
+    expect(isArchivedDocument('true')).toBe(false);
+    expect(isArchivedDocument(true)).toBe(true);
+  });
+
+  it('pide completar el uid solo si el documento existe y no lo tiene igual al propio', () => {
+    expect(needsOwnUid(undefined, 'u1')).toBe(false);
+    expect(needsOwnUid({}, 'u1')).toBe(true);
+    expect(needsOwnUid({ uid: 'otro' }, 'u1')).toBe(true);
+    expect(needsOwnUid({ uid: 'u1' }, 'u1')).toBe(false);
   });
 });

@@ -130,7 +130,7 @@ describe('enlace y mensaje para compartir', () => {
     expect(inviteLink('K7P2-9XQ-4MN')).toBe('changuito://unirse/K7P2-9XQ-4MN');
   });
 
-  it('el mensaje lleva el nombre del hogar, el código y el enlace', () => {
+  it('el mensaje lleva el nombre del grupo, el código y el enlace', () => {
     expect(inviteMessage('Nuestra casa', 'K7P2-9XQ-4MN')).toBe(
       `Sumate a Nuestra casa en Changuito.\nCódigo: K7P2-9XQ-4MN\nAbrí Changuito, tocá 'Tengo un código de invitación' y pegá este código.`,
     );

@@ -95,7 +95,7 @@ describe('purgeExpired', () => {
 });
 
 describe('purgeOncePerOpening', () => {
-  it('corre una sola vez por hogar en cada apertura', async () => {
+  it('corre una sola vez por grupo en cada apertura', async () => {
     serve({});
     await purgeOncePerOpening('h1');
     await purgeOncePerOpening('h1');

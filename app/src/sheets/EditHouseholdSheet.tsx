@@ -17,7 +17,7 @@ type Props = {
 /** Panel "Nombre del hogar" (`33-editar-hogar`): lo puede cambiar cualquier miembro. */
 export function EditHouseholdSheet({ visible, name, onClose, onSave }: Props) {
   return (
-    <BottomSheet visible={visible} title="Nombre del hogar" onClose={onClose}>
+    <BottomSheet visible={visible} title="Nombre del grupo" onClose={onClose}>
       <EditHouseholdForm name={name} onClose={onClose} onSave={onSave} />
     </BottomSheet>
   );
@@ -48,7 +48,7 @@ function EditHouseholdForm({ name, onClose, onSave }: Omit<Props, 'visible'>) {
     <View>
       <Text style={styles.current}>
         Ahora se llama <Text style={styles.currentName}>{name}</Text>. Lo ven todas las personas del
-        hogar.
+        grupo.
       </Text>
       <TextField
         label="Nuevo nombre"

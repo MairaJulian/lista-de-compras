@@ -3,15 +3,15 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { CreateHouseholdScreen } from './CreateHouseholdScreen';
 
 async function typeName(name: string) {
-  await fireEvent.changeText(screen.getByLabelText('Nombre del hogar'), name);
+  await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), name);
 }
 
-describe('Crear hogar: carga y error', () => {
+describe('Crear grupo: carga y error', () => {
   it('mientras se crea queda en "Creando…", sin poder tocar de nuevo', async () => {
     const onCreate = jest.fn(() => new Promise<boolean>(() => {}));
     await render(<CreateHouseholdScreen onCreate={onCreate} />);
     await typeName('Casa nueva');
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
 
     const creating = screen.getByRole('button', { name: 'Creando…' });
     expect(creating).toBeDisabled();
@@ -25,11 +25,11 @@ describe('Crear hogar: carga y error', () => {
   ])('si no se pudo crear (%s) muestra el error y conserva el nombre', async (_case, failure) => {
     await render(<CreateHouseholdScreen onCreate={failure} />);
     await typeName('Casa nueva');
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
 
-    expect(await screen.findByText('No pudimos crear el hogar')).toBeTruthy();
+    expect(await screen.findByText('No pudimos crear el grupo')).toBeTruthy();
     expect(
-      screen.getByText('Tu hogar no se creó. No se perdió nada de lo que escribiste.'),
+      screen.getByText('Tu grupo no se creó. No se perdió nada de lo que escribiste.'),
     ).toBeTruthy();
     expect(screen.getByDisplayValue('Casa nueva')).toBeTruthy();
   });
@@ -39,12 +39,12 @@ describe('Crear hogar: carga y error', () => {
     onCreate.mockResolvedValue(true);
     await render(<CreateHouseholdScreen onCreate={onCreate} />);
     await typeName('Casa nueva');
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
     await fireEvent.press(await screen.findByText('Reintentar'));
 
     expect(onCreate).toHaveBeenCalledTimes(2);
     expect(onCreate).toHaveBeenLastCalledWith('Casa nueva');
-    await waitFor(() => expect(screen.queryByText('No pudimos crear el hogar')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('No pudimos crear el grupo')).toBeNull());
   });
 
   it('"Reintentar" se deshabilita si se borra el nombre, y "Ahora no" sale', async () => {
@@ -53,8 +53,8 @@ describe('Crear hogar: carga y error', () => {
       <CreateHouseholdScreen onCreate={() => Promise.resolve(false)} onDismiss={onDismiss} />,
     );
     await typeName('Casa nueva');
-    await fireEvent.press(screen.getByRole('button', { name: 'Crear hogar' }));
-    await screen.findByText('No pudimos crear el hogar');
+    await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+    await screen.findByText('No pudimos crear el grupo');
 
     await typeName('  ');
     expect(screen.getByText('Reintentar')).toBeDisabled();

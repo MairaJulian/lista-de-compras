@@ -3,7 +3,7 @@ import { deriveSession, demoAccount, signedInState, startRoute } from './session
 const user = { displayName: 'Maira Julián', email: 'maira@example.com', photoURL: 'http://foto/1' };
 
 describe('signedInState', () => {
-  it('usa nombre, mail y foto del documento y marca que tiene hogar', () => {
+  it('usa nombre, mail y foto del documento y marca que tiene grupo', () => {
     expect(
       signedInState(user, {
         nombre: 'Maira',
@@ -19,7 +19,7 @@ describe('signedInState', () => {
     });
   });
 
-  it('con hogarActualId vacío, ausente o null está sin hogar', () => {
+  it('con hogarActualId vacío, ausente o null está sin grupo', () => {
     for (const hogarActualId of [null, '', undefined]) {
       expect(signedInState(user, { nombre: 'Maira', hogarActualId })).toMatchObject({
         hasHousehold: false,
@@ -56,15 +56,15 @@ describe('deriveSession y startRoute', () => {
     expect(startRoute(deriveSession({ status: 'signedOut' }, true))).toBe('/');
   });
 
-  it('con sesión y sin hogar → Sin hogar', () => {
+  it('con sesión y sin grupo → Sin grupo', () => {
     expect(startRoute(deriveSession(noHome, true))).toBe('/sin-hogar');
   });
 
-  it('con sesión y hogar → Listas', () => {
+  it('con sesión y grupo → Listas', () => {
     expect(startRoute(deriveSession(withHome, false))).toBe('/listas');
   });
 
-  it('la sesión de ejemplo sigue el hogar de los datos de ejemplo', () => {
+  it('la sesión de ejemplo sigue el grupo de los datos de ejemplo', () => {
     const demo = deriveSession({ status: 'demo' }, true);
     expect(demo).toMatchObject({ status: 'signedIn', demo: true, account: demoAccount });
     expect(startRoute(demo)).toBe('/listas');

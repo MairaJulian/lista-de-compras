@@ -16,7 +16,15 @@ const HOUR = 60 * 60 * 1000;
 const maira = { id: 'u1', name: 'Maira', role: 'creator' as const, tone: 'green' as const };
 const ready = (activeInviteId: string | null): HouseholdState => ({
   status: 'ready',
-  household: { id: 'h1', name: 'Nuestra casa', activeInviteId, me: maira, members: [maira] },
+  household: {
+    id: 'h1',
+    name: 'Nuestra casa',
+    type: 'familia',
+    archived: false,
+    activeInviteId,
+    me: maira,
+    members: [maira],
+  },
 });
 const timestamp = (millis: number) => ({ toMillis: () => millis });
 
@@ -43,7 +51,7 @@ describe('useInvite con una sesión real', () => {
     expect(watchInvite).not.toHaveBeenCalled();
   });
 
-  it('mientras no se leyó el hogar o la invitación está cargando', async () => {
+  it('mientras no se leyó el grupo o la invitación está cargando', async () => {
     (useHouseholdState as jest.Mock).mockReturnValue({ status: 'loading' });
     const first = await renderHook(() => useInvite());
     expect(first.result.current.status).toBe('loading');
@@ -133,7 +141,7 @@ describe('useInvite con una sesión real', () => {
     expect(result.current.invite).toEqual({ code: 'NEW-CODE-5678', hoursLeft: 48, active: true });
   });
 
-  it('generar y desactivar usan el hogar real y propagan el error si no se pudo', async () => {
+  it('generar y desactivar usan el grupo real y propagan el error si no se pudo', async () => {
     (useHouseholdState as jest.Mock).mockReturnValue(ready('K7P2-9XQ-4MN'));
     (createInvite as jest.Mock).mockResolvedValue('NEW-CODE-5678');
     (revokeInvite as jest.Mock).mockRejectedValue(new Error('unavailable'));

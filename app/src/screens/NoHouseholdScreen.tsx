@@ -29,14 +29,14 @@ export function NoHouseholdScreen({ onCreate, onEnterCode, onOpenProfile, remove
           <StatusCard
             icon="home"
             tone="dashed"
-            title="Todavía sin hogar"
+            title="Todavía sin grupo"
             subtitle="Acá van a aparecer sus listas"
           />
         }
-        title="Armá tu hogar o sumate a uno."
-        message="Un hogar es el grupo que comparte las listas de compras."
+        title="Armá tu grupo o sumate a uno."
+        message="Un grupo es la gente que comparte sus listas de compras: familia, amigos o un evento."
       >
-        <Button label="Crear un hogar" icon="plus" large onPress={onCreate} />
+        <Button label="Crear un grupo" icon="plus" large onPress={onCreate} />
         <Button
           label="Tengo un código de invitación"
           variant="secondary"
@@ -60,7 +60,7 @@ export function NoHouseholdScreen({ onCreate, onEnterCode, onOpenProfile, remove
         visible={noticeOpen}
         icon="homeOff"
         title={`Ya no sos parte de ${removedFrom ?? ''}`}
-        message="Ya no ves sus listas. Podés crear un hogar propio o unirte a otro con un código."
+        message="Ya no ves sus listas. Podés crear un grupo propio o unirte a otro con un código."
         onClose={() => setNoticeOpen(false)}
       >
         <Button label="Continuar" onPress={() => setNoticeOpen(false)} />

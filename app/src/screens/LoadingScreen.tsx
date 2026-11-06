@@ -29,7 +29,7 @@ export function LoadingScreen({ entering = false }: Props) {
           <Spinner />
           <View style={styles.statusText}>
             <Text style={styles.statusTitle}>Entrando…</Text>
-            <Text style={styles.statusMessage}>Estamos buscando tu hogar y tus listas.</Text>
+            <Text style={styles.statusMessage}>Estamos buscando tu grupo y tus listas.</Text>
           </View>
         </View>
       )}

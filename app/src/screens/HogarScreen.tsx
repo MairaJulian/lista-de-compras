@@ -33,13 +33,13 @@ function leaveDialogProps(leaving: LeaveCase, householdName: string) {
         icon: 'logout',
         tone: 'danger',
         title: `¿Salir de ${householdName}?`,
-        message: 'Vos creaste el hogar. Si salís, el rol de creador pasa a otro miembro.',
+        message: 'Vos creaste el grupo. Si salís, el rol de creador pasa a otro miembro.',
       } as const;
     case 'last':
       return {
         icon: 'archive',
         tone: 'amber',
-        title: 'Sos la última persona del hogar',
+        title: 'Sos la última persona del grupo',
         message: `Si salís, ${householdName} se archiva y no queda nadie con acceso a sus listas.`,
       } as const;
     default:
@@ -48,7 +48,7 @@ function leaveDialogProps(leaving: LeaveCase, householdName: string) {
         tone: 'danger',
         title: `¿Salir de ${householdName}?`,
         message:
-          'Vas a dejar de ver sus listas. Para volver, alguien del hogar tiene que invitarte de nuevo.',
+          'Vas a dejar de ver sus listas. Para volver, alguien del grupo tiene que invitarte de nuevo.',
       } as const;
   }
 }
@@ -65,7 +65,7 @@ function ActionError({ children }: { children: React.ReactNode }) {
 
 function roleLabel(member: Member, currentId: string) {
   if (member.role === 'creator') {
-    return member.id === currentId ? 'Creaste el hogar' : 'Creó el hogar';
+    return member.id === currentId ? 'Creaste el grupo' : 'Creó el grupo';
   }
   return 'Miembro';
 }
@@ -128,7 +128,7 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <View style={[styles.header, { paddingTop: top + 32 }]}>
           <Text accessibilityRole="header" style={styles.title}>
-            Hogar
+            Grupo
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -161,7 +161,7 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Editar el nombre del hogar"
+                accessibilityLabel="Editar el nombre del grupo"
                 onPress={() => setEditOpen(true)}
                 style={styles.edit}
               >
@@ -199,7 +199,7 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
 
             <View style={styles.leave}>
               <Button
-                label="Salir del hogar"
+                label="Salir del grupo"
                 variant="danger"
                 onPress={() => {
                   setLeaveAction('idle');
@@ -234,7 +234,7 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
       <CenteredDialog
         visible={removeOpen}
         leading={removeFor && <Avatar name={removeFor.name} tone={removeFor.tone} size={56} />}
-        title={`¿Quitar a ${removeFor?.name ?? ''} del hogar?`}
+        title={`¿Quitar a ${removeFor?.name ?? ''} del grupo?`}
         message={`Va a dejar de ver las listas de ${household.name}. Más adelante podés volver a invitar a ${removeFor?.name ?? ''}.`}
         detail={
           removeAction === 'failed' ? (
@@ -276,7 +276,7 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
               )}
               {leaveAction === 'failed' && (
                 <ActionError>
-                  No pudimos sacarte del hogar. Revisá tu conexión y probá de nuevo.
+                  No pudimos sacarte del grupo. Revisá tu conexión y probá de nuevo.
                 </ActionError>
               )}
             </>
@@ -290,7 +290,7 @@ export function HogarScreen({ onOpenProfile, onInvite, onLeft }: Props) {
               ? 'Saliendo…'
               : leaving === 'last'
                 ? 'Salir y archivar'
-                : 'Salir del hogar'
+                : 'Salir del grupo'
           }
           variant="dangerFilled"
           disabled={leaveAction === 'busy'}

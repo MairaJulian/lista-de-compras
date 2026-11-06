@@ -29,7 +29,7 @@ export function goToNoHousehold() {
 
 /** Cuando te quitaron del hogar: Sin hogar con el aviso `19` ("Ya no sos parte de <hogar>"). */
 export function goToRemoved(householdName: string) {
-  resetTo({ pathname: '/sin-hogar', params: { sacaron: householdName || 'tu hogar' } });
+  resetTo({ pathname: '/sin-hogar', params: { sacaron: householdName || 'tu grupo' } });
 }
 
 /** Después de crear un hogar: Hogar creado, que ofrece invitar. */

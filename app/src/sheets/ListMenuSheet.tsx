@@ -58,7 +58,7 @@ export function ListMenuSheet({
           <Text style={[styles.optionLabel, { color: colors.danger }]}>Eliminar lista</Text>
         </Pressable>
         <Text style={styles.note}>
-          Si la renombrás o la eliminás, el cambio lo ve todo el hogar.
+          Si la renombrás o la eliminás, el cambio lo ve todo el grupo.
         </Text>
         <Button label="Cancelar" variant="secondary" onPress={onClose} />
       </View>

@@ -43,7 +43,7 @@ describe('watchSession', () => {
     expect(onChange).toHaveBeenCalledWith({ status: 'signedOut' });
   });
 
-  it('con usuario escucha usuarios/{uid} y avisa con el hogar', () => {
+  it('con usuario escucha usuarios/{uid} y avisa con el grupo', () => {
     const onChange = jest.fn();
     watchSession(onChange);
     authCallback(user);
@@ -53,7 +53,7 @@ describe('watchSession', () => {
     );
   });
 
-  it('si no puede leer el documento entra igual, sin hogar', () => {
+  it('si no puede leer el documento entra igual, sin grupo', () => {
     const onChange = jest.fn();
     watchSession(onChange);
     authCallback(user);

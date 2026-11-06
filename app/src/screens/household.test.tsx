@@ -23,7 +23,7 @@ describe('HogarScreen: perfil, invitar, opciones de miembro y salir', () => {
   it('⋯ abre las opciones del miembro y Cancelar las cierra sin cambios', async () => {
     await render(<HogarScreen />);
     await fireEvent.press(screen.getByLabelText('Opciones de Lucía'));
-    expect(screen.getByText('Quitar del hogar')).toBeTruthy();
+    expect(screen.getByText('Quitar del grupo')).toBeTruthy();
     expect(screen.getByText(/Lucía dejará de ver las listas de Nuestra casa\./)).toBeTruthy();
     await fireEvent.press(screen.getByText('Cancelar'));
     expect(screen.getByText('3 miembros')).toBeTruthy();
@@ -32,8 +32,8 @@ describe('HogarScreen: perfil, invitar, opciones de miembro y salir', () => {
   it('quitar a un miembro pide confirmación y actualiza los miembros', async () => {
     await render(<HogarScreen />);
     await fireEvent.press(screen.getByLabelText('Opciones de Lucía'));
-    await fireEvent.press(screen.getByText('Quitar del hogar'));
-    expect(screen.getByText('¿Quitar a Lucía del hogar?')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Quitar del grupo'));
+    expect(screen.getByText('¿Quitar a Lucía del grupo?')).toBeTruthy();
     await fireEvent.press(screen.getByText('Quitar'));
     expect(screen.getByText('2 miembros')).toBeTruthy();
     // El panel de opciones sale con animación: se espera a que se cierre.
@@ -43,20 +43,20 @@ describe('HogarScreen: perfil, invitar, opciones de miembro y salir', () => {
   it('Cancelar en el aviso de quitar no quita a nadie', async () => {
     await render(<HogarScreen />);
     await fireEvent.press(screen.getByLabelText('Opciones de Diego'));
-    await fireEvent.press(screen.getByText('Quitar del hogar'));
+    await fireEvent.press(screen.getByText('Quitar del grupo'));
     await fireEvent.press(screen.getAllByText('Cancelar').at(-1)!);
     expect(screen.getByText('3 miembros')).toBeTruthy();
   });
 
-  it('Salir del hogar pide confirmación y avisa solo al confirmar', async () => {
+  it('Salir del grupo pide confirmación y avisa solo al confirmar', async () => {
     const onLeft = jest.fn();
     await render(<HogarScreen onLeft={onLeft} />);
-    await fireEvent.press(screen.getByText('Salir del hogar'));
+    await fireEvent.press(screen.getByText('Salir del grupo'));
     expect(screen.getByText('¿Salir de Nuestra casa?')).toBeTruthy();
     await fireEvent.press(screen.getByText('Cancelar'));
     expect(onLeft).not.toHaveBeenCalled();
-    await fireEvent.press(screen.getAllByText('Salir del hogar')[0]);
-    await fireEvent.press(screen.getAllByText('Salir del hogar')[1]);
+    await fireEvent.press(screen.getAllByText('Salir del grupo')[0]);
+    await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
     expect(onLeft).toHaveBeenCalledTimes(1);
   });
 });
@@ -74,7 +74,7 @@ describe('WelcomeScreen y JoinScreen', () => {
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
-  it('Unirse muestra el hogar y avisa "Entrar y unirme" y "Ahora no"', async () => {
+  it('Unirse muestra el grupo y avisa "Entrar y unirme" y "Ahora no"', async () => {
     const onJoin = jest.fn();
     const onDecline = jest.fn();
     await render(
@@ -85,7 +85,7 @@ describe('WelcomeScreen y JoinScreen', () => {
         onDecline={onDecline}
       />,
     );
-    expect(screen.getByText('Te invitaron a unirte al hogar.')).toBeTruthy();
+    expect(screen.getByText('Te invitaron a unirte al grupo.')).toBeTruthy();
     expect(screen.getByText('Nuestra casa')).toBeTruthy();
     expect(screen.getByText('3 miembros · 4 listas')).toBeTruthy();
     await fireEvent.press(screen.getByText('Entrar y unirme'));
@@ -118,7 +118,7 @@ describe('JoinScreen con la sesión abierta', () => {
 });
 
 describe('ProfileScreen', () => {
-  it('muestra la cuenta y el hogar, y avisa volver y cerrar sesión', async () => {
+  it('muestra la cuenta y el grupo, y avisa volver y cerrar sesión', async () => {
     const onBack = jest.fn();
     const onSignOut = jest.fn();
     await render(<ProfileScreen onBack={onBack} onSignOut={onSignOut} />);
@@ -126,7 +126,7 @@ describe('ProfileScreen', () => {
     expect(screen.getByText('Vos')).toBeTruthy();
     expect(screen.getByText('[cuenta de Google]')).toBeTruthy();
     expect(screen.getByText('Nuestra casa')).toBeTruthy();
-    await fireEvent.press(screen.getByLabelText('Volver a Hogar'));
+    await fireEvent.press(screen.getByLabelText('Volver a Grupo'));
     await fireEvent.press(screen.getByText('Cerrar sesión'));
     expect(onBack).toHaveBeenCalledTimes(1);
     expect(onSignOut).toHaveBeenCalledTimes(1);

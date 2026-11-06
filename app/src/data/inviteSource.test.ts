@@ -54,7 +54,7 @@ beforeEach(() => {
 });
 
 describe('createInvite', () => {
-  it('crea la invitación a 48 h con los datos que verifican las reglas y apunta el hogar a ella', async () => {
+  it('crea la invitación a 48 h con los datos que verifican las reglas y apunta el grupo a ella', async () => {
     const before = Date.now();
     documents({ 'hogares/h1': household(null), 'hogares/h1/miembros/u1': member });
 
@@ -121,7 +121,7 @@ describe('createInvite', () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it('no escribe si el hogar o la membresía no existen', async () => {
+  it('no escribe si el grupo o la membresía no existen', async () => {
     documents({ 'hogares/h1': household(null) });
     await expect(createInvite('h1')).rejects.toThrow();
     expect(mockSet).not.toHaveBeenCalled();
@@ -174,7 +174,7 @@ describe('revokeInvite', () => {
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it('no escribe si la lectura falla (sin conexión) ni si el hogar no existe', async () => {
+  it('no escribe si la lectura falla (sin conexión) ni si el grupo no existe', async () => {
     mockGet.mockRejectedValue(new Error('unavailable'));
     await expect(revokeInvite('h1')).rejects.toThrow('unavailable');
     documents({});

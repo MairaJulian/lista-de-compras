@@ -51,7 +51,7 @@ beforeEach(() => {
 });
 
 describe('readInvitePreview', () => {
-  it('lee la invitación del servidor y devuelve el hogar y quién invitó', async () => {
+  it('lee la invitación del servidor y devuelve el grupo y quién invitó', async () => {
     mockGetDocFromServer.mockResolvedValue(snap(validInvite()));
 
     await expect(readInvitePreview(CODE)).resolves.toEqual({
@@ -135,7 +135,7 @@ describe('joinHousehold', () => {
     },
   );
 
-  it('si ya figuraba activa en ese hogar solo apunta hogarActualId', async () => {
+  it('si ya figuraba activa en ese grupo solo apunta hogarActualId', async () => {
     documents({
       [`invitaciones/${CODE}`]: validInvite(),
       'hogares/h1/miembros/u2': { estado: 'activo', rol: 'miembro' },

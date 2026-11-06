@@ -346,7 +346,7 @@ export function ListaScreen({ listId, onBack }: Props) {
 /** "Se van a borrar los 10 ítems (7 pendientes y 3 comprados) y la lista desaparece..." (`36`). */
 function deleteMessage(pending: number, done: number) {
   const total = pending + done;
-  const ending = 'la lista desaparece para todo el hogar. No se puede deshacer.';
+  const ending = 'la lista desaparece para todo el grupo. No se puede deshacer.';
   if (total === 0) return `La lista está vacía y ${ending}`;
   const parts = [
     pending > 0 && (pending === 1 ? '1 pendiente' : `${pending} pendientes`),

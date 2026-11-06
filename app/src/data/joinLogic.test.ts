@@ -59,7 +59,7 @@ describe('isPlausibleCode', () => {
 describe('isInviteUsable', () => {
   const valid = { estado: 'activa', hogarId: 'h1', venceEn: at(NOW + HOUR) };
 
-  it('sirve si está activa, no venció y dice de qué hogar es', () => {
+  it('sirve si está activa, no venció y dice de qué grupo es', () => {
     expect(isInviteUsable(valid, NOW)).toBe(true);
   });
 

@@ -8,7 +8,7 @@ import { TabBar } from '../../navigation/TabBar';
 import { colors } from '../../theme';
 
 /**
- * Pestañas Listas y Hogar. Atrás en Hogar vuelve a Listas; atrás en Listas cierra la app.
+ * Pestañas Listas y Grupo. Atrás en Grupo vuelve a Listas; atrás en Listas cierra la app.
  * Sin hogar no hay listas que mostrar: va a Sin hogar.
  */
 export default function TabsLayout() {
@@ -26,7 +26,7 @@ export default function TabsLayout() {
         screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.background } }}
       >
         <Tabs.Screen name="listas" options={{ title: 'Listas' }} />
-        <Tabs.Screen name="hogar" options={{ title: 'Hogar' }} />
+        <Tabs.Screen name="hogar" options={{ title: 'Grupo' }} />
       </Tabs>
       {/* "Ítems borrados · Deshacer" después de salir de una lista (Etapa 6). */}
       <LeaveUndoToast />

@@ -14,7 +14,7 @@ describe('LoadingScreen', () => {
     await render(<LoadingScreen entering />);
     expect(screen.getByText('Changuito')).toBeTruthy();
     expect(screen.getByText('Entrando…')).toBeTruthy();
-    expect(screen.getByText('Estamos buscando tu hogar y tus listas.')).toBeTruthy();
+    expect(screen.getByText('Estamos buscando tu grupo y tus listas.')).toBeTruthy();
     expect(screen.getByLabelText('Entrando')).toBeTruthy();
   });
 });

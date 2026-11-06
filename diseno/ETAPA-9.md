@@ -127,5 +127,9 @@ La Etapa 9 termina cuando la secuencia anterior funciona completa, las reglas es
 
 - [x] PR 1 · Esquema y reglas (rama `etapa-9/01-reglas-grupos`; decisiones en `ESQUEMA-DATOS.md`, "Varios grupos")
 - [ ] Maira publica las reglas y el índice (`npx firebase deploy --only firestore:rules,firestore:indexes --project changuito-31ec1`, desde `firebase/`)
-- [ ] PR 2 · Varios grupos y archivar
+- [ ] PR 2 · Varios grupos y archivar, **dividida en cuatro PRs** (la original pasaba de ~1.750 líneas):
+  - [x] PR 2a · Textos "grupo" + datos base (rama `etapa-9/02a-textos-y-datos-base`): textos visibles y tests en "grupo"; la app lee `tipo` y `archivado`; completa su `uid` en el grupo actual
+  - [ ] PR 2b · Cambiar de grupo (47), Mis grupos (48), crear otro (49), unirse a otro (50), Inicio con ⌄, `ultimoUso`, límite de 10
+  - [ ] PR 2c · Salir con otros grupos (53), Sin grupo (54), "te sacaron" (19), 27 y 28
+  - [ ] PR 2d · Archivar y desarchivar (51, 52), solo lectura en la app, fila "Archivar grupo"
 - [ ] Prueba de Maira con dos cuentas

@@ -47,7 +47,7 @@ export function trackWrite(saved: Promise<unknown>, descriptor: FailedDescriptor
   saved.then(undefined, async (error: unknown) => {
     if (startedIn !== generation) return;
     if (isPermissionDenied(error) && (await isActiveMember(descriptor.householdId)) === false) {
-      console.warn(`Cambio descartado, ya no sos parte del hogar (${descriptor.kind}).`);
+      console.warn(`Cambio descartado, ya no sos parte del grupo (${descriptor.kind}).`);
       return;
     }
     if (startedIn !== generation) return;

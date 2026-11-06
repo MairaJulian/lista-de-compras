@@ -8,7 +8,7 @@ import { ListaScreen } from './ListaScreen';
 describe('InicioScreen', () => {
   beforeEach(() => resetMockStore());
 
-  it('muestra el hogar, las tarjetas con pendientes y "Al día"', async () => {
+  it('muestra el grupo, las tarjetas con pendientes y "Al día"', async () => {
     await render(<InicioScreen />);
     expect(screen.getByText('Nuestra casa')).toBeTruthy();
     expect(screen.getByText('Listas')).toBeTruthy();
@@ -28,20 +28,20 @@ describe('InicioScreen', () => {
 });
 
 describe('HogarScreen', () => {
-  it('muestra el hogar, los miembros con su rol y los botones', async () => {
+  it('muestra el grupo, los miembros con su rol y los botones', async () => {
     await render(<HogarScreen />);
     expect(screen.getByText('Nuestra casa')).toBeTruthy();
     expect(screen.getByText('3 miembros')).toBeTruthy();
-    expect(screen.getByText('Creaste el hogar')).toBeTruthy();
+    expect(screen.getByText('Creaste el grupo')).toBeTruthy();
     expect(screen.getAllByText('Miembro')).toHaveLength(2);
     expect(screen.getByText('Lucía')).toBeTruthy();
     expect(screen.getByText('Diego')).toBeTruthy();
     expect(screen.getByText('Invitar')).toBeTruthy();
-    expect(screen.getByText('Salir del hogar')).toBeTruthy();
+    expect(screen.getByText('Salir del grupo')).toBeTruthy();
     expect(screen.getByLabelText('Tu perfil')).toBeTruthy();
   });
 
-  it('quien creó el hogar ve ⋯ en los demás miembros y no en sí mismo', async () => {
+  it('quien creó el grupo ve ⋯ en los demás miembros y no en sí mismo', async () => {
     await render(<HogarScreen />);
     expect(screen.getByLabelText('Opciones de Lucía')).toBeTruthy();
     expect(screen.getByLabelText('Opciones de Diego')).toBeTruthy();

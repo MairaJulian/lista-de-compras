@@ -12,7 +12,7 @@ describe('EditHouseholdSheet', () => {
     await render(
       <EditHouseholdSheet visible name="Nuestra casa" onClose={jest.fn()} onSave={jest.fn()} />,
     );
-    expect(screen.getByText('Nombre del hogar')).toBeTruthy();
+    expect(screen.getByText('Nombre del grupo')).toBeTruthy();
     expect(screen.getByText('Nuestra casa')).toBeTruthy();
     expect(screen.getByDisplayValue('Nuestra casa')).toBeTruthy();
   });
@@ -75,12 +75,12 @@ describe('EditHouseholdSheet', () => {
 describe('HogarScreen: editar el nombre (datos de ejemplo)', () => {
   beforeEach(() => resetMockStore());
 
-  it('el lápiz abre el panel y el nombre nuevo se ve en Hogar', async () => {
+  it('el lápiz abre el panel y el nombre nuevo se ve en Grupo', async () => {
     await render(<HogarScreen />);
-    await fireEvent.press(screen.getByLabelText('Editar el nombre del hogar'));
+    await fireEvent.press(screen.getByLabelText('Editar el nombre del grupo'));
     await fireEvent.changeText(field(), 'Casa del lago');
     await fireEvent.press(save());
-    await waitFor(() => expect(screen.queryByText('Nombre del hogar')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Nombre del grupo')).toBeNull());
     expect(screen.getByText('Casa del lago')).toBeTruthy();
     expect(screen.queryByText('Nuestra casa')).toBeNull();
   });

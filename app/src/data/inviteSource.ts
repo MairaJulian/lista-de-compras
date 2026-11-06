@@ -37,7 +37,7 @@ export async function createInvite(householdId: string): Promise<string> {
     const household = await transaction.get(householdRef);
     const member = await transaction.get(memberRef);
     if (!household.exists() || !member.exists()) {
-      throw new Error('El hogar o la membresía no existen.');
+      throw new Error('El grupo o la membresía no existen.');
     }
     const previousId = household.data()?.invitacionActivaId;
     const previousRef =
@@ -71,7 +71,7 @@ export async function revokeInvite(householdId: string): Promise<void> {
   await runTransaction(db, async (transaction) => {
     const household = await transaction.get(householdRef);
     if (!household.exists()) {
-      throw new Error('El hogar no existe.');
+      throw new Error('El grupo no existe.');
     }
     const previousId = household.data()?.invitacionActivaId;
     if (typeof previousId !== 'string' || !previousId) {

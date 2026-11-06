@@ -21,7 +21,7 @@ export function ProfileScreen({ onBack, onSignOut }: Props) {
     <View style={styles.screen}>
       <ScreenHeader
         title="Perfil"
-        backLabel={hasHousehold ? 'Volver a Hogar' : 'Volver'}
+        backLabel={hasHousehold ? 'Volver a Grupo' : 'Volver'}
         onBack={onBack}
       />
 
@@ -47,7 +47,7 @@ export function ProfileScreen({ onBack, onSignOut }: Props) {
             <Icon name="home" color={colors.primary} />
           </View>
           <View>
-            <Text style={styles.householdLabel}>Hogar</Text>
+            <Text style={styles.householdLabel}>Grupo actual</Text>
             <Text style={styles.householdName}>{household.name}</Text>
           </View>
         </View>

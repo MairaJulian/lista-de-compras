@@ -66,7 +66,7 @@ export function OfflineJoinErrorScreen({ onRetry, onDismiss }: OfflineProps) {
           icon="cloudOff"
           tone="amber"
           title="Sin conexión"
-          subtitle="No pudimos llegar al hogar"
+          subtitle="No pudimos llegar al grupo"
         />
       }
       title="Necesitás internet para unirte."

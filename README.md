@@ -12,7 +12,7 @@ App Android de lista de compras compartida para una familia. Hecha con React Nat
 
 ## Estado
 
-La app ya hace todo lo esencial: entrar con Google, hogares con código de invitación, listas e ítems compartidos en tiempo real, uso sin conexión, presencia, salir de una lista y purga de lo borrado. **No tiene notificaciones** (Etapa 7, pospuesta hasta ver cómo se usa en casa). Se instala en los celulares con un APK, sin Play Store.
+La app ya hace todo lo esencial: entrar con Google, grupos con código de invitación, listas e ítems compartidos en tiempo real, uso sin conexión, presencia, salir de una lista y purga de lo borrado. **No tiene notificaciones** (Etapa 7, pospuesta hasta ver cómo se usa en casa). Se instala en los celulares con un APK, sin Play Store.
 
 ## Estructura
 
@@ -150,7 +150,7 @@ Deja el archivo en `app/dist/changuito.apk` (la carpeta `dist/` no se versiona).
 2. **Abrilo.** Android te va a decir que por seguridad no podés instalar apps de orígenes desconocidos desde ese programa (WhatsApp, Drive, Chrome o Archivos). Tocá **Configuración** y activá **Permitir desde esta fuente**. Es solo para ese programa y lo podés desactivar después.
 3. Tocá **Instalar**. Si aparece un aviso de **Play Protect** del estilo "App no verificada" o "¿Analizar la app?", es normal: Changuito no está en Play Store. Tocá **Instalar de todos modos** (o **Más detalles** y después esa opción).
 4. Abrí **Changuito** y tocá **Entrar con Google** y elegí tu cuenta.
-5. Para sumarte a la casa, pedile el **código de invitación** a Maira (se ve en la pestaña Hogar → Invitar) y, en la pantalla "Armá tu hogar o sumate a uno", tocá **Tengo un código de invitación**, escribilo y tocá **Unirme**.
+5. Para sumarte a la casa, pedile el **código de invitación** a Maira (se ve en la pestaña Grupo → Invitar) y, en la pantalla "Armá tu grupo o sumate a uno", tocá **Tengo un código de invitación**, escribilo y tocá **Unirme**.
 6. Si te falla algo, anotalo en una línea (qué hiciste, qué pasó, qué esperabas) y pasáselo a Maira.
 
 ## Registro de fallos (Crashlytics)
