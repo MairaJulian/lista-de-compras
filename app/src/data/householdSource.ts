@@ -134,12 +134,27 @@ export async function removeMemberFromHousehold(householdId: string, memberId: s
 }
 
 /**
- * Sale del hogar y vacía `hogarActualId`, todo en una transacción. Si quien sale es el creador y
+ * Marca `ultimoUso` en la membresía propia del grupo al que se pasa (para elegir el próximo cuando
+ * salga de otro). Es opcional: si falla no importa.
+ */
+function markLastUsed(householdId: string, uid: string) {
+  updateDoc(doc(getFirestore(), 'hogares', householdId, 'miembros', uid), {
+    ultimoUso: serverTimestamp(),
+  }).catch(() => {});
+}
+
+/**
+ * Sale del hogar y pasa `hogarActualId` a `nextId` (el grupo al que se va después; vacío si no le
+ * queda ninguno), todo en una transacción. Si quien sale es el creador y
  * queda alguien (`successorId`, el que lleva más tiempo), en el mismo lote le pasa el rol: la
  * persona que sale queda como `miembro`, `successorId` como `creador` y el hogar apunta a ella en
  * `creadorActualId`. Sin `successorId` (miembro común, o la última persona) solo sale.
  */
-export async function leaveCurrentHousehold(householdId: string, successorId?: string) {
+export async function leaveCurrentHousehold(
+  householdId: string,
+  successorId?: string,
+  nextId?: string,
+) {
   const uid = currentUid();
   const db = getFirestore();
   const memberRef = doc(db, 'hogares', householdId, 'miembros', uid);
@@ -158,7 +173,7 @@ export async function leaveCurrentHousehold(householdId: string, successorId?: s
       throw new Error('Todavía no existe el documento de la persona.');
     }
 
-    // Si ya no figuraba activa (salió desde otro celular) solo falta vaciar `hogarActualId`.
+    // Si ya no figuraba activa (salió desde otro celular) solo falta cambiar `hogarActualId`.
     if (member.exists() && member.data()?.estado === 'activo') {
       if (successorRef && successorId && member.data()?.rol === 'creador') {
         if (successor?.data()?.estado !== 'activo' || successor.data()?.rol !== 'miembro') {
@@ -175,24 +190,29 @@ export async function leaveCurrentHousehold(householdId: string, successorId?: s
         transaction.update(memberRef, { estado: 'salio', hasta: serverTimestamp() });
       }
     }
-    transaction.update(userRef, { hogarActualId: null });
+    transaction.update(userRef, { hogarActualId: nextId ?? null });
   });
+  if (nextId) markLastUsed(nextId, uid);
 }
 
 /**
- * Vacía el `hogarActualId` propio si todavía apunta a este hogar (cuando te sacaron o saliste desde
- * otro celular). Condicional para no pisar un hogar al que la persona ya se unió después.
+ * Si el `hogarActualId` propio todavía apunta a este hogar (cuando te sacaron o saliste desde otro
+ * celular) lo pasa a `nextId` (otro grupo activo) o lo vacía si no hay. Condicional para no pisar un
+ * grupo al que la persona ya pasó o se unió después.
  */
-export async function forgetHousehold(householdId: string) {
+export async function forgetHousehold(householdId: string, nextId?: string) {
   const uid = currentUid();
   const db = getFirestore();
   const userRef = doc(db, 'usuarios', uid);
+  let moved = false;
   await runTransaction(db, async (transaction) => {
     const user = await transaction.get(userRef);
-    if (user.data()?.hogarActualId === householdId) {
-      transaction.update(userRef, { hogarActualId: null });
+    moved = user.data()?.hogarActualId === householdId;
+    if (moved) {
+      transaction.update(userRef, { hogarActualId: nextId ?? null });
     }
   });
+  if (nextId && moved) markLastUsed(nextId, uid);
 }
 
 /**

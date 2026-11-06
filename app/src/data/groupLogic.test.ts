@@ -1,5 +1,7 @@
 import {
   MAX_ACTIVE_GROUPS,
+  archivedCount,
+  pickNextGroup,
   archivedLabel,
   groupAppearance,
   groupCountsLabel,
@@ -135,5 +137,40 @@ describe('withLiveCounts', () => {
   it('sin datos en vivo o sin grupo actual deja todo igual', () => {
     expect(withLiveCounts(groups, 'a', undefined)).toBe(groups);
     expect(withLiveCounts(groups, null, { memberCount: 1, pendingCount: 1 })).toBe(groups);
+  });
+});
+
+describe('pickNextGroup', () => {
+  it('elige el grupo usado más recientemente, sin contar el que se deja', () => {
+    const groups = [
+      group('a', { lastUsed: 100 }),
+      group('b', { lastUsed: 300 }),
+      group('c', { lastUsed: 200 }),
+    ];
+    expect(pickNextGroup(groups, 'b')?.id).toBe('c');
+    expect(pickNextGroup(groups, 'a')?.id).toBe('b');
+  });
+
+  it('sin ultimoUso queda el que lleva más tiempo; los que tienen ultimoUso van primero', () => {
+    const groups = [
+      group('a', { since: 5 }),
+      group('b', { since: 2 }),
+      group('c', { lastUsed: 1 }),
+    ];
+    expect(pickNextGroup(groups.slice(0, 2), null)?.id).toBe('b');
+    expect(pickNextGroup(groups, null)?.id).toBe('c');
+  });
+
+  it('ignora los archivados y devuelve undefined si no queda ninguno', () => {
+    expect(pickNextGroup([group('a'), group('x', { archived: true, lastUsed: 9 })], 'a')).toBe(
+      undefined,
+    );
+    expect(pickNextGroup([], null)).toBeUndefined();
+  });
+});
+
+describe('archivedCount', () => {
+  it('cuenta solo los archivados', () => {
+    expect(archivedCount([group('a'), group('b', { archived: true })])).toBe(1);
   });
 });

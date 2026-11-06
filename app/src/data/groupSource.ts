@@ -100,6 +100,7 @@ export async function fetchMyGroups(): Promise<GroupSummary[]> {
           archivedAt: millis(data.archivadoEn),
           role: member.rol === 'creador' ? 'creator' : 'member',
           since: millis(member.desde),
+          lastUsed: millis(member.ultimoUso),
           memberCount,
           pendingCount,
         };

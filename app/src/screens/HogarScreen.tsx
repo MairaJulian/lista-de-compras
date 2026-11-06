@@ -9,6 +9,7 @@ import {
   useHousehold,
   useHouseholdLoad,
   useLeaveHousehold,
+  useNextGroupAfterLeaving,
   useRemoveMember,
   useRenameHousehold,
 } from '../data/hooks';
@@ -25,33 +26,39 @@ type Props = {
   onOpenGroups?: () => void;
   onOpenProfile?: () => void;
   onInvite?: () => void;
-  /** Después de confirmar "Salir del hogar". */
-  onLeft?: () => void;
+  /** Después de confirmar "Salir del grupo": `stays` es si le queda otro grupo al que pasar. */
+  onLeft?: (stays: boolean) => void;
 };
 
-function leaveDialogProps(leaving: LeaveCase, householdName: string) {
+/** "Vas a pasar a X." cuando le queda otro grupo (`53`); nada si va a Sin grupo. */
+function passTo(nextName: string | undefined) {
+  return nextName ? ` Vas a pasar a ${nextName}.` : '';
+}
+
+function leaveDialogProps(leaving: LeaveCase, householdName: string, nextName?: string) {
   switch (leaving) {
     case 'creator':
       return {
         icon: 'logout',
         tone: 'danger',
         title: `¿Salir de ${householdName}?`,
-        message: 'Vos creaste el grupo. Si salís, el rol de creador pasa a otro miembro.',
+        message: `Vos creaste el grupo. Si salís, el rol de creador pasa a otro miembro.${passTo(nextName)}`,
       } as const;
     case 'last':
       return {
         icon: 'archive',
         tone: 'amber',
         title: 'Sos la última persona del grupo',
-        message: `Si salís, ${householdName} se archiva y no queda nadie con acceso a sus listas.`,
+        message: `Si salís, ${householdName} se archiva y no queda nadie con acceso a sus listas.${passTo(nextName)}`,
       } as const;
     default:
       return {
         icon: 'logout',
         tone: 'danger',
         title: `¿Salir de ${householdName}?`,
-        message:
-          'Vas a dejar de ver sus listas. Para volver, alguien del grupo tiene que invitarte de nuevo.',
+        message: nextName
+          ? `Vas a dejar de ver sus listas y vas a pasar a ${nextName}. Para volver, alguien del grupo tiene que invitarte de nuevo.`
+          : 'Vas a dejar de ver sus listas. Para volver, alguien del grupo tiene que invitarte de nuevo.',
       } as const;
   }
 }
@@ -89,6 +96,9 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
   const [removeFor, setRemoveFor] = useState<Member>();
   const [removeOpen, setRemoveOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
+  // Cada vez que se abre el aviso de salir se averigua a qué grupo pasaría (una lectura por apertura).
+  const [leaveCount, setLeaveCount] = useState(0);
+  const target = useNextGroupAfterLeaving(leaveOpen ? leaveCount : undefined);
   // Quitar y salir hablan con el servidor: mientras corren los botones se bloquean, y si fallan
   // (sin conexión, sin permiso) el aviso sigue abierto con el error para reintentar.
   const [removeAction, setRemoveAction] = useState<ActionState>('idle');
@@ -119,14 +129,14 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
   const confirmLeave = async () => {
     setLeaveAction('busy');
     try {
-      await leaveHousehold();
+      await leaveHousehold(target.next?.id);
     } catch {
       setLeaveAction('failed');
       return;
     }
     setLeaveOpen(false);
     setLeaveAction('idle');
-    onLeft?.();
+    onLeft?.(target.next !== undefined);
   };
 
   return (
@@ -227,6 +237,7 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
                 variant="danger"
                 onPress={() => {
                   setLeaveAction('idle');
+                  setLeaveCount((n) => n + 1);
                   setLeaveOpen(true);
                 }}
               />
@@ -285,9 +296,11 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
 
       <CenteredDialog
         visible={leaveOpen}
-        {...leaveDialogProps(leaving, household.name)}
+        {...leaveDialogProps(leaving, household.name, target.next?.name)}
         detail={
-          (leaving === 'creator' && successor) || leaveAction === 'failed' ? (
+          (leaving === 'creator' && successor) ||
+          leaveAction === 'failed' ||
+          target.status === 'error' ? (
             <>
               {leaving === 'creator' && successor && (
                 <View style={styles.successor}>
@@ -303,6 +316,11 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
                   No pudimos sacarte del grupo. Revisá tu conexión y probá de nuevo.
                 </ActionError>
               )}
+              {target.status === 'error' && (
+                <ActionError>
+                  No pudimos revisar tus otros grupos. Revisá tu conexión y probá de nuevo.
+                </ActionError>
+              )}
             </>
           ) : undefined
         }
@@ -312,13 +330,16 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft }: P
           label={
             leaveAction === 'busy'
               ? 'Saliendo…'
-              : leaving === 'last'
-                ? 'Salir y archivar'
-                : 'Salir del grupo'
+              : target.status === 'error'
+                ? 'Reintentar'
+                : leaving === 'last'
+                  ? 'Salir y archivar'
+                  : 'Salir del grupo'
           }
           variant="dangerFilled"
-          disabled={leaveAction === 'busy'}
-          onPress={() => void confirmLeave()}
+          // Hasta saber a qué grupo pasa (o si no le queda ninguno) no se puede confirmar.
+          disabled={leaveAction === 'busy' || target.status === 'loading'}
+          onPress={() => (target.status === 'error' ? target.retry() : void confirmLeave())}
         />
         <Button
           label="Cancelar"

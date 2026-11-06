@@ -55,6 +55,7 @@ describe('createHousehold', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCurrentUser = { uid: 'u1' };
+    mockUpdateDoc.mockResolvedValue(undefined);
     mockGet.mockResolvedValue({ exists: () => true });
     mockRunTransaction.mockImplementation((_db, update) =>
       update({ get: mockGet, set: mockSet, update: mockUpdate }),
@@ -116,6 +117,7 @@ describe('renameHousehold', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCurrentUser = { uid: 'u1' };
+    mockUpdateDoc.mockResolvedValue(undefined);
     mockGet.mockResolvedValue({ exists: () => true });
     mockRunTransaction.mockImplementation((_db, update) =>
       update({ get: mockGet, set: mockSet, update: mockUpdate }),
@@ -165,6 +167,7 @@ describe('removeMemberFromHousehold', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCurrentUser = { uid: 'u1' };
+    mockUpdateDoc.mockResolvedValue(undefined);
     mockRunTransaction.mockImplementation((_db, update) =>
       update({ get: mockGet, set: mockSet, update: mockUpdate }),
     );
@@ -214,6 +217,7 @@ describe('leaveCurrentHousehold', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCurrentUser = { uid: 'u1' };
+    mockUpdateDoc.mockResolvedValue(undefined);
     mockRunTransaction.mockImplementation((_db, update) =>
       update({ get: mockGet, set: mockSet, update: mockUpdate }),
     );
@@ -234,6 +238,19 @@ describe('leaveCurrentHousehold', () => {
     ]);
     expect(updated('usuarios/u1')).toEqual([{ hogarActualId: null }]);
     expect(mockUpdate).toHaveBeenCalledTimes(2);
+  });
+
+  it('con otro grupo activo pasa hogarActualId a ese grupo (y marca ultimoUso en él)', async () => {
+    readsDocuments({
+      'hogares/h1/miembros/u1': { estado: 'activo', rol: 'miembro' },
+      'usuarios/u1': user,
+    });
+    await leaveCurrentHousehold('h1', undefined, 'h2');
+    expect(updated('usuarios/u1')).toEqual([{ hogarActualId: 'h2' }]);
+    expect(mockUpdateDoc).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'hogares/h2/miembros/u1' }),
+      { ultimoUso: 'SERVER_TIMESTAMP' },
+    );
   });
 
   it('quien creó el grupo traspasa el rol en un solo lote: sale como miembro, el elegido pasa a creador', async () => {
@@ -317,6 +334,7 @@ describe('forgetHousehold', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCurrentUser = { uid: 'u1' };
+    mockUpdateDoc.mockResolvedValue(undefined);
     mockRunTransaction.mockImplementation((_db, update) =>
       update({ get: mockGet, set: mockSet, update: mockUpdate }),
     );
@@ -327,6 +345,14 @@ describe('forgetHousehold', () => {
     await forgetHousehold('h1');
     expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ path: 'usuarios/u1' }), {
       hogarActualId: null,
+    });
+  });
+
+  it('con otro grupo activo lo pasa a ese grupo', async () => {
+    readsDocuments({ 'usuarios/u1': { hogarActualId: 'h1' } });
+    await forgetHousehold('h1', 'h2');
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ path: 'usuarios/u1' }), {
+      hogarActualId: 'h2',
     });
   });
 
@@ -344,6 +370,7 @@ describe('watchHousehold', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCurrentUser = { uid: 'u1' };
+    mockUpdateDoc.mockResolvedValue(undefined);
   });
 
   const membersSnap = (docs: { id: string; data: object }[]) => ({
@@ -536,6 +563,7 @@ describe('watchHousehold', () => {
     expect(onError).toHaveBeenCalledTimes(1);
 
     mockCurrentUser = { uid: 'u1' };
+    mockUpdateDoc.mockResolvedValue(undefined);
     watchHousehold('h1', jest.fn(), jest.fn(), jest.fn())();
     expect(mockStop).toHaveBeenCalledTimes(3);
   });
@@ -545,6 +573,7 @@ describe('isActiveMember', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCurrentUser = { uid: 'u1' };
+    mockUpdateDoc.mockResolvedValue(undefined);
   });
 
   it('lee su membresía del servidor, no de la copia local', async () => {
