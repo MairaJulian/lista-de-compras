@@ -51,10 +51,10 @@ function leaveDialogProps(leaving: LeaveCase, householdName: string, nextName?: 
       } as const;
     case 'last':
       return {
-        icon: 'archive',
+        icon: 'alertCircle',
         tone: 'amber',
         title: 'Sos la última persona del grupo',
-        message: `Si salís, ${householdName} se archiva y no queda nadie con acceso a sus listas.${passTo(nextName)}`,
+        message: `Si salís, ${householdName} se queda sin miembros y nadie va a poder ver sus listas.${passTo(nextName)}`,
       } as const;
     default:
       return {
@@ -437,9 +437,7 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft, onA
               ? 'Saliendo…'
               : target.status === 'error'
                 ? 'Reintentar'
-                : leaving === 'last'
-                  ? 'Salir y archivar'
-                  : 'Salir del grupo'
+                : 'Salir del grupo'
           }
           variant="dangerFilled"
           // Hasta saber a qué grupo pasa (o si no le queda ninguno) no se puede confirmar.

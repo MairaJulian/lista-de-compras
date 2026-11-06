@@ -1,5 +1,6 @@
 import { Button, IntroLayout, StatusCard } from '../components';
-import { useHousehold } from '../data/hooks';
+import { groupAppearance } from '../data/groupLogic';
+import { useCurrentGroupType, useHousehold } from '../data/hooks';
 
 type Props = {
   onInvite?: () => void;
@@ -10,14 +11,15 @@ type Props = {
 export function HouseholdCreatedScreen({ onInvite, onLater }: Props) {
   const household = useHousehold();
   const count = household.members.length;
+  const look = groupAppearance(useCurrentGroupType());
 
   return (
     <IntroLayout
       heroHeight={430}
       hero={
         <StatusCard
-          icon="home"
-          tone="primary"
+          icon={look.icon}
+          tone={look.tone === 'green' ? 'primary' : look.tone === 'neutral' ? 'blue' : look.tone}
           badge
           title={household.name}
           subtitle={count === 1 ? '1 miembro' : `${count} miembros`}

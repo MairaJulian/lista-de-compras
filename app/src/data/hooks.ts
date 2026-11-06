@@ -299,10 +299,20 @@ export function useCreateHousehold(): (name: string, type?: GroupType) => Promis
       }
       if (account) {
         // El correo no viaja: en `miembros` solo se guardan nombre y foto.
-        seedHousehold(
-          await createHousehold(clean, { name: account.name, photo: account.photo }, type),
+        const created = await createHousehold(
+          clean,
+          { name: account.name, photo: account.photo },
+          type,
         );
+        seedHousehold(created);
         invalidateGroups();
+        // El grupo nace con su primer código de invitación, así Invitar no dice "ya no está
+        // activo". Si falla (se cortó la conexión justo ahora) no importa: se genera desde Invitar.
+        try {
+          await createInvite(created.id);
+        } catch {
+          // Sin código todavía: Invitar ofrece "Generar código nuevo".
+        }
         return true;
       }
       setState((s) => ({

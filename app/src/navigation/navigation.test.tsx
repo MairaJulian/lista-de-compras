@@ -22,6 +22,7 @@ import Perfil from '../app/perfil';
 import Unirse from '../app/unirse/index';
 import UnirseConEnlace from '../app/unirse/[codigo]';
 import { Alert } from 'react-native';
+import { createInvite } from '../data/inviteSource';
 import { signOutEverywhere, watchSession } from '../auth/sessionSource';
 import { signedInState, type AuthState } from '../auth/sessionState';
 import { resetSession } from '../auth/sessionStore';
@@ -1591,7 +1592,7 @@ describe('navegación', () => {
           expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', 'u2', undefined);
         });
 
-        it('la última persona sale sin traspaso ("Salir y archivar")', async () => {
+        it('la última persona sale sin traspaso', async () => {
           readsMembers(creatorMe, [creatorMe]);
           (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
             await emitAuth(signedInState(account, { hogarActualId: null }));
@@ -1599,7 +1600,7 @@ describe('navegación', () => {
           await openHogar();
           await fireEvent.press(screen.getByText('Salir del grupo'));
           expect(screen.getByText('Sos la última persona del grupo')).toBeTruthy();
-          await fireEvent.press(screen.getByText('Salir y archivar'));
+          await fireEvent.press(screen.getAllByText('Salir del grupo').at(-1)!);
           expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
           expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined, undefined);
         });
@@ -1747,9 +1748,26 @@ describe('navegación', () => {
           { name: 'Maira Julián', photo: null },
           'familia',
         );
+        // El grupo nace con su primer código de invitación.
+        expect(createInvite).toHaveBeenCalledWith('h-nuevo');
         await fireEvent.press(screen.getByText('Más tarde'));
         expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
         expect(screen.getByText('Casa nueva')).toBeTruthy();
+      });
+
+      it('si no se puede generar el primer código, el grupo igual se crea', async () => {
+        readsHousehold('Casa nueva');
+        (createInvite as jest.Mock).mockRejectedValueOnce(new Error('unavailable'));
+        (createHousehold as jest.Mock).mockImplementation(async (name: string) => {
+          await emitAuth(signedInState(account, { hogarActualId: 'h-nuevo' }));
+          return { id: 'h-nuevo', name, me, members: [me] };
+        });
+        firebaseSession(signedInState(account, { hogarActualId: null }));
+        await renderRouter(routes);
+        await fireEvent.press(screen.getByText('Crear un grupo'));
+        await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Casa nueva');
+        await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+        expect(await screen.findByText('¡Listo, grupo creado!')).toBeTruthy();
       });
 
       it('si falla crear el grupo muestra el error con el nombre escrito; "Reintentar" lo crea', async () => {
