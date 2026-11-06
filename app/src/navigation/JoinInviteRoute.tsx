@@ -19,10 +19,6 @@ export function JoinInviteRoute({ code }: { code: string }) {
   const router = useRouter();
   const signedOut = session.status === 'signedOut';
   const real = session.status === 'signedIn' && !session.demo;
-  // Quien ya tiene un hogar no se une a otro con un enlace (no hay pantalla para eso): solo se mira al abrir.
-  const [alreadyHasHousehold] = useState(
-    real && session.status === 'signedIn' && session.hasHousehold,
-  );
   const preview = useInvitePreview(code);
   const join = useJoinFlow();
   const [joining, setJoining] = useState(false);
@@ -31,12 +27,10 @@ export function JoinInviteRoute({ code }: { code: string }) {
     if (signedOut) {
       if (code) setPendingInvite(code);
       router.replace('/');
-    } else if (alreadyHasHousehold) {
-      goToStart();
     }
-  }, [signedOut, alreadyHasHousehold, code, router]);
+  }, [signedOut, code, router]);
 
-  if (signedOut || alreadyHasHousehold) {
+  if (signedOut) {
     return <LoadingScreen />;
   }
   if (preview.status === 'loading') {

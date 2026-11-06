@@ -57,12 +57,13 @@ function currentUid(): string {
 export async function createHousehold(
   name: string,
   account: { name: string; photo: string | null },
+  type: GroupType = 'familia',
 ): Promise<LoadedHousehold> {
   const uid = currentUid();
   const db = getFirestore();
   const householdRef = doc(collection(db, 'hogares'));
   const userRef = doc(db, 'usuarios', uid);
-  const documents = newHouseholdDocuments({ uid, ...account }, name, serverTimestamp());
+  const documents = newHouseholdDocuments({ uid, ...account }, name, serverTimestamp(), type);
 
   await runTransaction(db, async (transaction) => {
     // Leer primero obliga a hablar con el servidor: sin conexión la transacción falla acá.
@@ -82,7 +83,7 @@ export async function createHousehold(
   return {
     id: householdRef.id,
     name,
-    type: 'familia',
+    type,
     archived: false,
     activeInviteId: null,
     me,

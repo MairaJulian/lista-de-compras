@@ -22,3 +22,4 @@ export { FormLayout } from './FormLayout';
 export { LargeField } from './LargeField';
 export { UndoToast } from './UndoToast';
 export { SaveErrorNotice } from './SaveErrorNotice';
+export { GroupBadge } from './GroupBadge';

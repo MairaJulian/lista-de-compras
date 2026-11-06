@@ -39,6 +39,9 @@ const glyphs = {
   homeAlert: 'home-alert-outline',
   paste: 'content-paste',
   pencil: 'pencil-outline',
+  gift: 'gift-outline',
+  chevronDown: 'chevron-down',
+  chevronRight: 'chevron-right',
 } as const satisfies Record<string, ComponentProps<typeof MaterialCommunityIcons>['name']>;
 
 export type IconName = keyof typeof glyphs;

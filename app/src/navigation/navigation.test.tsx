@@ -7,6 +7,8 @@ import Hogar from '../app/(tabs)/hogar';
 import Inicio from '../app/(tabs)/listas';
 import Codigo from '../app/codigo';
 import CrearHogar from '../app/crear-hogar';
+import CrearOtroGrupo from '../app/crear-otro-grupo';
+import MisGrupos from '../app/mis-grupos';
 import ErrorEnlace from '../app/error-enlace';
 import ErrorLogin from '../app/error-login';
 import ErrorSinConexion from '../app/error-sin-conexion';
@@ -34,6 +36,9 @@ import {
 import { InviteInvalidError } from '../data/joinLogic';
 import { joinHousehold, readInvitePreview } from '../data/joinSource';
 import { clearPendingInvite } from '../data/pendingInvite';
+import { fetchMyGroups, switchToGroup } from '../data/groupSource';
+import { resetGroupsStore } from '../data/groupsStore';
+import type { GroupSummary } from '../data/groupLogic';
 import { resetHouseholdStore } from '../data/householdStore';
 import {
   addItem,
@@ -74,6 +79,8 @@ const routes = {
   'sin-hogar': SinHogar,
   codigo: Codigo,
   'crear-hogar': CrearHogar,
+  'crear-otro-grupo': CrearOtroGrupo,
+  'mis-grupos': MisGrupos,
   'hogar-creado': HogarCreado,
   'error-enlace': ErrorEnlace,
   'error-login': ErrorLogin,
@@ -109,6 +116,9 @@ describe('navegación', () => {
     resetMockStore();
     resetHouseholdStore();
     resetListData();
+    resetGroupsStore();
+    (fetchMyGroups as jest.Mock).mockReset().mockResolvedValue([]);
+    (switchToGroup as jest.Mock).mockReset().mockResolvedValue(undefined);
     [
       createList,
       addItem,
@@ -487,6 +497,246 @@ describe('navegación', () => {
           'lista-rechazada',
         );
         await waitFor(() => expect(screen.queryByText('No pudimos guardar 1 cambio')).toBeNull());
+      });
+
+      describe('varios grupos', () => {
+        const group = (id: string, rest: Partial<GroupSummary> = {}): GroupSummary => ({
+          id,
+          name: id,
+          type: 'familia',
+          archived: false,
+          role: 'member',
+          since: 1,
+          memberCount: 2,
+          pendingCount: 0,
+          ...rest,
+        });
+        const threeGroups = [
+          group('h1', { name: 'Casa real', role: 'creator', since: 1 }),
+          group('h2', {
+            name: 'Juntada del sábado',
+            type: 'amigos',
+            memberCount: 5,
+            pendingCount: 12,
+            since: 2,
+          }),
+          group('h3', {
+            name: 'Cumple de los chicos',
+            type: 'evento',
+            role: 'creator',
+            memberCount: 2,
+            pendingCount: 9,
+            since: 3,
+          }),
+          group('h4', {
+            name: 'Cena de fin de año',
+            archived: true,
+            archivedAt: new Date(2026, 7, 12).getTime(),
+            since: 4,
+          }),
+        ];
+
+        beforeEach(() => {
+          readsHousehold('Casa real');
+          (fetchMyGroups as jest.Mock).mockResolvedValue(threeGroups);
+          firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        });
+
+        it('el nombre del grupo con ⌄ abre "Tus grupos": activos con sus conteos, el actual con tilde y sin archivados', async () => {
+          await renderRouter(routes);
+          await fireEvent.press(
+            screen.getByRole('button', { name: 'Casa real. Cambiar de grupo' }),
+          );
+          expect(await screen.findByText('Tus grupos')).toBeTruthy();
+          expect(await screen.findByText('5 miembros · 12 pendientes')).toBeTruthy();
+          expect(screen.getByText('2 miembros · 9 pendientes')).toBeTruthy();
+          // El grupo actual usa los datos en vivo (1 miembro, sin listas ni pendientes).
+          expect(screen.getByText('1 miembro · sin pendientes')).toBeTruthy();
+          expect(screen.getByRole('button', { name: /^Casa real,/ })).toHaveProp(
+            'accessibilityState',
+            expect.objectContaining({ selected: true }),
+          );
+          expect(screen.queryByText('Cena de fin de año')).toBeNull();
+          expect(fetchMyGroups).toHaveBeenCalledTimes(1);
+        });
+
+        it('elegir otro grupo solo cambia el grupo actual; elegir el actual no hace nada', async () => {
+          await renderRouter(routes);
+          await fireEvent.press(
+            screen.getByRole('button', { name: 'Casa real. Cambiar de grupo' }),
+          );
+          await fireEvent.press(await screen.findByRole('button', { name: /^Casa real,/ }));
+          expect(switchToGroup).not.toHaveBeenCalled();
+          await fireEvent.press(
+            screen.getByRole('button', { name: 'Casa real. Cambiar de grupo' }),
+          );
+          await fireEvent.press(
+            await screen.findByRole('button', { name: /^Juntada del sábado,/ }),
+          );
+          expect(switchToGroup).toHaveBeenCalledWith('h2', false);
+        });
+
+        it('al cambiar el grupo actual deja de leer el anterior y lee solo el nuevo', async () => {
+          const stops: Record<string, jest.Mock> = {};
+          (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
+            onData({
+              id,
+              name: id === 'h2' ? 'Juntada del sábado' : 'Casa real',
+              me,
+              members: [me],
+            });
+            stops[id] = jest.fn();
+            return stops[id];
+          });
+          await renderRouter(routes);
+          expect(watchHousehold).toHaveBeenCalledTimes(1);
+          await emitAuth(signedInState(account, { hogarActualId: 'h2' }));
+          expect(await screen.findByText('Juntada del sábado')).toBeTruthy();
+          expect(stops.h1).toHaveBeenCalledTimes(1);
+          expect(watchHousehold).toHaveBeenCalledTimes(2);
+          expect(watchHouseholdData).toHaveBeenLastCalledWith(
+            'h2',
+            expect.anything(),
+            expect.anything(),
+          );
+        });
+
+        it('si falla leer los grupos el panel avisa y "Reintentar" vuelve a leer', async () => {
+          (fetchMyGroups as jest.Mock).mockRejectedValueOnce(new Error('unavailable'));
+          await renderRouter(routes);
+          await fireEvent.press(
+            screen.getByRole('button', { name: 'Casa real. Cambiar de grupo' }),
+          );
+          expect(await screen.findByText(/No pudimos cargar tus grupos/)).toBeTruthy();
+          await fireEvent.press(screen.getByText('Reintentar'));
+          expect(await screen.findByText('5 miembros · 12 pendientes')).toBeTruthy();
+          expect(fetchMyGroups).toHaveBeenCalledTimes(2);
+        });
+
+        it('"Crear grupo" abre Crear otro grupo; con Evento avisa del archivo y crea con ese tipo', async () => {
+          (createHousehold as jest.Mock).mockImplementation(
+            async (name: string, _a: unknown, type: string) => {
+              await emitAuth(signedInState(account, { hogarActualId: 'h-nuevo' }));
+              return { id: 'h-nuevo', name, type, archived: false, me, members: [me] };
+            },
+          );
+          await renderRouter(routes);
+          await fireEvent.press(
+            screen.getByRole('button', { name: 'Casa real. Cambiar de grupo' }),
+          );
+          await fireEvent.press(await screen.findByRole('button', { name: /Crear grupo/ }));
+          expect(await screen.findByText('¿Cómo se llama el grupo?')).toBeTruthy();
+          expect(screen.getByText('Seguís en tus otros grupos.', { exact: false })).toBeTruthy();
+          expect(
+            screen.getByText('El tipo solo cambia el color y el ícono del grupo.'),
+          ).toBeTruthy();
+          await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Cumple');
+          await fireEvent.press(screen.getByRole('radio', { name: /Evento/ }));
+          expect(
+            screen.getByText(
+              'Cuando termine el evento, podés archivar el grupo y queda en solo lectura.',
+            ),
+          ).toBeTruthy();
+          await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+          expect(await screen.findByText('¡Listo, grupo creado!')).toBeTruthy();
+          expect(createHousehold).toHaveBeenCalledWith(
+            'Cumple',
+            { name: 'Maira Julián', photo: null },
+            'evento',
+          );
+        });
+
+        it('si falla crear el otro grupo conserva lo escrito y avisa en rojo', async () => {
+          (createHousehold as jest.Mock).mockRejectedValueOnce(new Error('unavailable'));
+          await renderRouter(routes);
+          await fireEvent.press(
+            screen.getByRole('button', { name: 'Casa real. Cambiar de grupo' }),
+          );
+          await fireEvent.press(await screen.findByRole('button', { name: /Crear grupo/ }));
+          await fireEvent.changeText(await screen.findByLabelText('Nombre del grupo'), 'Cumple');
+          await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
+          expect(await screen.findByText(/No pudimos crear el grupo/)).toBeTruthy();
+          expect(screen.getByDisplayValue('Cumple')).toBeTruthy();
+        });
+
+        it('"Unirme con un código" abre Unirme a otro grupo y se une sin dejar los otros', async () => {
+          (joinHousehold as jest.Mock).mockReset().mockImplementation(async () => {
+            await emitAuth(signedInState(account, { hogarActualId: 'h2' }));
+          });
+          await renderRouter(routes);
+          await fireEvent.press(
+            screen.getByRole('button', { name: 'Casa real. Cambiar de grupo' }),
+          );
+          await fireEvent.press(
+            await screen.findByRole('button', { name: /Unirme con un código/ }),
+          );
+          expect(await screen.findByText('Unirme a otro grupo')).toBeTruthy();
+          expect(
+            screen.getByText('Te lo pasó quien creó el grupo. Seguís en tus otros grupos.'),
+          ).toBeTruthy();
+          await fireEvent.changeText(screen.getByLabelText('Código de invitación'), 'K7P2-9XQ-4MN');
+          await fireEvent.press(screen.getByRole('button', { name: 'Unirme' }));
+          expect(joinHousehold).toHaveBeenCalledWith('K7P2-9XQ-4MN', {
+            name: 'Maira Julián',
+            photo: null,
+          });
+          expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
+          expect(router.canGoBack()).toBe(false);
+        });
+
+        it('con 10 grupos activos, crear y unirse avisan el límite sin abrir nada; los archivados no cuentan', async () => {
+          const ten = Array.from({ length: 10 }, (_, i) => group(`g${i}`, { since: i }));
+          (fetchMyGroups as jest.Mock).mockResolvedValue([
+            ...ten,
+            ...threeGroups.filter((g) => g.archived),
+          ]);
+          await renderRouter(routes);
+          await fireEvent.press(
+            screen.getByRole('button', { name: 'Casa real. Cambiar de grupo' }),
+          );
+          await fireEvent.press(await screen.findByRole('button', { name: /Crear grupo/ }));
+          expect(await screen.findByText(/Ya estás en 10 grupos activos/)).toBeTruthy();
+          expect(screen.queryByText('¿Cómo se llama el grupo?')).toBeNull();
+          await fireEvent.press(screen.getByRole('button', { name: /Unirme con un código/ }));
+          expect(screen.queryByText('Unirme a otro grupo')).toBeNull();
+        });
+
+        it('con 9 activos y 1 archivado todavía deja crear', async () => {
+          const nine = Array.from({ length: 9 }, (_, i) => group(`g${i}`, { since: i }));
+          (fetchMyGroups as jest.Mock).mockResolvedValue([...nine, threeGroups[3]]);
+          await renderRouter(routes);
+          await fireEvent.press(
+            screen.getByRole('button', { name: 'Casa real. Cambiar de grupo' }),
+          );
+          await fireEvent.press(await screen.findByRole('button', { name: /Crear grupo/ }));
+          expect(await screen.findByText('¿Cómo se llama el grupo?')).toBeTruthy();
+        });
+
+        it('"Ver todos mis grupos y archivados" abre Mis grupos con activos, archivados y "Viendo"', async () => {
+          await renderRouter(routes);
+          await fireEvent.press(
+            screen.getByRole('button', { name: 'Casa real. Cambiar de grupo' }),
+          );
+          await fireEvent.press(await screen.findByText('Ver todos mis grupos y archivados'));
+          expect(await screen.findByText('Mis grupos')).toBeTruthy();
+          expect(screen.getByText('Viendo')).toBeTruthy();
+          expect(screen.getByText('Creaste el grupo · 1 miembro')).toBeTruthy();
+          expect(screen.getByText('Miembro · 5 miembros')).toBeTruthy();
+          expect(screen.getByText('Cena de fin de año')).toBeTruthy();
+          expect(screen.getByText('Archivado el 12 de agosto · solo lectura')).toBeTruthy();
+          // Tocar uno activo lo abre en Inicio.
+          await fireEvent.press(screen.getByRole('button', { name: /^Juntada del sábado,/ }));
+          expect(switchToGroup).toHaveBeenCalledWith('h2', false);
+        });
+
+        it('la pestaña Grupo tiene la fila Mis grupos, que abre la pantalla', async () => {
+          await renderRouter(routes);
+          await fireEvent.press(screen.getByRole('tab', { name: 'Grupo' }));
+          await fireEvent.press(screen.getByRole('button', { name: 'Mis grupos' }));
+          expect(
+            await screen.findByText('Tocá uno para verlo. Podés estar en todos los que quieras.'),
+          ).toBeTruthy();
+        });
       });
 
       describe('con listas e ítems reales', () => {
@@ -1245,10 +1495,11 @@ describe('navegación', () => {
         await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Casa nueva');
         await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
         expect(await screen.findByText('¡Listo, grupo creado!')).toBeTruthy();
-        expect(createHousehold).toHaveBeenCalledWith('Casa nueva', {
-          name: 'Maira Julián',
-          photo: null,
-        });
+        expect(createHousehold).toHaveBeenCalledWith(
+          'Casa nueva',
+          { name: 'Maira Julián', photo: null },
+          'familia',
+        );
         await fireEvent.press(screen.getByText('Más tarde'));
         expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
         expect(screen.getByText('Casa nueva')).toBeTruthy();
@@ -1378,11 +1629,21 @@ describe('navegación', () => {
         expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
       });
 
-      it('si ya tiene un grupo, el enlace no lo cambia de grupo: va a Inicio', async () => {
+      it('si ya tiene un grupo, el enlace igual deja unirse a otro y pasa a ese grupo', async () => {
         firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+        (joinHousehold as jest.Mock).mockImplementation(async () => {
+          await emitAuth(signedInState(account, { hogarActualId: 'h2' }));
+        });
         await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
+        await fireEvent.press(await screen.findByRole('button', { name: 'Unirme' }));
+        expect(joinHousehold).toHaveBeenCalledWith(CODE, { name: 'Maira Julián', photo: null });
         expect(await screen.findByText('Todavía no hay listas')).toBeTruthy();
-        expect(joinHousehold).not.toHaveBeenCalled();
+        expect(watchHousehold).toHaveBeenLastCalledWith(
+          'h2',
+          expect.anything(),
+          expect.anything(),
+          expect.anything(),
+        );
       });
 
       it('con el código: se une y va a Inicio', async () => {

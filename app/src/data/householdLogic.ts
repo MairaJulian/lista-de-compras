@@ -72,16 +72,24 @@ export function cleanHouseholdName(name: string): string | undefined {
  * Los dos documentos que se crean juntos al armar un hogar: el hogar y el miembro creador (que lo
  * deja listo para las reglas, que lo verifican con `getAfter`). `now` es la hora del servidor.
  */
-export function newHouseholdDocuments(profile: HouseholdProfile, name: string, now: unknown) {
+export function newHouseholdDocuments(
+  profile: HouseholdProfile,
+  name: string,
+  now: unknown,
+  type: GroupType = 'familia',
+) {
   return {
     household: {
       nombre: name,
+      tipo: type,
       creadoPor: profile.uid,
       creadoEn: now,
       invitacionActivaId: null,
       creadorActualId: profile.uid,
     },
     member: {
+      uid: profile.uid,
+      ultimoUso: now,
       // Las reglas piden un nombre con texto; si la cuenta de Google no trae uno, se usa este.
       nombre: profile.name.trim() || 'Sin nombre',
       foto: profile.photo,

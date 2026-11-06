@@ -96,6 +96,8 @@ export function newJoinMember(
   now: unknown,
 ) {
   return {
+    uid: profile.uid,
+    ultimoUso: now,
     nombre: profile.name.trim() || 'Sin nombre',
     foto: profile.photo,
     colorAvatar: toneForUid(profile.uid),

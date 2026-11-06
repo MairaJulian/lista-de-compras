@@ -101,6 +101,8 @@ describe('joinHousehold', () => {
     const [ref, data] = mockSet.mock.calls[0];
     expect(ref.path).toBe('hogares/h1/miembros/u2');
     expect(data).toEqual({
+      uid: 'u2',
+      ultimoUso: 'SERVER_TIME',
       nombre: 'Lucía',
       foto: null,
       colorAvatar: expect.any(String),

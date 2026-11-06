@@ -7,6 +7,7 @@ export default function HogarRoute() {
   const router = useRouter();
   return (
     <HogarScreen
+      onOpenGroups={() => router.push('/mis-grupos')}
       onOpenProfile={() => router.push('/perfil')}
       onInvite={() => router.push('/invitar')}
       onLeft={goToNoHousehold}
