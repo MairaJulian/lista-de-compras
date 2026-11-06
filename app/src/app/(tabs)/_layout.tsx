@@ -4,6 +4,7 @@ import { View } from 'react-native';
 
 import { useSession } from '../../auth/sessionStore';
 import { LeaveUndoToast } from '../../navigation/LeaveUndoToast';
+import { RemovedNotice } from '../../navigation/RemovedNotice';
 import { TabBar } from '../../navigation/TabBar';
 import { colors } from '../../theme';
 
@@ -30,6 +31,8 @@ export default function TabsLayout() {
       </Tabs>
       {/* "Ítems borrados · Deshacer" después de salir de una lista (Etapa 6). */}
       <LeaveUndoToast />
+      {/* "Ya no sos parte de <grupo>" cuando te sacaron y te quedan otros grupos (`19`). */}
+      <RemovedNotice />
     </View>
   );
 }

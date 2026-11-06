@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 
-import { goToNoHousehold } from '../../navigation/session';
+import { goToNoHousehold, goToStart } from '../../navigation/session';
 import { HogarScreen } from '../../screens/HogarScreen';
 
 export default function HogarRoute() {
@@ -10,7 +10,7 @@ export default function HogarRoute() {
       onOpenGroups={() => router.push('/mis-grupos')}
       onOpenProfile={() => router.push('/perfil')}
       onInvite={() => router.push('/invitar')}
-      onLeft={goToNoHousehold}
+      onLeft={(next) => (next ? goToStart() : goToNoHousehold())}
     />
   );
 }

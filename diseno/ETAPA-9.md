@@ -130,6 +130,6 @@ La Etapa 9 termina cuando la secuencia anterior funciona completa, las reglas es
 - [ ] PR 2 · Varios grupos y archivar, **dividida en cuatro PRs** (la original pasaba de ~1.750 líneas):
   - [x] PR 2a · Textos "grupo" + datos base (rama `etapa-9/02a-textos-y-datos-base`): textos visibles y tests en "grupo"; la app lee `tipo` y `archivado`; completa su `uid` en el grupo actual
   - [x] PR 2b · Cambiar de grupo (47), Mis grupos (48), crear otro (49), unirse a otro (50), Inicio con ⌄, `ultimoUso`, límite de 10 (rama `etapa-9/02b-cambiar-de-grupo`). Quedó para 2c/2d: salir pasando a otro grupo y "te sacaron" (siguen yendo a Sin grupo aunque queden otros grupos: **mergear 2c antes de usar varios grupos en serio**); los archivados se listan en 48 pero todavía no se pueden abrir (2d)
-  - [ ] PR 2c · Salir con otros grupos (53), Sin grupo (54), "te sacaron" (19), 27 y 28
+  - [x] PR 2c · Salir con otros grupos (53), Sin grupo (54), "te sacaron" (19), 27 y 28 (rama `etapa-9/02c-salir-y-sin-grupo`). Al salir o que te saquen se pasa al grupo activo usado más recientemente (`ultimoUso`, si no hay, el más antiguo); sin ninguno va a Sin grupo (54, con "Ver mis grupos archivados (N)"). 27 y 28 ganan la línea "Vas a pasar a X". Pendiente para 2d: que la última persona al salir realmente archive el grupo (hoy el aviso lo dice pero solo sale)
   - [ ] PR 2d · Archivar y desarchivar (51, 52), solo lectura en la app, fila "Archivar grupo"
 - [ ] Prueba de Maira con dos cuentas

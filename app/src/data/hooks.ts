@@ -29,6 +29,8 @@ import {
 } from './householdStore';
 import {
   GROUP_LIMIT_MESSAGE,
+  archivedCount,
+  pickNextGroup,
   reachedGroupLimit,
   withLiveCounts,
   type GroupSummary,
@@ -149,28 +151,72 @@ export function useHasHousehold(): boolean {
  * Sale del hogar (si era quien lo creó, el rol pasa al miembro que lleva más tiempo) y queda sin
  * hogar. En la sesión real es una transacción: sin conexión rechaza en vez de quedar en cola.
  */
-export function useLeaveHousehold(): () => Promise<void> {
+export function useLeaveHousehold(): (nextGroupId?: string) => Promise<void> {
   const real = useIsRealSession();
   const loaded = useCurrentHouseholdState();
   const household = loaded.status === 'ready' ? loaded.household : undefined;
-  return useCallback(async () => {
-    if (real) {
-      if (!household) {
-        throw new Error('El grupo todavía no se leyó.');
+  return useCallback(
+    async (nextGroupId) => {
+      if (real) {
+        if (!household) {
+          throw new Error('El grupo todavía no se leyó.');
+        }
+        const successor =
+          leaveCase(household.members, household.me.id) === 'creator'
+            ? nextCreator(household.members, household.me.id)
+            : undefined;
+        await leaveCurrentHousehold(household.id, successor?.id, nextGroupId);
+        invalidateGroups();
+        return;
       }
-      const successor =
-        leaveCase(household.members, household.me.id) === 'creator'
-          ? nextCreator(household.members, household.me.id)
-          : undefined;
-      await leaveCurrentHousehold(household.id, successor?.id);
-      return;
-    }
-    setState((s) => ({
-      ...s,
-      members: leaveHousehold(s.members, getMockCurrentMember().id),
-      hasHousehold: false,
-    }));
-  }, [real, household]);
+      setState((s) => ({
+        ...s,
+        members: leaveHousehold(s.members, getMockCurrentMember().id),
+        hasHousehold: false,
+      }));
+    },
+    [real, household],
+  );
+}
+
+export type NextGroup = {
+  /** `idle`: el aviso de salir no está abierto (no se lee nada). */
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  /** A qué grupo pasaría al salir; `undefined` si no le queda ninguno (va a Sin grupo). */
+  next?: GroupSummary;
+  retry: () => void;
+};
+
+/**
+ * A qué grupo pasa la persona si sale del actual (ver `pickNextGroup`). Solo lee mientras el aviso de
+ * salir está abierto (`openKey` es un número distinto cada vez que se abre; `undefined` = cerrado) y
+ * reutiliza la lectura reciente de "mis grupos". Con los datos de ejemplo no hay otros grupos.
+ */
+export function useNextGroupAfterLeaving(openKey: number | undefined): NextGroup {
+  const real = useIsRealSession();
+  const session = useSession();
+  const [attempt, setAttempt] = useState(0);
+  const [result, setResult] = useState<{ key: string; next?: GroupSummary; failed?: boolean }>();
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  const currentId = session.status === 'signedIn' ? session.householdId : null;
+  const key = `${openKey}#${attempt}`;
+
+  useEffect(() => {
+    if (!real || openKey === undefined) return;
+    let cancelled = false;
+    loadGroups(attempt > 0).then(
+      (groups) => !cancelled && setResult({ key, next: pickNextGroup(groups, currentId) }),
+      () => !cancelled && setResult({ key, failed: true }),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [real, openKey, attempt, key, currentId]);
+
+  if (openKey === undefined) return { status: 'idle', retry };
+  if (!real) return { status: 'ready', retry };
+  if (result?.key !== key) return { status: 'loading', retry };
+  return result.failed ? { status: 'error', retry } : { status: 'ready', next: result.next, retry };
 }
 
 /**
@@ -914,6 +960,24 @@ type LoadedGroups = { attempt: number; groups?: GroupSummary[] };
  * listeners; la lectura se reutiliza un minuto) y el grupo actual usa sus datos en vivo. Con los
  * datos de ejemplo hay un solo grupo, el de ejemplo.
  */
+/** Cuántos grupos archivados tiene (una lectura al abrir Sin grupo; 0 si no se pudo leer). */
+export function useArchivedCount(enabled: boolean): number {
+  const real = useIsRealSession();
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!real || !enabled) return;
+    let cancelled = false;
+    loadGroups().then(
+      (groups) => !cancelled && setCount(archivedCount(groups)),
+      () => {},
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [real, enabled]);
+  return count;
+}
+
 export function useMyGroups(): MyGroups {
   const real = useIsRealSession();
   const session = useSession();
@@ -989,6 +1053,8 @@ export function useSwitchGroup(): (group: GroupSummary) => void {
   return useCallback(
     (group) => {
       if (!real || group.id === currentId) return;
+      // `ultimoUso` cambia: lo leído de "mis grupos" ya no sirve para elegir el próximo grupo.
+      invalidateGroups();
       switchToGroup(group.id, group.archived).catch(() => {});
     },
     [real, currentId],

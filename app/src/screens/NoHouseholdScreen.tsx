@@ -13,10 +13,23 @@ type Props = {
   onOpenProfile?: () => void;
   /** Nombre del hogar del que sacaron a la persona; muestra el aviso `19-sin-hogar-te-sacaron`. */
   removedFrom?: string;
+  /** Salió o lo sacaron de su último grupo: `54` ("Ya no estás en ningún grupo"). */
+  leftAll?: boolean;
+  /** Cuántos grupos archivados tiene; con alguno aparece "Ver mis grupos archivados (N)". */
+  archivedCount?: number;
+  onSeeArchived?: () => void;
 };
 
 /** Sin hogar (`17-sin-hogar`), con el aviso de "te sacaron" encima (`19-sin-hogar-te-sacaron`). */
-export function NoHouseholdScreen({ onCreate, onEnterCode, onOpenProfile, removedFrom }: Props) {
+export function NoHouseholdScreen({
+  onCreate,
+  onEnterCode,
+  onOpenProfile,
+  removedFrom,
+  leftAll,
+  archivedCount = 0,
+  onSeeArchived,
+}: Props) {
   const [noticeOpen, setNoticeOpen] = useState(!!removedFrom);
   const { member } = useAccount();
   const { top } = useSafeAreaInsets();
@@ -29,11 +42,11 @@ export function NoHouseholdScreen({ onCreate, onEnterCode, onOpenProfile, remove
           <StatusCard
             icon="home"
             tone="dashed"
-            title="Todavía sin grupo"
-            subtitle="Acá van a aparecer sus listas"
+            title={leftAll ? 'Ya no estás en ningún grupo' : 'Todavía sin grupo'}
+            subtitle={leftAll ? 'Tus listas ya no se ven acá' : 'Acá van a aparecer sus listas'}
           />
         }
-        title="Armá tu grupo o sumate a uno."
+        title={leftAll ? 'Armá un grupo o sumate a uno.' : 'Armá tu grupo o sumate a uno.'}
         message="Un grupo es la gente que comparte sus listas de compras: familia, amigos o un evento."
       >
         <Button label="Crear un grupo" icon="plus" large onPress={onCreate} />
@@ -43,6 +56,14 @@ export function NoHouseholdScreen({ onCreate, onEnterCode, onOpenProfile, remove
           large
           onPress={onEnterCode}
         />
+        {leftAll && archivedCount > 0 && onSeeArchived && (
+          <Button
+            label={`Ver mis grupos archivados (${archivedCount})`}
+            variant="text"
+            icon="archive"
+            onPress={onSeeArchived}
+          />
+        )}
       </IntroLayout>
 
       {onOpenProfile && (

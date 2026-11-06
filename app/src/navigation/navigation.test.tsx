@@ -36,6 +36,7 @@ import {
 import { InviteInvalidError } from '../data/joinLogic';
 import { joinHousehold, readInvitePreview } from '../data/joinSource';
 import { clearPendingInvite } from '../data/pendingInvite';
+import { resetRemovedNotice } from '../data/removedNoticeStore';
 import { fetchMyGroups, switchToGroup } from '../data/groupSource';
 import { resetGroupsStore } from '../data/groupsStore';
 import type { GroupSummary } from '../data/groupLogic';
@@ -118,6 +119,7 @@ describe('navegación', () => {
     resetListData();
     resetGroupsStore();
     (fetchMyGroups as jest.Mock).mockReset().mockResolvedValue([]);
+    resetRemovedNotice();
     (switchToGroup as jest.Mock).mockReset().mockResolvedValue(undefined);
     [
       createList,
@@ -195,7 +197,7 @@ describe('navegación', () => {
     await renderRouter(routes);
     expect(screen.getByText('Las compras de casa, entre todos.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Entrar con Google'));
-    expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+    expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
     expect(screen.queryByText('Entrar con Google')).toBeNull();
     expect(router.canGoBack()).toBe(false);
   });
@@ -221,7 +223,7 @@ describe('navegación', () => {
     await fireEvent.press(screen.getByText('Entrar con Google'));
     expect(await screen.findByText('Algo salió mal.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Reintentar'));
-    expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+    expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
   });
 
   it('si el reintento falla de nuevo se queda en el error, y si cancela vuelve a Bienvenida', async () => {
@@ -272,7 +274,7 @@ describe('navegación', () => {
     await fireEvent.press(screen.getByText('Salir del grupo'));
     expect(screen.getByText('¿Salir de Nuestra casa?')).toBeTruthy();
     await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
-    expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+    expect(screen.getByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
     expect(router.canGoBack()).toBe(false);
   });
 
@@ -303,7 +305,7 @@ describe('navegación', () => {
     await renderRouter(routes, { initialUrl: '/sin-hogar' });
     await fireEvent.press(screen.getByText('Tengo un código de invitación'));
     await fireEvent.press(screen.getByLabelText('Volver'));
-    expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+    expect(screen.getByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
     await fireEvent.press(screen.getByText('Tengo un código de invitación'));
     await fireEvent.changeText(screen.getByLabelText('Código de invitación'), 'K7P2-9XQ-4MN');
     await fireEvent.press(screen.getByText('Unirme'));
@@ -322,7 +324,7 @@ describe('navegación', () => {
       return { status: 'success' };
     });
     await fireEvent.press(screen.getByText('Entrar con Google'));
-    expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+    expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
   });
 
   it('Unirse con el enlace desactivado muestra el error y "Entendido" vuelve al inicio', async () => {
@@ -361,7 +363,7 @@ describe('navegación', () => {
     await renderRouter(routes, { initialUrl: '/error-login' });
     expect(screen.getByText('Algo salió mal.')).toBeTruthy();
     await fireEvent.press(screen.getByText('Reintentar'));
-    expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+    expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
   });
 
   it('"te sacaron" muestra el aviso encima de Sin grupo', async () => {
@@ -390,13 +392,13 @@ describe('navegación', () => {
     it('con sesión y sin grupo abre Sin grupo', async () => {
       firebaseSession(signedInState(account, { hogarActualId: null }));
       await renderRouter(routes);
-      expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+      expect(screen.getByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
     });
 
     it('con sesión y sin grupo, pedir Listas lleva a Sin grupo', async () => {
       firebaseSession(signedInState(account, { hogarActualId: null }));
       await renderRouter(routes, { initialUrl: '/listas' });
-      expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+      expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
     });
 
     it('con sesión y grupo abre Listas, sin pasar por Bienvenida', async () => {
@@ -436,7 +438,7 @@ describe('navegación', () => {
       expect(signOutEverywhere).toHaveBeenCalledTimes(1);
       expect(router.canGoBack()).toBe(false);
       await fireEvent.press(screen.getByText('Entrar con Google'));
-      expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+      expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
     });
 
     it('si no se puede cerrar la sesión avisa y se queda en Perfil', async () => {
@@ -1325,9 +1327,112 @@ describe('navegación', () => {
           await openHogar();
           await fireEvent.press(screen.getByText('Salir del grupo'));
           await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
-          expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
-          expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined);
+          expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
+          expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined, undefined);
           expect(screen.queryByText(/Ya no sos parte/)).toBeNull();
+        });
+
+        describe('con otros grupos', () => {
+          const other = (id: string, name: string, lastUsed: number): GroupSummary => ({
+            id,
+            name,
+            type: 'amigos',
+            archived: false,
+            role: 'member',
+            since: 1,
+            lastUsed,
+          });
+          const archived: GroupSummary = {
+            id: 'h9',
+            name: 'Cena vieja',
+            type: 'evento',
+            archived: true,
+            role: 'member',
+          };
+
+          it('salir avisa a qué grupo pasa (el último que usó) y lo pasa ahí', async () => {
+            (fetchMyGroups as jest.Mock).mockResolvedValue([
+              other('h2', 'Juntada del sábado', 10),
+              other('h3', 'Cumple', 20),
+              archived,
+            ]);
+            readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
+            (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
+              await emitAuth(signedInState(account, { hogarActualId: 'h3' }));
+            });
+            await openHogar();
+            await fireEvent.press(screen.getByText('Salir del grupo'));
+            expect(await screen.findByText(/vas a pasar a Cumple./)).toBeTruthy();
+            await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
+            await waitFor(() =>
+              expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined, 'h3'),
+            );
+            expect(await screen.findByRole('tab', { name: 'Listas', selected: true })).toBeTruthy();
+            expect(screen.queryByText(/Armá (tu|un) grupo/)).toBeNull();
+          });
+
+          it('si todos sus otros grupos están archivados, sale a Sin grupo con el enlace a archivados', async () => {
+            (fetchMyGroups as jest.Mock).mockResolvedValue([archived]);
+            readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
+            (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
+              await emitAuth(signedInState(account, { hogarActualId: null }));
+            });
+            await openHogar();
+            await fireEvent.press(screen.getByText('Salir del grupo'));
+            await waitFor(() => expect(screen.getAllByText('Salir del grupo')[1]).toBeEnabled());
+            await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
+            expect(await screen.findByText('Ya no estás en ningún grupo')).toBeTruthy();
+            expect(screen.getByText('Tus listas ya no se ven acá')).toBeTruthy();
+            expect(await screen.findByText('Ver mis grupos archivados (1)')).toBeTruthy();
+            expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined, undefined);
+          });
+
+          it('si no se pueden leer los otros grupos no se puede salir todavía: error y "Reintentar"', async () => {
+            (fetchMyGroups as jest.Mock)
+              .mockRejectedValueOnce(new Error('unavailable'))
+              .mockResolvedValue([]);
+            readsMembers(luciaMe, [{ ...creatorMe, id: 'u3' }, luciaMe]);
+            await openHogar();
+            await fireEvent.press(screen.getByText('Salir del grupo'));
+            expect(await screen.findByText(/No pudimos revisar tus otros grupos/)).toBeTruthy();
+            expect(leaveCurrentHousehold).not.toHaveBeenCalled();
+            await fireEvent.press(screen.getByText('Reintentar'));
+            await waitFor(() => expect(screen.queryByText(/No pudimos revisar/)).toBeNull());
+          });
+
+          it('si te quitan y te quedan otros grupos: pasás a Inicio de otro con el aviso "Ya no sos parte"', async () => {
+            (fetchMyGroups as jest.Mock).mockResolvedValue([other('h2', 'Juntada del sábado', 10)]);
+            (watchHousehold as jest.Mock).mockImplementation(
+              (_id, _onData, _onError, onRemoved) => {
+                onRemoved('quitado', 'Casa real');
+                return () => {};
+              },
+            );
+            firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+            await renderRouter(routes);
+            expect(await screen.findByText('Ya no sos parte de Casa real')).toBeTruthy();
+            expect(screen.queryByText(/Armá (tu|un) grupo/)).toBeNull();
+            expect(forgetHousehold).toHaveBeenCalledWith('h1', 'h2');
+            await fireEvent.press(screen.getByText('Continuar'));
+            await waitFor(() =>
+              expect(screen.queryByText('Ya no sos parte de Casa real')).toBeNull(),
+            );
+          });
+
+          it('si saliste desde otro celular y te quedan otros grupos: pasás a otro sin aviso', async () => {
+            (fetchMyGroups as jest.Mock).mockResolvedValue([other('h2', 'Juntada del sábado', 10)]);
+            (watchHousehold as jest.Mock).mockImplementation(
+              (_id, _onData, _onError, onRemoved) => {
+                onRemoved('salio', 'Casa real');
+                return () => {};
+              },
+            );
+            firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+            await renderRouter(routes);
+            await waitFor(() => expect(forgetHousehold).toHaveBeenCalledWith('h1', 'h2'));
+            expect(screen.queryByText(/Ya no sos parte/)).toBeNull();
+            expect(screen.queryByText(/Armá (tu|un) grupo/)).toBeNull();
+          });
         });
 
         it('quien creó el grupo pasa el rol a quien lleva más tiempo y se muestra a quién', async () => {
@@ -1340,8 +1445,8 @@ describe('navegación', () => {
           await fireEvent.press(screen.getByText('Salir del grupo'));
           expect(screen.getByText('Será la nueva persona a cargo')).toBeTruthy();
           await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
-          expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
-          expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', 'u2');
+          expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
+          expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', 'u2', undefined);
         });
 
         it('la última persona sale sin traspaso ("Salir y archivar")', async () => {
@@ -1353,8 +1458,8 @@ describe('navegación', () => {
           await fireEvent.press(screen.getByText('Salir del grupo'));
           expect(screen.getByText('Sos la última persona del grupo')).toBeTruthy();
           await fireEvent.press(screen.getByText('Salir y archivar'));
-          expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
-          expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined);
+          expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
+          expect(leaveCurrentHousehold).toHaveBeenCalledWith('h1', undefined, undefined);
         });
 
         it('si no se pudo salir (sin conexión) sigue en Grupo con el error y se puede reintentar', async () => {
@@ -1366,12 +1471,12 @@ describe('navegación', () => {
           expect(
             await screen.findByText(/No pudimos sacarte del grupo\. Revisá tu conexión/),
           ).toBeTruthy();
-          expect(screen.queryByText('Armá tu grupo o sumate a uno.')).toBeNull();
+          expect(screen.queryByText(/Armá (tu|un) grupo o sumate a uno./)).toBeNull();
           (leaveCurrentHousehold as jest.Mock).mockImplementation(async () => {
             await emitAuth(signedInState(account, { hogarActualId: null }));
           });
           await fireEvent.press(screen.getAllByText('Salir del grupo')[1]);
-          expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+          expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
           expect(leaveCurrentHousehold).toHaveBeenCalledTimes(2);
         });
 
@@ -1383,8 +1488,8 @@ describe('navegación', () => {
           await openHogar();
           await act(async () => removed('quitado', 'Casa real'));
           expect(await screen.findByText('Ya no sos parte de Casa real')).toBeTruthy();
-          expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
-          expect(forgetHousehold).toHaveBeenCalledWith('h1');
+          expect(screen.getByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
+          expect(forgetHousehold).toHaveBeenCalledWith('h1', undefined);
           await fireEvent.press(screen.getByText('Continuar'));
           await waitFor(() =>
             expect(screen.queryByText('Ya no sos parte de Casa real')).toBeNull(),
@@ -1436,7 +1541,7 @@ describe('navegación', () => {
           firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
           await renderRouter(routes);
           expect(await screen.findByText('Ya no sos parte de Casa real')).toBeTruthy();
-          expect(forgetHousehold).toHaveBeenCalledWith('h1');
+          expect(forgetHousehold).toHaveBeenCalledWith('h1', undefined);
         });
 
         it('sin el nombre del grupo el aviso dice "tu grupo"', async () => {
@@ -1456,9 +1561,9 @@ describe('navegación', () => {
           });
           firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
           await renderRouter(routes);
-          expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+          expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
           expect(screen.queryByText(/Ya no sos parte/)).toBeNull();
-          expect(forgetHousehold).toHaveBeenCalledWith('h1');
+          expect(forgetHousehold).toHaveBeenCalledWith('h1', undefined);
         });
 
         it('si no se puede vaciar hogarActualId (sin conexión) igual se muestra el aviso', async () => {
@@ -1480,7 +1585,7 @@ describe('navegación', () => {
         expect(screen.getByText('maira@example.com')).toBeTruthy();
         expect(screen.getByText('Cerrar sesión')).toBeTruthy();
         await fireEvent.press(screen.getByLabelText('Volver'));
-        expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+        expect(screen.getByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
       });
 
       it('crear el grupo: Grupo creado y "Más tarde" lleva a Inicio sin listas', async () => {
@@ -1532,7 +1637,7 @@ describe('navegación', () => {
         await fireEvent.changeText(screen.getByLabelText('Nombre del grupo'), 'Casa nueva');
         await fireEvent.press(screen.getByRole('button', { name: 'Crear grupo' }));
         await fireEvent.press(await screen.findByText('Ahora no'));
-        expect(screen.getByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+        expect(screen.getByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
       });
     });
 
@@ -1572,7 +1677,7 @@ describe('navegación', () => {
         await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
         await fireEvent.press(await screen.findByRole('button', { name: 'Unirme' }));
         expect(await screen.findByRole('button', { name: 'Uniéndome…' })).toBeDisabled();
-        expect(screen.queryByText('Armá tu grupo o sumate a uno.')).toBeNull();
+        expect(screen.queryByText(/Armá (tu|un) grupo o sumate a uno./)).toBeNull();
       });
 
       it('un enlace cuya invitación no existe, venció o está revocada muestra el error de enlace', async () => {
@@ -1581,7 +1686,7 @@ describe('navegación', () => {
         await renderRouter(routes, { initialUrl: `/unirse/${CODE}` });
         expect(await screen.findByText('Este enlace ya no sirve.')).toBeTruthy();
         await fireEvent.press(screen.getByText('Entendido'));
-        expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+        expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
       });
 
       it('si la invitación se revoca antes de confirmar, "Unirme" muestra el error de enlace', async () => {
@@ -1610,7 +1715,7 @@ describe('navegación', () => {
         await fireEvent.press(await screen.findByRole('button', { name: 'Unirme' }));
         expect(await screen.findByText('Necesitás internet para unirte.')).toBeTruthy();
         await fireEvent.press(screen.getByText('Ahora no'));
-        expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+        expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
       });
 
       it('sin sesión conserva el código: entra con Google y sigue en la invitación', async () => {
@@ -1626,7 +1731,7 @@ describe('navegación', () => {
         expect(await screen.findByText('Te invitó Lucía')).toBeTruthy();
         expect(readInvitePreview).toHaveBeenCalledWith(CODE);
         await fireEvent.press(screen.getByText('Ahora no'));
-        expect(await screen.findByText('Armá tu grupo o sumate a uno.')).toBeTruthy();
+        expect(await screen.findByText(/Armá (tu|un) grupo o sumate a uno./)).toBeTruthy();
       });
 
       it('si ya tiene un grupo, el enlace igual deja unirse a otro y pasa a ese grupo', async () => {

@@ -9,13 +9,16 @@ import { startSession, useSession } from '../auth/sessionStore';
 import { setEntered, setSigningIn, useEntered, useSigningIn } from '../auth/signingInStore';
 import { startCrashReporting } from '../data/crashReporting';
 import { clearFailures } from '../data/failureStore';
+import { loadGroups } from '../data/groupsStore';
+import { pickNextGroup } from '../data/groupLogic';
+import { showRemovedNotice } from '../data/removedNoticeStore';
 import { forgetHousehold } from '../data/householdSource';
 import { startHousehold, useHouseholdState } from '../data/householdStore';
 import { configureFirestore } from '../data/firestoreConfig';
 import { useListsLoad } from '../data/hooks';
 import { startListData, useListData } from '../data/listStore';
 import { purgeOncePerOpening } from '../data/purgeSource';
-import { goToNoHousehold, goToRemoved } from '../navigation/session';
+import { goToNoHousehold, goToRemoved, goToStart } from '../navigation/session';
 import { takePendingInvite } from '../data/pendingInvite';
 import { LoadingScreen } from '../screens/LoadingScreen';
 import { colors } from '../theme';
@@ -72,22 +75,42 @@ export default function RootLayout() {
     return () => clearTimeout(timer);
   }, [navigationReady, realSignedIn, router]);
 
-  // Si la membresía deja de estar activa (te quitaron, o saliste desde otro celular) se vacía el
-  // `hogarActualId` propio y se va a Sin hogar; solo a quien quitaron se le muestra el aviso.
+  // Si la membresía deja de estar activa (te quitaron, o saliste desde otro celular) la persona pasa
+  // a otro de sus grupos activos (el último que usó) o, si no le queda ninguno, a Sin grupo. Solo a
+  // quien quitaron se le muestra el aviso (sobre Inicio del otro grupo, o en Sin grupo).
   const household = useHouseholdState();
   useEffect(() => {
     if (!navigationReady || !householdId || household.status !== 'removed') return;
     // Los cambios que la persona hizo sin conexión y el servidor rechazó por esto no son un error de
-    // guardado: se descartan y se muestra el aviso de que ya no es parte del hogar.
+    // guardado: se descartan y se muestra el aviso de que ya no es parte del grupo.
     clearFailures();
-    forgetHousehold(householdId).catch(() => {
-      // Sin conexión no se puede vaciar ahora; se vuelve a detectar al abrir la app.
-    });
-    if (household.reason === 'quitado') {
-      goToRemoved(household.householdName);
-    } else {
-      goToNoHousehold();
-    }
+    const { reason, householdName } = household;
+    let cancelled = false;
+    void (async () => {
+      // Sin conexión no se pueden leer los otros grupos: se va a Sin grupo y se vuelve a decidir al
+      // abrir la app.
+      let next: Awaited<ReturnType<typeof loadGroups>>[number] | undefined;
+      try {
+        next = pickNextGroup(await loadGroups(true), householdId);
+      } catch {
+        next = undefined;
+      }
+      if (cancelled) return;
+      forgetHousehold(householdId, next?.id).catch(() => {
+        // Sin conexión no se puede cambiar ahora; se vuelve a detectar al abrir la app.
+      });
+      if (next) {
+        if (reason === 'quitado') showRemovedNotice(householdName || 'tu grupo');
+        goToStart();
+      } else if (reason === 'quitado') {
+        goToRemoved(householdName);
+      } else {
+        goToNoHousehold();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [navigationReady, householdId, household]);
 
   // Pantalla `46-cargando-entrada`: desde que se elige la cuenta de Google, y al abrir la app con

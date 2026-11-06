@@ -22,14 +22,20 @@ export function goToStart() {
   if (route) resetTo(route);
 }
 
-/** Después de salir del hogar o de que te saquen. */
+/**
+ * Después de salir del grupo o de que te saquen, sin ningún otro grupo activo: Sin grupo en su
+ * variante "Ya no estás en ningún grupo" (`54`). Con otro grupo se va a Inicio con `goToStart`.
+ */
 export function goToNoHousehold() {
-  resetTo('/sin-hogar');
+  resetTo({ pathname: '/sin-hogar', params: { ya: '1' } });
 }
 
 /** Cuando te quitaron del hogar: Sin hogar con el aviso `19` ("Ya no sos parte de <hogar>"). */
 export function goToRemoved(householdName: string) {
-  resetTo({ pathname: '/sin-hogar', params: { sacaron: householdName || 'tu grupo' } });
+  resetTo({
+    pathname: '/sin-hogar',
+    params: { sacaron: householdName || 'tu grupo', ya: '1' },
+  });
 }
 
 /** Después de crear un hogar: Hogar creado, que ofrece invitar. */

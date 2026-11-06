@@ -18,6 +18,8 @@ export type GroupSummary = {
   role: MemberRole;
   /** Milisegundos de `desde` (cuándo entró la persona): ordena la lista. */
   since?: number;
+  /** Milisegundos de `ultimoUso` (la última vez que la persona abrió este grupo), si se marcó. */
+  lastUsed?: number;
   /** Miembros activos; `undefined` si no se pudo leer. */
   memberCount?: number;
   /** Ítems pendientes; `undefined` si no se pudo leer o no se pide. */
@@ -65,6 +67,29 @@ export function splitGroups(groups: GroupSummary[]): {
     active: sorted.filter((group) => !group.archived),
     archived: sorted.filter((group) => group.archived),
   };
+}
+
+/**
+ * A qué grupo pasar cuando la persona sale de uno o la sacan: entre los activos y no archivados (sin
+ * contar `excludeId`), el que usó más recientemente (`lastUsed`); si ninguno tiene `lastUsed`, el
+ * que lleva más tiempo (`since` menor). `undefined` si no queda ninguno: va a Sin grupo.
+ */
+export function pickNextGroup(
+  groups: GroupSummary[],
+  excludeId: string | null,
+): GroupSummary | undefined {
+  const candidates = groups.filter((group) => !group.archived && group.id !== excludeId);
+  return [...candidates].sort(
+    (a, b) =>
+      (b.lastUsed ?? -Infinity) - (a.lastUsed ?? -Infinity) ||
+      (a.since ?? Infinity) - (b.since ?? Infinity) ||
+      a.name.localeCompare(b.name, 'es-AR'),
+  )[0];
+}
+
+/** Cuántos archivados tiene (el enlace de `54`: "Ver mis grupos archivados (N)"). */
+export function archivedCount(groups: GroupSummary[]): number {
+  return groups.filter((group) => group.archived).length;
 }
 
 /** Si ya tiene el máximo de grupos activos (los archivados no cuentan). */
