@@ -87,13 +87,19 @@ service cloud.firestore {
       return /databases/$(database)/documents/hogares/$(hogarId)/listas/$(listaId);
     }
 
+    // Un grupo (hogar) archivado a mano queda en solo lectura. Ausente = no
+    // archivado. Cuesta una lectura más por escritura; es aceptable.
+    function hogarEscribible(hogarId) {
+      return get(hogarDoc(hogarId)).data.get('archivado', false) != true;
+    }
+
     function esCreadorActivo(hogarId) {
       return esMiembroActivo(hogarId)
         && get(miembroDoc(hogarId, request.auth.uid)).data.rol == 'creador';
     }
 
     // El hogar tiene un creador activo (creadorActualId apunta a él). Un hogar
-    // archivado, o que quedó sin creador, no admite nuevos miembros.
+    // archivado (a mano, o porque quedó sin creador) no admite nuevos miembros.
     function hogarTieneCreadorActivo(hogarId) {
       let creadorId = get(hogarDoc(hogarId)).data.creadorActualId;
       let creador = get(miembroDoc(hogarId, creadorId)).data;
@@ -104,9 +110,10 @@ service cloud.firestore {
 
     function hogarNuevoValido(hogarId, datos) {
       return logueado()
-        && datos.keys().hasOnly(['nombre', 'creadoPor', 'creadoEn', 'invitacionActivaId', 'creadorActualId'])
+        && datos.keys().hasOnly(['nombre', 'tipo', 'creadoPor', 'creadoEn', 'invitacionActivaId', 'creadorActualId'])
         && datos.keys().hasAll(['nombre', 'creadoPor', 'creadoEn', 'creadorActualId'])
         && nombreValido(datos.nombre, 60)
+        && (!('tipo' in datos) || datos.tipo in ['familia', 'amigos', 'evento'])
         && datos.creadoPor == request.auth.uid
         && datos.creadorActualId == request.auth.uid
         && datos.creadoEn == request.time
@@ -139,23 +146,53 @@ service cloud.firestore {
         && getAfter(miembroDoc(hogarId, nuevo)).data.estado == 'activo';
     }
 
+    // Archivar y desarchivar: solo quien crea el grupo, en una sola escritura
+    // que toca solo los tres campos de archivado.
+    function archivadoCambioValido(hogarId, antes, despues, cambios) {
+      return cambios.hasOnly(['archivado', 'archivadoPor', 'archivadoEn'])
+        && antes.creadorActualId == request.auth.uid
+        && esCreadorActivo(hogarId)
+        && (
+          (antes.get('archivado', false) != true
+            && cambios.hasAll(['archivado', 'archivadoPor', 'archivadoEn'])
+            && despues.archivado == true
+            && despues.archivadoPor == request.auth.uid
+            && despues.archivadoEn == request.time)
+          || (antes.get('archivado', false) == true
+            && despues.archivado == false
+            && sinValor(despues.get('archivadoPor', null))
+            && sinValor(despues.get('archivadoEn', null)))
+        );
+    }
+
+    // `tipo` no cambia después de crear el grupo. Con el grupo archivado solo
+    // se admite desarchivarlo o traspasar el rol de creador (para que siempre
+    // haya alguien que pueda desarchivarlo).
     function hogarEditadoValido(hogarId) {
       let antes = resource.data;
       let despues = request.resource.data;
       let cambios = despues.diff(antes).affectedKeys();
-      return cambios.hasOnly(['nombre', 'invitacionActivaId', 'creadorActualId'])
-        && (!('nombre' in cambios) || nombreValido(despues.nombre, 60))
-        && (!('invitacionActivaId' in cambios)
-          || cambioInvitacionActivaValido(hogarId, antes.get('invitacionActivaId', null), despues.get('invitacionActivaId', null)))
-        && (!('creadorActualId' in cambios)
-          || traspasoCreadorValido(hogarId, antes.creadorActualId, despues.creadorActualId));
+      let archivado = antes.get('archivado', false) == true;
+      return cambios.hasOnly(['nombre', 'invitacionActivaId', 'creadorActualId', 'archivado', 'archivadoPor', 'archivadoEn'])
+        && (
+          cambios.hasAny(['archivado', 'archivadoPor', 'archivadoEn'])
+            ? archivadoCambioValido(hogarId, antes, despues, cambios)
+            : ((!archivado || cambios.hasOnly(['creadorActualId']))
+              && (!('nombre' in cambios) || nombreValido(despues.nombre, 60))
+              && (!('invitacionActivaId' in cambios)
+                || cambioInvitacionActivaValido(hogarId, antes.get('invitacionActivaId', null), despues.get('invitacionActivaId', null)))
+              && (!('creadorActualId' in cambios)
+                || traspasoCreadorValido(hogarId, antes.creadorActualId, despues.creadorActualId)))
+        );
     }
 
     // ---- hogares/{hogarId}/miembros/{uid} ----
 
     function miembroBaseValido(datos) {
-      return datos.keys().hasOnly(['nombre', 'foto', 'colorAvatar', 'rol', 'estado', 'desde', 'hasta', 'invitacionId', 'invitadoPor'])
+      return datos.keys().hasOnly(['uid', 'nombre', 'foto', 'colorAvatar', 'rol', 'estado', 'desde', 'hasta', 'invitacionId', 'invitadoPor', 'ultimoUso'])
         && datos.keys().hasAll(['nombre', 'colorAvatar', 'rol', 'estado', 'desde'])
+        && datos.get('uid', request.auth.uid) == request.auth.uid
+        && datos.get('ultimoUso', request.time) == request.time
         && nombreValido(datos.nombre, 100)
         && esTextoOVacio(datos.get('foto', null))
         && datos.colorAvatar is string && datos.colorAvatar.size() <= 20
@@ -188,17 +225,23 @@ service cloud.firestore {
         && get(invitacionDoc(datos.invitacionId)).data.estado == 'activa'
         && get(invitacionDoc(datos.invitacionId)).data.venceEn > request.time
         && datos.get('invitadoPor', null) == get(invitacionDoc(datos.invitacionId)).data.creadaPor
+        && hogarEscribible(hogarId)
         && hogarTieneCreadorActivo(hogarId);
     }
 
-    // Cada persona mantiene al día su nombre y foto (la copia que ven los demás).
-    function refrescoPropioValido(uid) {
+    // Cada persona mantiene al día su nombre y foto (la copia que ven los demás),
+    // completa su `uid` (para la consulta "mis grupos") y marca `ultimoUso` al
+    // cambiar de grupo. En un grupo archivado solo puede completar el `uid`.
+    function refrescoPropioValido(hogarId, uid) {
       let cambios = request.resource.data.diff(resource.data).affectedKeys();
       return request.auth.uid == uid
         && resource.data.estado == 'activo'
-        && cambios.hasOnly(['nombre', 'foto'])
+        && cambios.hasOnly(['nombre', 'foto', 'uid', 'ultimoUso'])
         && nombreValido(request.resource.data.nombre, 100)
-        && esTextoOVacio(request.resource.data.get('foto', null));
+        && esTextoOVacio(request.resource.data.get('foto', null))
+        && (!('uid' in cambios) || request.resource.data.uid == uid)
+        && (!('ultimoUso' in cambios) || request.resource.data.ultimoUso == request.time)
+        && (cambios.hasOnly(['uid']) || hogarEscribible(hogarId));
     }
 
     // Salir. Un creador sale sin cambiar de rol (era la última persona) o
@@ -225,6 +268,7 @@ service cloud.firestore {
     function quitarValido(hogarId, uid) {
       let cambios = request.resource.data.diff(resource.data).affectedKeys();
       return esCreadorActivo(hogarId)
+        && hogarEscribible(hogarId)
         && request.auth.uid != uid
         && resource.data.estado == 'activo'
         && resource.data.rol == 'miembro'
@@ -376,7 +420,7 @@ service cloud.firestore {
           && (creadorAlCrearHogarValido(hogarId, uid, request.resource.data)
             || unirseValido(hogarId, request.resource.data));
         allow update: if logueado()
-          && (refrescoPropioValido(uid)
+          && (refrescoPropioValido(hogarId, uid)
             || salidaPropiaValida(hogarId, uid)
             || quitarValido(hogarId, uid)
             || recibeTraspasoValido(hogarId, uid)
@@ -388,9 +432,10 @@ service cloud.firestore {
       // Solo se borra de verdad una lista eliminada hace más de 30 días.
       match /listas/{listaId} {
         allow read: if esMiembroActivo(hogarId);
-        allow create: if esMiembroActivo(hogarId) && listaNuevaValida(request.resource.data);
-        allow update: if esMiembroActivo(hogarId) && listaEditadaValida();
-        allow delete: if esMiembroActivo(hogarId)
+        allow create: if esMiembroActivo(hogarId) && hogarEscribible(hogarId)
+          && listaNuevaValida(request.resource.data);
+        allow update: if esMiembroActivo(hogarId) && hogarEscribible(hogarId) && listaEditadaValida();
+        allow delete: if esMiembroActivo(hogarId) && hogarEscribible(hogarId)
           && resource.data.get('eliminada', false) == true
           && hacePasadoTreintaDias(resource.data.get('eliminadaEn', null));
       }
@@ -399,9 +444,10 @@ service cloud.firestore {
       // y evita una lectura por escritura.
       match /items/{itemId} {
         allow read: if esMiembroActivo(hogarId);
-        allow create: if esMiembroActivo(hogarId) && itemNuevoValido(request.resource.data);
-        allow update: if esMiembroActivo(hogarId) && itemEditadoValido();
-        allow delete: if esMiembroActivo(hogarId)
+        allow create: if esMiembroActivo(hogarId) && hogarEscribible(hogarId)
+          && itemNuevoValido(request.resource.data);
+        allow update: if esMiembroActivo(hogarId) && hogarEscribible(hogarId) && itemEditadoValido();
+        allow delete: if esMiembroActivo(hogarId) && hogarEscribible(hogarId)
           && (
             (resource.data.get('borrado', false) == true
               && hacePasadoTreintaDias(resource.data.get('borradoEn', null)))
@@ -414,10 +460,18 @@ service cloud.firestore {
       match /presencia/{uid} {
         allow read: if esMiembroActivo(hogarId);
         allow create, update: if esMiembroActivo(hogarId)
+          && hogarEscribible(hogarId)
           && request.auth.uid == uid
           && presenciaValida(request.resource.data);
         allow delete: if false;
       }
+    }
+
+    // "Mis grupos" (Etapa 9): consulta de grupo de colecciones sobre `miembros`
+    // con where('uid', '==', <uid propio>). Solo devuelve documentos propios.
+    // Necesita el índice de grupo de colecciones de firestore.indexes.json.
+    match /{path=**}/miembros/{miembroId} {
+      allow list: if logueado() && resource.data.get('uid', null) == request.auth.uid;
     }
 
     // ---- invitaciones/{codigo} ----
@@ -429,6 +483,7 @@ service cloud.firestore {
         && datos.keys().hasOnly(['hogarId', 'creadaPor', 'venceEn', 'estado', 'hogarNombre', 'invitadoPorNombre'])
         && datos.keys().hasAll(['hogarId', 'creadaPor', 'venceEn', 'estado', 'hogarNombre', 'invitadoPorNombre'])
         && esMiembroActivo(hogarId)
+        && hogarEscribible(hogarId)
         && datos.creadaPor == request.auth.uid
         && datos.estado == 'activa'
         && datos.venceEn is timestamp
@@ -445,6 +500,7 @@ service cloud.firestore {
       allow create: if logueado() && invitacionNuevaValida(codigo, request.resource.data);
       // Lo único que se modifica es revocarla.
       allow update: if esMiembroActivo(resource.data.hogarId)
+        && hogarEscribible(resource.data.hogarId)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado'])
         && resource.data.estado == 'activa'
         && request.resource.data.estado == 'revocada';
