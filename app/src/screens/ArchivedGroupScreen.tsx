@@ -1,8 +1,10 @@
+import { Redirect } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Icon, ScreenHeader } from '../components';
 import {
+  useCurrentGroupArchived,
   useCurrentMember,
   useHousehold,
   useHouseholdLoad,
@@ -30,7 +32,8 @@ export function ArchivedGroupScreen({ onBack, onUnarchived }: Props) {
   const lists = useLists();
   const current = useCurrentMember();
   const unarchive = useUnarchiveGroup();
-  const [action, setAction] = useState<'idle' | 'busy' | 'failed'>('idle');
+  const archived = useCurrentGroupArchived();
+  const [action, setAction] = useState<'idle' | 'busy' | 'failed' | 'done'>('idle');
   const isCreator = current.role === 'creator';
 
   const confirm = async () => {
@@ -41,9 +44,16 @@ export function ArchivedGroupScreen({ onBack, onUnarchived }: Props) {
       setAction('failed');
       return;
     }
-    setAction('idle');
+    // Ya está desarchivado: no se redirige a Listas, la salida es la que decide (Mis grupos).
+    setAction('done');
     onUnarchived?.();
   };
+
+  // Si el grupo ya no está archivado (lo desarchivaron mientras se miraba una lista vieja de Mis
+  // grupos) esta pantalla no corresponde: se va a Listas.
+  if (load.status === 'ready' && !archived && action !== 'done') {
+    return <Redirect href="/listas" />;
+  }
 
   const rows: (typeof lists)[] = [];
   for (let i = 0; i < lists.length; i += 2) rows.push(lists.slice(i, i + 2));
@@ -74,7 +84,7 @@ export function ArchivedGroupScreen({ onBack, onUnarchived }: Props) {
             {isCreator && (
               <Button
                 label={action === 'busy' ? 'Desarchivando…' : 'Desarchivar grupo'}
-                disabled={action === 'busy'}
+                disabled={action === 'busy' || action === 'done'}
                 onPress={() => void confirm()}
               />
             )}

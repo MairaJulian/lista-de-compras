@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, fontSizes, fonts, radii } from '../theme';
 import { Icon, IconName } from './Icon';
 
-type Tone = 'dashed' | 'amber' | 'danger' | 'primary';
+type Tone = 'dashed' | 'amber' | 'blue' | 'danger' | 'primary';
 
 type Props = {
   icon: IconName;
@@ -17,6 +17,7 @@ type Props = {
 const toneColors = {
   dashed: { background: 'transparent', icon: colors.textSecondary },
   amber: { background: colors.amberSoft, icon: colors.amberText },
+  blue: { background: colors.blueSoft, icon: colors.blueText },
   danger: { background: colors.dangerSoft, icon: colors.danger },
   primary: { background: colors.primary, icon: colors.onPrimary },
 } as const;

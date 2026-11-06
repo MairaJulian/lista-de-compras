@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, ButtonRow, GroupBadge, Icon, ScreenHeader } from '../components';
 import { useMyGroups, useSwitchGroup } from '../data/hooks';
@@ -67,6 +68,7 @@ function GroupRow({
 export function MyGroupsScreen({ onBack, onCreate, onJoin, onOpened, onOpenArchived }: Props) {
   const myGroups = useMyGroups();
   const switchGroup = useSwitchGroup();
+  const { bottom } = useSafeAreaInsets();
   const [limitShown, setLimitShown] = useState(false);
   const { active, archived } = splitGroups(myGroups.groups);
 
@@ -134,7 +136,7 @@ export function MyGroupsScreen({ onBack, onCreate, onJoin, onOpened, onOpenArchi
         </ScrollView>
       )}
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: 32 + bottom }]}>
         {limitShown && (
           <View accessibilityRole="alert" style={styles.notice}>
             <Icon name="alertCircle" size={22} color={colors.danger} />

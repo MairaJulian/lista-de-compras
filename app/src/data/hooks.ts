@@ -181,6 +181,13 @@ export function useLeaveHousehold(): (nextGroupId?: string) => Promise<void> {
   );
 }
 
+/** Tipo del grupo actual (`familia` si todavía no se leyó o con datos de ejemplo). */
+export function useCurrentGroupType(): GroupType {
+  const real = useIsRealSession();
+  const loaded = useCurrentHouseholdState();
+  return real && loaded.status === 'ready' ? loaded.household.type : 'familia';
+}
+
 /** Si el grupo actual está archivado (solo lectura para todos, `52`). */
 export function useCurrentGroupArchived(): boolean {
   const real = useIsRealSession();
@@ -292,10 +299,20 @@ export function useCreateHousehold(): (name: string, type?: GroupType) => Promis
       }
       if (account) {
         // El correo no viaja: en `miembros` solo se guardan nombre y foto.
-        seedHousehold(
-          await createHousehold(clean, { name: account.name, photo: account.photo }, type),
+        const created = await createHousehold(
+          clean,
+          { name: account.name, photo: account.photo },
+          type,
         );
+        seedHousehold(created);
         invalidateGroups();
+        // El grupo nace con su primer código de invitación, así Invitar no dice "ya no está
+        // activo". Si falla (se cortó la conexión justo ahora) no importa: se genera desde Invitar.
+        try {
+          await createInvite(created.id);
+        } catch {
+          // Sin código todavía: Invitar ofrece "Generar código nuevo".
+        }
         return true;
       }
       setState((s) => ({

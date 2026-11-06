@@ -20,7 +20,7 @@ describe('Salir del grupo: variantes del aviso', () => {
     expect(screen.getByText('Será la nueva persona a cargo')).toBeTruthy();
   });
 
-  it('la última persona ve que el grupo se archiva y confirma con "Salir y archivar"', async () => {
+  it('la última persona ve que el grupo se queda sin miembros y confirma con "Salir del grupo"', async () => {
     const onLeft = jest.fn();
     await render(<HogarScreen onLeft={onLeft} />);
     await fireEvent.press(screen.getByLabelText('Opciones de Lucía'));
@@ -33,10 +33,10 @@ describe('Salir del grupo: variantes del aviso', () => {
     expect(screen.getByText('Sos la última persona del grupo')).toBeTruthy();
     expect(
       screen.getByText(
-        'Si salís, Nuestra casa se archiva y no queda nadie con acceso a sus listas.',
+        'Si salís, Nuestra casa se queda sin miembros y nadie va a poder ver sus listas.',
       ),
     ).toBeTruthy();
-    await fireEvent.press(screen.getByText('Salir y archivar'));
+    await fireEvent.press(screen.getAllByText('Salir del grupo').at(-1)!);
     expect(onLeft).toHaveBeenCalledTimes(1);
   });
 });
