@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router/js-tabs';
 import { View } from 'react-native';
 
 import { useSession } from '../../auth/sessionStore';
+import { isArchivingGroup, useCurrentGroupArchived } from '../../data/hooks';
 import { LeaveUndoToast } from '../../navigation/LeaveUndoToast';
 import { RemovedNotice } from '../../navigation/RemovedNotice';
 import { TabBar } from '../../navigation/TabBar';
@@ -14,9 +15,15 @@ import { colors } from '../../theme';
  */
 export default function TabsLayout() {
   const session = useSession();
+  const archived = useCurrentGroupArchived();
 
   if (session.status === 'signedIn' && !session.hasHousehold) {
     return <Redirect href="/sin-hogar" />;
+  }
+  // Un grupo archivado se ve en solo lectura (`52`), no en las pestañas. Mientras se archiva desde
+  // Grupo, se deja que el flujo lleve a Mis grupos (`51`).
+  if (archived && !isArchivingGroup()) {
+    return <Redirect href="/grupo-archivado" />;
   }
 
   return (

@@ -181,6 +181,13 @@ export function useLeaveHousehold(): (nextGroupId?: string) => Promise<void> {
   );
 }
 
+/** Tipo del grupo actual (`familia` si todavía no se leyó o con datos de ejemplo). */
+export function useCurrentGroupType(): GroupType {
+  const real = useIsRealSession();
+  const loaded = useCurrentHouseholdState();
+  return real && loaded.status === 'ready' ? loaded.household.type : 'familia';
+}
+
 /** Si el grupo actual está archivado (solo lectura para todos, `52`). */
 export function useCurrentGroupArchived(): boolean {
   const real = useIsRealSession();

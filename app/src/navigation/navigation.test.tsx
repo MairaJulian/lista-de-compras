@@ -1520,6 +1520,53 @@ describe('navegación', () => {
             expect(screen.getByText('Solo lo puede hacer quien creó el grupo.')).toBeTruthy();
           });
 
+          it('si archivan el grupo mientras se mira la pestaña Grupo, pasa a la pantalla de solo lectura', async () => {
+            let push: (archived: boolean) => void = () => {};
+            (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
+              push = (archived) =>
+                onData({
+                  id,
+                  name: 'Casa real',
+                  type: 'familia',
+                  archived,
+                  me: luciaMe,
+                  members: [creatorMe, luciaMe],
+                });
+              push(false);
+              return () => {};
+            });
+            await openHogar();
+            expect(screen.getByText('Salir del grupo')).toBeTruthy();
+            await act(async () => push(true));
+            expect(await screen.findByText('Este grupo está archivado')).toBeTruthy();
+            expect(screen.queryByText('Salir del grupo')).toBeNull();
+          });
+
+          it('la pantalla de archivado de un grupo que ya no lo está lleva a Listas', async () => {
+            (fetchMyGroups as jest.Mock).mockResolvedValue([archivedGroup]);
+            reads(creatorMe, false, 'Cena vieja');
+            firebaseSession(signedInState(account, { hogarActualId: 'h1' }));
+            await renderRouter(routes, { initialUrl: '/grupo-archivado' });
+            expect(await screen.findByText('Cena vieja')).toBeTruthy();
+            expect(screen.queryByText('Este grupo está archivado')).toBeNull();
+          });
+
+          it('un grupo de tipo Evento muestra su tarjeta con ícono de regalo en Grupo', async () => {
+            (watchHousehold as jest.Mock).mockImplementation((id, onData) => {
+              onData({
+                id,
+                name: 'Cumple',
+                type: 'evento',
+                archived: false,
+                me: creatorMe,
+                members: [creatorMe],
+              });
+              return () => {};
+            });
+            await openHogar();
+            expect(screen.getByText('gift-outline')).toBeTruthy();
+          });
+
           it('quien creó el grupo lo desarchiva y vuelve a Mis grupos', async () => {
             reads(creatorMe, true, 'Cena vieja');
             firebaseSession(signedInState(account, { hogarActualId: 'h1' }));

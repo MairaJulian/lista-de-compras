@@ -9,11 +9,13 @@ import {
   useHousehold,
   useHouseholdLoad,
   useArchiveGroup,
+  useCurrentGroupType,
   useLeaveHousehold,
   useNextGroupAfterLeaving,
   useRemoveMember,
   useRenameHousehold,
 } from '../data/hooks';
+import { groupAppearance } from '../data/groupLogic';
 import { peekGroups } from '../data/groupsStore';
 import { LeaveCase, leaveCase, nextCreator } from '../data/householdLogic';
 import type { Member } from '../data/types';
@@ -68,6 +70,34 @@ function leaveDialogProps(leaving: LeaveCase, householdName: string, nextName?: 
 
 type ActionState = 'idle' | 'busy' | 'failed';
 
+/** Colores de la tarjeta del grupo según su tipo (`51`: Evento en ámbar). */
+const cardLooks = {
+  green: {
+    card: colors.primarySoft,
+    tile: colors.primary,
+    icon: colors.onPrimary,
+    text: colors.primaryText,
+  },
+  blue: {
+    card: colors.blueSoft,
+    tile: colors.blueText,
+    icon: colors.blueSoft,
+    text: colors.blueText,
+  },
+  amber: {
+    card: colors.amberSoft,
+    tile: colors.amberText,
+    icon: colors.amberSoft,
+    text: colors.amberText,
+  },
+  neutral: {
+    card: colors.neutralSoft,
+    tile: colors.neutralText,
+    icon: colors.neutralSoft,
+    text: colors.neutralText,
+  },
+} as const;
+
 export function ActionError({ children }: { children: React.ReactNode }) {
   return (
     <Text accessibilityRole="alert" style={styles.actionError}>
@@ -92,6 +122,8 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft, onA
   const removeMember = useRemoveMember();
   const leaveHousehold = useLeaveHousehold();
   const archiveGroup = useArchiveGroup();
+  const groupType = useCurrentGroupType();
+  const cardLook = cardLooks[groupAppearance(groupType).tone];
   const { top } = useSafeAreaInsets();
   // El panel y el aviso guardan a quién se refieren aparte de si están abiertos, para que el
   // contenido no desaparezca mientras se cierran.
@@ -186,13 +218,13 @@ export function HogarScreen({ onOpenGroups, onOpenProfile, onInvite, onLeft, onA
           load.status === 'error' && <LoadErrorState onRetry={load.retry} />
         ) : (
           <>
-            <View style={styles.householdCard}>
-              <View style={styles.householdIcon}>
-                <Icon name="home" size={28} color={colors.onPrimary} />
+            <View style={[styles.householdCard, { backgroundColor: cardLook.card }]}>
+              <View style={[styles.householdIcon, { backgroundColor: cardLook.tile }]}>
+                <Icon name={groupAppearance(groupType).icon} size={28} color={cardLook.icon} />
               </View>
               <View style={styles.householdText}>
                 <Text style={styles.householdName}>{household.name}</Text>
-                <Text style={styles.householdCount}>
+                <Text style={[styles.householdCount, { color: cardLook.text }]}>
                   {count === 1 ? '1 miembro' : `${count} miembros`}
                 </Text>
               </View>
